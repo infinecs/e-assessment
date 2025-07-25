@@ -14,5 +14,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
+
+Route::get('/assessment', function () {
+    return view('assessment.index');
+});
+
+Route::get('/password.request', function () {
+    return view('auth.recoverPW');
+})->name('password.request');
