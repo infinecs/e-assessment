@@ -102,32 +102,58 @@
                                     <p class="mt-2 mb-4 text-gray-500 dark:text-gray-100/60">Sign in to continue to Minia.</p>
                                 </div>
 
-                                <form class="pt-2" action="{{ url('assessment') }}">
-                                    <div class="mb-4">
-                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Username</label>
-                                        <input type="text" class="w-full py-1.5 border-gray-50 rounded placeholder:text-13 bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 dark:placeholder:text-zinc-100/60 focus:ring focus:ring-violet-500/20 focus:border-violet-100 text-13" id="username" placeholder="Enter username">
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="flex justify-between">
-                                            <label class="block mb-2 font-medium text-gray-600 dark:text-gray-100">Password</label>
-                                            <a href="{{ url('password.request') }}" class="text-gray-500 dark:text-gray-100 text-sm hover:text-violet-500 hover:underline transition-colors">Forgot password?</a>
-                                        </div>
-                                        <div class="flex">
-                                            <input type="password" class="w-full py-1.5 border-gray-50 rounded-l bg-gray-50/30 placeholder:text-13 text-13 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 dark:placeholder:text-zinc-100/60 focus:ring focus:ring-violet-500/20 focus:border-violet-100" placeholder="Enter password" aria-label="Password" aria-describedby="password-addon">
-                                            <button class="px-4 border rounded-r border-gray-50 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100" type="button" id="password-addon"><i class="mdi mdi-eye-off-outline"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="mb-6">
-                                        <label class="inline-flex items-center">
-                                            <input type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 checked:bg-blue-600 checked:border-blue-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 focus:ring-offset-0">
-                                            <span class="ml-2 text-gray-600 dark:text-gray-100">Remember me</span>
-                                        </label>
-                                    </div>
-                                    <div class="mb-3">
-                                        <button class="w-full py-2 text-white border-transparent shadow-md btn bg-violet-500 waves-effect waves-light shadow-violet-200 dark:shadow-zinc-600" type="submit">Log In</button>
-                                    </div>
-                                </form>
+                                <form class="pt-2" method="POST" action="{{ route('login') }}">
+    @csrf
 
+    {{-- EMAIL FIELD --}}
+    <div class="mb-4">
+        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Email</label>
+        <input type="email" name="email" value="{{ old('email') }}"
+            class="w-full py-1.5 border-gray-50 rounded placeholder:text-13 bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 dark:placeholder:text-zinc-100/60 focus:ring focus:ring-violet-500/20 focus:border-violet-100 text-13"
+            id="email" placeholder="Enter email" required>
+        @error('email')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    {{-- PASSWORD FIELD --}}
+    <div class="mb-3">
+        <div class="flex justify-between">
+            <label class="block mb-2 font-medium text-gray-600 dark:text-gray-100">Password</label>
+            <a href="{{ url('password.request') }}"
+                class="text-gray-500 dark:text-gray-100 text-sm hover:text-violet-500 hover:underline transition-colors">
+                Forgot password?
+            </a>
+        </div>
+
+        <div class="flex">
+            <input type="password" name="password"
+                class="w-full py-1.5 border-gray-50 rounded-l bg-gray-50/30 placeholder:text-13 text-13 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 dark:placeholder:text-zinc-100/60 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                placeholder="Enter password" aria-label="Password" aria-describedby="password-addon" required>
+
+            <button class="px-4 border rounded-r border-gray-50 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
+                type="button" id="password-addon"><i class="mdi mdi-eye-off-outline"></i></button>
+        </div>
+        @error('password')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    {{-- REMEMBER ME --}}
+    <div class="mb-6">
+        <label class="inline-flex items-center">
+            <input type="checkbox" name="remember"
+                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 checked:bg-blue-600 checked:border-blue-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 focus:ring-offset-0">
+            <span class="ml-2 text-gray-600 dark:text-gray-100">Remember me</span>
+        </label>
+    </div>
+
+    {{-- LOGIN BUTTON --}}
+    <div class="mb-3">
+        <button class="w-full py-2 text-white border-transparent shadow-md btn bg-violet-500 waves-effect waves-light shadow-violet-200 dark:shadow-zinc-600"
+            type="submit">Log In</button>
+    </div>
+</form>
                                 <div class="pt-2 mt-5 text-center">
                                     <h6 class="mb-3 font-medium text-gray-500 text-14 dark:text-gray-100">- Sign in with -</h6>
                                     <div class="flex justify-center gap-3">
