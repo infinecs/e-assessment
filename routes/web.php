@@ -1,9 +1,12 @@
-
 <?php
 
-use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ParticipantsController;
+use Illuminate\Http\Request;
+use App\Models\Participant;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -14,12 +17,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('web')->group(function () {
-    Route::get('/admin-dashboard', function () {
+    Route::get('/admin', function () {
         return view('assessment.index');
     });
 
-    Route::get('/user-dashboard', function () {
-        return 'Welcome User!';
+    Route::get('/user', function () {
+        return view('user');
     });
 });
 
@@ -33,3 +36,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.updateProfile');
     Route::post('/settings/account', [SettingsController::class, 'updateAccount'])->name('settings.updateAccount');
 });
+
+
+
+Route::middleware(['rolelog:admin'])->group(function () {
+    Route::get('/admin', [AdminController::class, 'index'])->name('assessment.index');
+});
+
+
+
+Route::view('/participantRegister', 'participants.participantRegister')
+    ->name('participantRegister');
+
+Route::post('/participants', [ParticipantsController::class, 'store'])
+    ->name('participants.store');
+
+Route::view('/quiz', 'participants.quizPage');

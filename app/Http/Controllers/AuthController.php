@@ -14,7 +14,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
@@ -26,7 +26,14 @@ class AuthController extends Controller
             ])->withInput();
         }
 
-        if (!Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        $remember = $request->has('remember'); // <--- add this line
+
+        if (
+            !Auth::attempt(
+                ['email' => $request->email, 'password' => $request->password],
+                $remember // <--- pass it here
+            )
+        ) {
             return back()->withErrors([
                 'password' => 'Incorrect password.',
             ])->withInput();
@@ -36,9 +43,8 @@ class AuthController extends Controller
         $role = Auth::user()->roles;
 
         return match ($role) {
-            'admin' => redirect()->intended('/admin-dashboard'),
-            'user'  => redirect()->intended('/user-dashboard'),
-            default => redirect()->intended('/'),
+            'admin' => redirect()->intended('/admin'),
+
         };
     }
 
