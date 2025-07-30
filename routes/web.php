@@ -1,10 +1,15 @@
 <?php
 
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ParticipantsController;
+use App\Http\Controllers\EventsController;
+use App\Http\Controllers\AssessmentResultController;
+use App\Http\Controllers\AssessmentCategoryController;
+use App\Http\Controllers\AssessmentTopicController;
+use App\Http\Controllers\AssessmentQuestionController;
+
 use Illuminate\Http\Request;
 use App\Models\Participant;
 
@@ -42,6 +47,21 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['rolelog:admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('assessment.index');
 });
+Route::view('/events', 'assessment.events')->name('events');
+Route::get('/events', [EventsController::class, 'index'])->name('events');
+
+Route::view('/results', 'assessment.results')->name('results');
+Route::get('/results', [AssessmentResultController::class, 'index'])->name('results');
+
+
+Route::view('/category', 'assessment.category')->name('category');
+Route::get('/category', [AssessmentCategoryController::class, 'index'])->name('category');
+
+Route::view('/topic', 'assessment.topic')->name('topic');
+Route::get('/topic', [AssessmentTopicController::class, 'index'])->name('topic');
+
+Route::view('/question', 'assessment.question')->name('question');
+Route::get('/question', [AssessmentQuestionController::class, 'index'])->name('question');
 
 
 
