@@ -128,7 +128,7 @@
                                     </p>
                                 </div>
 
-                                <form method="POST" action="{{ route('participants.store') }}">
+                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}">
                                     @csrf
 
                                     {{-- Name --}}

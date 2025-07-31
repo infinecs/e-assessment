@@ -27,4 +27,9 @@ class AssessmentQuestion extends Model
         'DateCreate',
         'DateUpdate',
     ];
+
+    public function answers()
+{
+    return $this->hasMany(\App\Models\AssessmentAnswer::class, 'QuestionID', 'QuestionID');
+}
 }

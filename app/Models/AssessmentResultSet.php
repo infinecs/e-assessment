@@ -9,13 +9,15 @@ class AssessmentResultSet extends Model
     protected $table = 'assessmentresultset';
     public $timestamps = false;
 
-    protected $primaryKey = null; // Composite key, handle manually
+    // No primary key, no incrementing
+    protected $primaryKey = null;
     public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'AssessmentID',
         'QuestionID',
         'AnswerID',
-        'DateCreate'
+        'DateCreate',
     ];
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\AssessmentResultController;
 use App\Http\Controllers\AssessmentCategoryController;
 use App\Http\Controllers\AssessmentTopicController;
 use App\Http\Controllers\AssessmentQuestionController;
+use App\Http\Controllers\QuizController;
 
 use Illuminate\Http\Request;
 use App\Models\Participant;
@@ -65,10 +66,24 @@ Route::get('/question', [AssessmentQuestionController::class, 'index'])->name('q
 
 
 
-Route::view('/participantRegister', 'participants.participantRegister')
-    ->name('participantRegister');
+Route::get('/participantRegister/{eventCode}', [ParticipantsController::class, 'showRegisterForm'])
+    ->name('participantRegister.show');
+
+Route::post('/participantRegister/{eventCode}', [ParticipantsController::class, 'register'])
+    ->name('participantRegister.store');
 
 Route::post('/participants', [ParticipantsController::class, 'store'])
     ->name('participants.store');
 
-Route::view('/quiz', 'participants.quizPage');
+
+
+Route::get('/quiz/{eventCode}', [QuizController::class, 'showQuiz'])->name('quiz.show');
+
+
+Route::post('/quiz/{eventCode}/submit', [QuizController::class, 'submitQuiz'])->name('quiz.submit');
+
+Route::post('/quiz/{eventCode}/save-answer', [QuizController::class, 'saveAnswer'])
+    ->name('quiz.saveAnswer');
+
+    Route::get('/quiz/{eventCode}/results', [QuizController::class, 'showResults'])
+    ->name('quiz.results');
