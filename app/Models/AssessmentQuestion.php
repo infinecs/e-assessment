@@ -30,6 +30,6 @@ class AssessmentQuestion extends Model
 
     public function answers()
 {
-    return $this->hasMany(\App\Models\AssessmentAnswer::class, 'QuestionID', 'QuestionID');
+    return $this->hasMany(AssessmentAnswer::class, 'QuestionID', 'QuestionID');
 }
 }

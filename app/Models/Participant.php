@@ -9,7 +9,9 @@ class Participant extends Model
 {
     use HasFactory; // You imported this, so use it
 
-    protected $table = 'participants'; // explicitly define table name
+    protected $table = 'participants';  // if not default
+    protected $primaryKey = 'id';       // confirm that the column is literally `id`
+    public $timestamps = true;   // explicitly define table name
 
     protected $fillable = [
         'name',

@@ -9,6 +9,7 @@ use App\Models\AssessmentTopic;
 use App\Models\AssessmentResultSet;
 use App\Models\AssessmentAnswer;
 use App\Models\Assessment;
+use App\Models\Participant; 
 
 class QuizController extends Controller
 {    
@@ -59,6 +60,7 @@ public function showQuiz($eventCode)
             $allQuestions = $allQuestions->merge($extraQuestions);
         }
 
+        $allQuestions = $allQuestions->unique('QuestionID')->values();
         $allQuestions = $allQuestions->shuffle()->values();
 
         // Save IDs in session
@@ -80,18 +82,31 @@ public function showQuiz($eventCode)
 public function submitQuiz(Request $request, $eventCode)
 {
     $answers = $request->input('answers', []);
-    $participantId = auth()->check() ? auth()->id() : 0;
 
+    // Get participant id from participants table
+   // Get participant id from session
+$email = session('participant_email');
+$participantId = 0;
+if ($email) {
+    $participant = Participant::where('email', $email)->first();
+    if ($participant) {
+        $participantId = $participant->id;
+    }
+}
+
+
+    // Load questions from session
     $questionIds = session("quiz_questions_$eventCode", []);
     if (empty($questionIds)) {
         return redirect()->route('quiz.show', $eventCode)
             ->with('error', 'Session expired, please retake the quiz.');
     }
 
+    // Calculate score
     $score = 0;
     $total = count($questionIds);
 
-    foreach ($questionIds as $qid) {
+    foreach (array_unique($questionIds) as $qid) {
         if (!isset($answers[$qid])) continue;
 
         $selectedOption = $answers[$qid];
@@ -99,7 +114,7 @@ public function submitQuiz(Request $request, $eventCode)
 
         $chosenAnswer = null;
         foreach ($answerList as $index => $ans) {
-            if (chr(65+$index) === $selectedOption) {
+            if (chr(65 + $index) === $selectedOption) {
                 $chosenAnswer = $ans;
                 break;
             }
@@ -110,6 +125,7 @@ public function submitQuiz(Request $request, $eventCode)
         }
     }
 
+    // Save Assessment + Results
     \DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds) {
         $assessment = Assessment::create([
             'ParticipantID' => $participantId,
@@ -120,13 +136,13 @@ public function submitQuiz(Request $request, $eventCode)
             'DateUpdate'    => now(),
         ]);
 
-        foreach ($questionIds as $qid) {
+        foreach (array_unique($questionIds) as $qid) {
             $answerLetter = $answers[$qid] ?? null;
             $answerId = null;
             if ($answerLetter) {
                 $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
                 foreach ($answerList as $index => $ans) {
-                    if (chr(65+$index) === $answerLetter) {
+                    if (chr(65 + $index) === $answerLetter) {
                         $answerId = $ans->AnswerID;
                         break;
                     }
@@ -142,19 +158,20 @@ public function submitQuiz(Request $request, $eventCode)
         }
     });
 
+    // Store result for final page
     session([
-    "quiz_result_$eventCode" => [
-        'score' => $score,
-        'total' => $total,
-    ],
-    "quiz_completed_$eventCode" => true
-]);
+        "quiz_result_$eventCode" => [
+            'score' => $score,
+            'total' => $total,
+        ],
+        "quiz_completed_$eventCode" => true
+    ]);
 
-// Remove old questions and answers so that next attempt is fresh
-session()->forget("quiz_questions_$eventCode");
-session()->forget("quiz_answers_$eventCode");
+    // Forget questions/answers so next attempt is fresh
+    session()->forget("quiz_questions_$eventCode");
+    session()->forget("quiz_answers_$eventCode");
 
-return redirect()->route('quiz.results', $eventCode);
+    return redirect()->route('quiz.results', $eventCode);
 }
 
 

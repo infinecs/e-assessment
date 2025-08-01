@@ -14,23 +14,29 @@ class ParticipantsController extends Controller
     }
 
     public function register(Request $request, $eventCode)
-    {
-        // Validate inputs
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone_number' => 'required|regex:/^[0-9]+$/|max:20',
-            'email' => 'required|email|unique:participants,email',
-        ]);
+{
+    // Validate inputs
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'phone_number' => 'required|regex:/^[0-9]+$/|max:20',
+        'email' => 'required|email|unique:participants,email',
+    ]);
 
-        // Save participant and link to event code
-        Participant::create([
-            'name' => $validated['name'],
-            'phone_number' => $validated['phone_number'],
-            'email' => $validated['email'],
-            'event_code' => $eventCode, // make sure this column exists
-        ]);
+    // Create participant
+    $participant = Participant::create([
+        'name' => $validated['name'],
+        'phone_number' => $validated['phone_number'],
+        'email' => $validated['email'],
+        'event_code' => $eventCode,
+    ]);
 
-        // Redirect to quiz page for that event
-        return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
-    }
+    // Store participant info in session (this is key!)
+    session([
+        'participant_email' => $participant->email,
+        'participant_id'    => $participant->id,
+    ]);
+
+    // Redirect to quiz page
+    return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
+}
 }

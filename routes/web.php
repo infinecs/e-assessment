@@ -54,6 +54,14 @@ Route::get('/events', [EventsController::class, 'index'])->name('events');
 Route::view('/results', 'assessment.results')->name('results');
 Route::get('/results', [AssessmentResultController::class, 'index'])->name('results');
 
+Route::delete('/assessment-results/delete', [AssessmentResultController::class, 'bulkDelete'])
+    ->name('assessment.bulkDelete');
+
+// Route for assessment details modal AJAX
+Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'details']);
+
+    
+
 
 Route::view('/category', 'assessment.category')->name('category');
 Route::get('/category', [AssessmentCategoryController::class, 'index'])->name('category');

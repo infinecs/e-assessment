@@ -9,7 +9,7 @@ class AssessmentResultSet extends Model
     protected $table = 'assessmentresultset';
     public $timestamps = false;
 
-    // No primary key, no incrementing
+    // No auto-incrementing primary key
     protected $primaryKey = null;
     public $incrementing = false;
     protected $keyType = 'string';
@@ -20,4 +20,14 @@ class AssessmentResultSet extends Model
         'AnswerID',
         'DateCreate',
     ];
+
+    public function question()
+    {
+        return $this->belongsTo(AssessmentQuestion::class, 'QuestionID', 'QuestionID');
+    }
+
+    public function answer()
+    {
+        return $this->belongsTo(AssessmentAnswer::class, 'AnswerID', 'AnswerID');
+    }
 }

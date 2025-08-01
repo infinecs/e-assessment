@@ -29,8 +29,14 @@ class Assessment extends Model
     ];
 
     // Optionally define relationships
-    public function participant()
-    {
-        return $this->belongsTo(Participant::class, 'ParticipantID', 'ParticipantID');
-    }
+public function participant()
+{
+    return $this->belongsTo(Participant::class, 'ParticipantID', 'id');
+}
+
+public function resultSets()
+{
+    return $this->hasMany(AssessmentResultSet::class, 'AssessmentID', 'AssessmentID');
+}
+
 }
