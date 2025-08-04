@@ -50,6 +50,12 @@ Route::middleware(['rolelog:admin'])->group(function () {
 });
 Route::view('/events', 'assessment.events')->name('events');
 Route::get('/events', [EventsController::class, 'index'])->name('events');
+Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
+Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
+Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
+Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
+Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
+Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 
 Route::view('/results', 'assessment.results')->name('results');
 Route::get('/results', [AssessmentResultController::class, 'index'])->name('results');
@@ -65,12 +71,27 @@ Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'deta
 
 Route::view('/category', 'assessment.category')->name('category');
 Route::get('/category', [AssessmentCategoryController::class, 'index'])->name('category');
+Route::get('/category/{id}/details', [AssessmentCategoryController::class, 'getCategoryDetails']);
+Route::delete('/category/{id}', [AssessmentCategoryController::class, 'destroy'])->name('category.destroy');
+Route::put('/category/{id}', [AssessmentCategoryController::class, 'update'])->name('category.update');
 
 Route::view('/topic', 'assessment.topic')->name('topic');
 Route::get('/topic', [AssessmentTopicController::class, 'index'])->name('topic');
+Route::delete('/topic/{id}', [AssessmentTopicController::class, 'destroy'])->name('topic.destroy');
+Route::put('/topic/{id}', [AssessmentTopicController::class, 'update'])->name('topic.update');
+Route::get('/topic/{id}/details', [AssessmentTopicController::class, 'getTopicDetails'])->name('topic.details');
 
 Route::view('/question', 'assessment.question')->name('question');
 Route::get('/question', [AssessmentQuestionController::class, 'index'])->name('question');
+
+// Question CRUD routes
+Route::delete('/question/{id}', [AssessmentQuestionController::class, 'destroy'])->name('question.destroy');
+Route::put('/question/{id}', [AssessmentQuestionController::class, 'update'])->name('question.update');
+Route::get('/question/{id}/details', [AssessmentQuestionController::class, 'getQuestionDetails'])->name('question.details');
+
+// Question answers routes
+Route::get('/question/{id}/answers', [AssessmentQuestionController::class, 'getAnswers']);
+Route::post('/question/{id}/answers', [AssessmentQuestionController::class, 'updateAnswers']);
 
 
 
@@ -92,6 +113,19 @@ Route::post('/quiz/{eventCode}/submit', [QuizController::class, 'submitQuiz'])->
 
 Route::post('/quiz/{eventCode}/save-answer', [QuizController::class, 'saveAnswer'])
     ->name('quiz.saveAnswer');
+
+Route::post('/quiz/{eventCode}/clear-answers', [QuizController::class, 'clearAnswers'])
+    ->name('quiz.clearAnswers');
+
+// Session management routes for cross-browser prevention
+Route::post('/quiz/{eventCode}/check-active-session', [QuizController::class, 'checkActiveSession'])
+    ->name('quiz.checkActiveSession');
+
+Route::post('/quiz/{eventCode}/clear-active-session', [QuizController::class, 'clearActiveSession'])
+    ->name('quiz.clearActiveSession');
+
+Route::post('/quiz/{eventCode}/heartbeat', [QuizController::class, 'heartbeat'])
+    ->name('quiz.heartbeat');
 
     Route::get('/quiz/{eventCode}/results', [QuizController::class, 'showResults'])
     ->name('quiz.results');

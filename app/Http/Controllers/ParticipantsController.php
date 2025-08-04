@@ -36,7 +36,7 @@ class ParticipantsController extends Controller
         'participant_id'    => $participant->id,
     ]);
 
-    // Redirect to quiz page
-    return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
+    // Redirect to quiz page with new session parameter
+    return redirect()->route('quiz.show', ['eventCode' => $eventCode])->with('new_session', true);
 }
 }

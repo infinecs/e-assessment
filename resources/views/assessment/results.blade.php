@@ -42,11 +42,12 @@
             </div>
 
             <div class="card-body">
-                <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
-                    <table class="w-full min-w-[1100px] text-sm text-center text-gray-500">
-                        <thead
-                            class="text-xs text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700/50 sticky top-0 z-10">
-                            <tr>
+                <div class="isolate">
+                    <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                        <table class="w-full min-w-[1100px] text-sm text-center text-gray-500">
+                            <thead
+                                class="text-xs text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">
+                                <tr>
                                 <th class="p-3">
                                     <div class="flex items-center justify-center">
                                         <input id="checkbox-all" type="checkbox"
@@ -93,12 +94,13 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-3 py-2 text-center">No records found</td>
+                                    <td colspan="7" class="px-3 py-2 text-center">No records found</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         </div>
 

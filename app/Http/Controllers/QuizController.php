@@ -74,7 +74,8 @@ public function showQuiz($eventCode)
     return view('participants.quizPage', [
         'eventCode' => $eventCode,
         'questions' => $questions,
-        'savedAnswers' => $savedAnswers
+        'savedAnswers' => $savedAnswers,
+        'assessment' => AssessmentEvent::where('EventCode', $eventCode)->first()
     ]);
 }
 
@@ -184,6 +185,14 @@ public function saveAnswer(Request $request, $eventCode)
     return response()->json(['status' => 'saved']);
 }
 
+public function clearAnswers(Request $request, $eventCode)
+{
+    // Clear saved answers from session for fresh start
+    session()->forget("quiz_answers_$eventCode");
+    
+    return response()->json(['status' => 'cleared']);
+}
+
 public function showResults($eventCode)
 {
     if (!session("quiz_completed_$eventCode")) {
@@ -195,6 +204,71 @@ public function showResults($eventCode)
         'eventCode' => $eventCode,
         'result' => $result
     ]);
+}
+
+/**
+ * Check if there's already an active quiz session for this participant
+ */
+public function checkActiveSession(Request $request, $eventCode)
+{
+    $email = session('participant_email');
+    if (!$email) {
+        return response()->json(['allowed' => false, 'message' => 'No participant session found']);
+    }
+
+    // Check if there's an active session in cache/database
+    $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+    $activeSession = cache()->get($activeSessionKey);
+    
+    if ($activeSession && $activeSession !== $request->input('tabId')) {
+        // Another session is active
+        return response()->json([
+            'allowed' => false, 
+            'message' => 'Quiz is already active in another browser or device'
+        ]);
+    }
+
+    // Store this session as active (expires in 2 hours)
+    cache()->put($activeSessionKey, $request->input('tabId'), now()->addHours(2));
+    
+    return response()->json(['allowed' => true]);
+}
+
+/**
+ * Clear the active session when quiz is completed or tab is closed
+ */
+public function clearActiveSession(Request $request, $eventCode)
+{
+    $email = session('participant_email');
+    if ($email) {
+        $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+        cache()->forget($activeSessionKey);
+    }
+    
+    return response()->json(['success' => true]);
+}
+
+/**
+ * Heartbeat to keep the session alive and check if still active
+ */
+public function heartbeat(Request $request, $eventCode)
+{
+    $email = session('participant_email');
+    if (!$email) {
+        return response()->json(['active' => false]);
+    }
+
+    $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+    $activeSession = cache()->get($activeSessionKey);
+    $currentTabId = $request->input('tabId');
+    
+    if ($activeSession === $currentTabId) {
+        // Extend the session for another 2 hours
+        cache()->put($activeSessionKey, $currentTabId, now()->addHours(2));
+        return response()->json(['active' => true]);
+    }
+    
+    return response()->json(['active' => false]);
 }
 }
 
