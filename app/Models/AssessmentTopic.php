@@ -26,6 +26,11 @@ class AssessmentTopic extends Model
         'DateCreate',
         'DateUpdate',
     ];
+
+    // Default values for attributes
+    protected $attributes = [
+        'AdminID' => 0,
+    ];
 }
 
 

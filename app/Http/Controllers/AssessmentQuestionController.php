@@ -11,7 +11,8 @@ class AssessmentQuestionController extends Controller
     public function index()
     {
         // Use the MODEL, not the controller, also get all topics for edit modal
-        $records = AssessmentQuestion::paginate(10); // 10 per page
+        // Order by most recent first (DateCreate descending)
+        $records = AssessmentQuestion::orderBy('DateCreate', 'desc')->paginate(10); // 10 per page
         
         // Get all topics for the edit modal dropdown
         $allTopics = DB::table('assessmenttopic')
@@ -20,6 +21,56 @@ class AssessmentQuestionController extends Controller
             ->get();
             
         return view('assessment.question', compact('records', 'allTopics'));
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'QuestionText' => 'required|string',
+                'selected_topic_ids' => 'required|array|min:1',
+                'answers' => 'required|array|min:2'
+            ]);
+            
+            // Create the question
+            $question = new AssessmentQuestion();
+            $question->QuestionText = $validatedData['QuestionText'];
+            
+            // Set topic information - only DefaultTopic column exists in the table
+            if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
+                $question->DefaultTopic = $validatedData['selected_topic_ids'][0];
+            }
+            
+            // Set AdminID to 0 as default (cannot be null)
+            $question->AdminID = 0;
+            
+            $question->DateCreate = now();
+            $question->DateUpdate = now();
+            $question->save();
+            
+            // Create the answers
+            foreach ($validatedData['answers'] as $answerData) {
+                $answer = new AssessmentAnswer();
+                $answer->QuestionID = $question->QuestionID;
+                $answer->AnswerText = $answerData['text'];
+                $answer->AnswerType = 'T';  // Set AnswerType to 'T'
+                $answer->ExpectedAnswer = $answerData['is_correct'] ? 'Y' : 'N';
+                $answer->DateCreate = now();
+                $answer->DateUpdate = now();
+                $answer->save();
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Question created successfully!',
+                'data' => $question
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating question: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($id)
@@ -44,6 +95,36 @@ class AssessmentQuestionController extends Controller
         }
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        try {
+            $questionIds = $request->input('question_ids');
+            
+            if (empty($questionIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No questions selected for deletion.'
+                ], 400);
+            }
+            
+            // Delete associated answers first
+            AssessmentAnswer::whereIn('QuestionID', $questionIds)->delete();
+            
+            // Delete questions
+            $deletedCount = AssessmentQuestion::whereIn('QuestionID', $questionIds)->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} questions and their answers."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting questions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         try {
@@ -54,10 +135,9 @@ class AssessmentQuestionController extends Controller
                 'selected_topic_ids' => 'array' // For selected topics
             ]);
             
-            // If specific topics are selected, use those as comma-separated string
+            // If specific topics are selected, use the first one as DefaultTopic (only column that exists)
             if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
-                $validatedData['TopicID'] = implode(',', $validatedData['selected_topic_ids']);
-                // Use the first selected topic as the default topic
+                // Use the first selected topic as the default topic (only column that exists in DB)
                 $validatedData['DefaultTopic'] = $validatedData['selected_topic_ids'][0];
             }
             
@@ -84,11 +164,11 @@ class AssessmentQuestionController extends Controller
         try {
             $question = AssessmentQuestion::findOrFail($id);
             
-            // Get selected topic IDs for this question
+            // Get selected topic IDs for this question (use DefaultTopic since TopicID column doesn't exist)
             $selectedTopicIds = [];
-            if ($question->TopicID) {
-                $selectedTopicIds = array_map('trim', explode(',', $question->TopicID));
-                $selectedTopicIds = array_map('strval', array_unique(array_filter($selectedTopicIds)));
+            if ($question->DefaultTopic) {
+                // Since only one topic is stored in DefaultTopic, just return it as an array
+                $selectedTopicIds = [strval($question->DefaultTopic)];
             }
             
             return response()->json([

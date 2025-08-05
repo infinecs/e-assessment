@@ -28,6 +28,11 @@ class AssessmentQuestion extends Model
         'DateUpdate',
     ];
 
+    // Default values for attributes
+    protected $attributes = [
+        'AdminID' => 0,
+    ];
+
     public function answers()
 {
     return $this->hasMany(AssessmentAnswer::class, 'QuestionID', 'QuestionID');

@@ -11,7 +11,7 @@ public function index()
 {
    $categories = DB::table('assessmentcategory as c')
     ->select('c.CategoryID', 'c.CategoryName', 'c.DateCreate', 'c.DateUpdate', 'c.AdminID', 'c.TopicIDs')
-    ->orderBy('c.CategoryID')
+    ->orderBy('c.DateCreate', 'desc')
     ->get();
 
     $processedCategories = $categories->map(function ($cat) {
@@ -65,6 +65,57 @@ public function index()
 
 }
 
+public function store(Request $request)
+{
+    try {
+        $validatedData = $request->validate([
+            'CategoryName' => 'required|string|max:255',
+            'topic_ids' => 'required|array|min:1'
+        ]);
+        
+        // Check if category name already exists
+        $existingCategory = DB::table('assessmentcategory')
+            ->where('CategoryName', $validatedData['CategoryName'])
+            ->first();
+        
+        if ($existingCategory) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: The category name has already been taken.'
+            ], 422);
+        }
+        
+        // Prepare category data
+        $categoryData = [
+            'CategoryName' => $validatedData['CategoryName'],
+            'AdminID' => 0, // Default AdminID
+            'DateCreate' => now(),
+            'DateUpdate' => now()
+        ];
+        
+        // Save topic IDs directly to category table (required now)
+        $categoryData['TopicIDs'] = implode(',', $validatedData['topic_ids']);
+        
+        $categoryId = DB::table('assessmentcategory')->insertGetId($categoryData);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Category created successfully!',
+            'data' => ['CategoryID' => $categoryId]
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating category: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
 public function destroy($id)
 {
     try {
@@ -105,7 +156,7 @@ public function update(Request $request, $id)
         
         $validatedData = $request->validate([
             'CategoryName' => 'required|string|max:255',
-            'topic_ids' => 'array'
+            'topic_ids' => 'required|array|min:1'
         ]);
         
         // Prepare update data
@@ -114,12 +165,8 @@ public function update(Request $request, $id)
             'DateUpdate' => now()
         ];
         
-        // Save topic IDs directly to category table (for time being)
-        if (isset($validatedData['topic_ids']) && !empty($validatedData['topic_ids'])) {
-            $categoryData['TopicIDs'] = implode(',', $validatedData['topic_ids']);
-        } else {
-            $categoryData['TopicIDs'] = null;
-        }
+        // Save topic IDs directly to category table (required now)
+        $categoryData['TopicIDs'] = implode(',', $validatedData['topic_ids']);
         
         DB::table('assessmentcategory')
             ->where('CategoryID', $id)
@@ -129,6 +176,11 @@ public function update(Request $request, $id)
             'success' => true,
             'message' => 'Category and topics saved successfully!'
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+        ], 422);
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -168,6 +220,36 @@ public function getCategoryDetails($id)
         return response()->json([
             'success' => false,
             'message' => 'Error fetching category details: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function bulkDestroy(Request $request)
+{
+    try {
+        $validatedData = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:assessmentcategory,CategoryID'
+        ]);
+
+        $ids = $validatedData['ids'];
+        $deletedCount = DB::table('assessmentcategory')->whereIn('CategoryID', $ids)->delete();
+
+        $categoryText = $deletedCount === 1 ? 'category' : 'categories';
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully deleted {$deletedCount} {$categoryText}!"
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting categories: ' . $e->getMessage()
         ], 500);
     }
 }

@@ -14,6 +14,7 @@ class EventsController extends Controller
         $records = DB::table('assessmentevent as e')
             ->leftJoin('assessmentcategory as c', 'e.CategoryID', '=', 'c.CategoryID')
             ->select('e.*', 'c.CategoryName')
+            ->orderBy('e.EventID', 'desc')
             ->paginate(10);
             
         // Get all categories for the edit modal dropdown
@@ -23,6 +24,80 @@ class EventsController extends Controller
             ->get();
             
         return view('assessment.events', compact('records', 'allCategories'));
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'EventName' => 'required|string|max:255',
+                'EventCode' => 'required|string|max:50|unique:assessmentevent,EventCode',
+                'QuestionLimit' => 'required|integer|min:1',
+                'DurationEachQuestion' => 'required|integer|min:1',
+                'StartDate' => 'required|date',
+                'EndDate' => 'required|date|after:StartDate',
+                'CategoryID' => 'required|integer',
+                'selected_topic_ids' => 'required|array|min:1' // At least one topic required
+            ]);
+            
+            // Convert selected topics to comma-separated string
+            if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
+                $validatedData['TopicID'] = implode(',', $validatedData['selected_topic_ids']);
+            }
+            
+            // Remove selected_topic_ids from validated data as it's not a database field
+            unset($validatedData['selected_topic_ids']);
+            
+            // Add creation timestamp and default AdminID
+            $validatedData['DateCreate'] = now();
+            $validatedData['DateUpdate'] = now();
+            $validatedData['AdminID'] = 0; // Set default AdminID to 0
+            
+            $event = AssessmentEvent::create($validatedData);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Event created successfully!',
+                'data' => $event
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating event: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        try {
+            $eventIds = $request->input('event_ids');
+            
+            if (empty($eventIds) || !is_array($eventIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No events selected for deletion'
+                ], 400);
+            }
+
+            $deletedCount = AssessmentEvent::whereIn('EventID', $eventIds)->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} event(s)"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting events: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($id)
@@ -106,16 +181,27 @@ class EventsController extends Controller
             
             // Get currently selected topics for this event
             $selectedTopicIds = [];
+            $topicNames = [];
             if ($event->TopicID) {
                 $selectedTopicIds = array_map('trim', explode(',', $event->TopicID));
                 $selectedTopicIds = array_map('strval', array_unique(array_filter($selectedTopicIds)));
+                
+                // Get topic names for search functionality
+                if (!empty($selectedTopicIds)) {
+                    $topics = DB::table('assessmenttopic')
+                        ->whereIn('TopicID', $selectedTopicIds)
+                        ->select('TopicName')
+                        ->get();
+                    $topicNames = $topics->pluck('TopicName')->toArray();
+                }
             }
             
             return response()->json([
                 'success' => true,
                 'event' => $event,
                 'category_topics' => $categoryTopics,
-                'selected_topic_ids' => $selectedTopicIds
+                'selected_topic_ids' => $selectedTopicIds,
+                'topic_names' => $topicNames
             ]);
         } catch (\Exception $e) {
             return response()->json([

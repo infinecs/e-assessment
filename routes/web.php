@@ -50,10 +50,10 @@ Route::middleware(['rolelog:admin'])->group(function () {
 });
 Route::view('/events', 'assessment.events')->name('events');
 Route::get('/events', [EventsController::class, 'index'])->name('events');
+Route::post('/events', [EventsController::class, 'store'])->name('events.store');
+Route::post('/events/bulk-delete', [EventsController::class, 'bulkDestroy'])->name('events.bulkDestroy');
 Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
 Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
-Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
-Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
 Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 
@@ -71,12 +71,16 @@ Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'deta
 
 Route::view('/category', 'assessment.category')->name('category');
 Route::get('/category', [AssessmentCategoryController::class, 'index'])->name('category');
+Route::post('/category', [AssessmentCategoryController::class, 'store'])->name('category.store');
+Route::post('/category/bulk-delete', [AssessmentCategoryController::class, 'bulkDestroy'])->name('category.bulk-delete');
 Route::get('/category/{id}/details', [AssessmentCategoryController::class, 'getCategoryDetails']);
 Route::delete('/category/{id}', [AssessmentCategoryController::class, 'destroy'])->name('category.destroy');
 Route::put('/category/{id}', [AssessmentCategoryController::class, 'update'])->name('category.update');
 
 Route::view('/topic', 'assessment.topic')->name('topic');
 Route::get('/topic', [AssessmentTopicController::class, 'index'])->name('topic');
+Route::post('/topic', [AssessmentTopicController::class, 'store'])->name('topic.store');
+Route::delete('/topic/bulk-delete', [AssessmentTopicController::class, 'bulkDestroy'])->name('topic.bulkDestroy');
 Route::delete('/topic/{id}', [AssessmentTopicController::class, 'destroy'])->name('topic.destroy');
 Route::put('/topic/{id}', [AssessmentTopicController::class, 'update'])->name('topic.update');
 Route::get('/topic/{id}/details', [AssessmentTopicController::class, 'getTopicDetails'])->name('topic.details');
@@ -85,6 +89,8 @@ Route::view('/question', 'assessment.question')->name('question');
 Route::get('/question', [AssessmentQuestionController::class, 'index'])->name('question');
 
 // Question CRUD routes
+Route::post('/question', [AssessmentQuestionController::class, 'store'])->name('question.store');
+Route::delete('/question/bulk-delete', [AssessmentQuestionController::class, 'bulkDestroy'])->name('question.bulkDestroy');
 Route::delete('/question/{id}', [AssessmentQuestionController::class, 'destroy'])->name('question.destroy');
 Route::put('/question/{id}', [AssessmentQuestionController::class, 'update'])->name('question.update');
 Route::get('/question/{id}/details', [AssessmentQuestionController::class, 'getQuestionDetails'])->name('question.details');

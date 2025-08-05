@@ -24,6 +24,12 @@ class AssessmentAnswer extends Model
         'DateUpdate',
     ];
 
+    // Default values for attributes
+    protected $attributes = [
+        'AdminID' => 0,
+        'AnswerType' => 'T',
+    ];
+
     // Relationship to Question
     public function question()
     {

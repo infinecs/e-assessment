@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Assessment;
 use App\Models\AssessmentResultSet;
 
@@ -16,7 +17,25 @@ class AssessmentResultController extends Controller
         ->orderBy('AssessmentID', 'desc') // ensure stable order
         ->paginate(10);
 
-    return view('assessment.results', compact('records'));
+    // Get all events for filter dropdown
+    $allEvents = DB::table('assessmentevent')
+        ->select('EventID', 'EventName')
+        ->orderBy('EventName')
+        ->get();
+        
+    // Get all categories for filter dropdown
+    $allCategories = DB::table('assessmentcategory')
+        ->select('CategoryID', 'CategoryName')
+        ->orderBy('CategoryName')
+        ->get();
+        
+    // Get all topics for filter dropdown
+    $allTopics = DB::table('assessmenttopic')
+        ->select('TopicID', 'TopicName')
+        ->orderBy('TopicName')
+        ->get();
+
+    return view('assessment.results', compact('records', 'allEvents', 'allCategories', 'allTopics'));
 }
 
     public function bulkDelete(Request $request)

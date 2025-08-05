@@ -1,6 +1,47 @@
 @extends('layout.appMain')
 
 @section('content')
+<!-- CSRF token for AJAX requests -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<!-- Custom styles for checkboxes -->
+<style>
+.row-checkbox:checked,
+#checkbox-all:checked,
+.event-filter-checkbox:checked,
+.category-filter-checkbox:checked,
+.topic-filter-checkbox:checked {
+    background-color: #7c3aed !important; /* violet-600 */
+    border-color: #7c3aed !important;
+}
+
+.row-checkbox:checked:after,
+#checkbox-all:checked:after,
+.event-filter-checkbox:checked:after,
+.category-filter-checkbox:checked:after,
+.topic-filter-checkbox:checked:after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.row-checkbox,
+#checkbox-all,
+.event-filter-checkbox,
+.category-filter-checkbox,
+.topic-filter-checkbox {
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+</style>
+
     <!-- Breadcrumb -->
     <div class="grid grid-cols-1 pb-6">
         <div class="md:flex items-center justify-between px-[2px]">
@@ -32,10 +73,127 @@
 
     <div class="col-span-12 xl:col-span-6">
         <div class="card dark:bg-zinc-800 dark:border-zinc-600">
-            <div class="card-body border-b border-gray-100 dark:border-zinc-600 flex items-center">
-                <div class="ml-auto">
+            <!-- Header with search and filters -->
+            <div class="card-body border-b border-gray-100 dark:border-zinc-600 flex items-center justify-between">
+                <!-- Search Bar and Filters -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <!-- Main Search Input -->
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search by name, email, or phone..." 
+                            class="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm w-60 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:placeholder-gray-400">
+                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+
+                    <!-- Event Filter -->
+                    <div class="relative">
+                        <button type="button" id="eventFilterBtn" 
+                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-gray-500 text-sm"></i>
+                            <span id="eventFilterText">Events</span>
+                            <span id="eventCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        </button>
+                        
+                        <!-- Event Dropdown -->
+                        <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            <div class="p-3">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Events</span>
+                                    <button type="button" id="clearEvents" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                </div>
+                                <input type="text" id="eventSearchFilter" placeholder="Search events..." 
+                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                <div id="eventListFilter" class="space-y-2">
+                                    <!-- Events will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="relative">
+                        <button type="button" id="categoryFilterBtn" 
+                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                            <i class="fas fa-folder text-gray-500 text-sm"></i>
+                            <span id="categoryFilterText">Categories</span>
+                            <span id="categoryCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        </button>
+                        
+                        <!-- Category Dropdown -->
+                        <div id="categoryDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            <div class="p-3">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Categories</span>
+                                    <button type="button" id="clearCategories" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                </div>
+                                <input type="text" id="categorySearchFilter" placeholder="Search categories..." 
+                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                <div id="categoryListFilter" class="space-y-2">
+                                    <!-- Categories will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Topic Filter -->
+                    <div class="relative">
+                        <button type="button" id="topicFilterBtn" 
+                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                            <i class="fas fa-tags text-gray-500 text-sm"></i>
+                            <span id="topicFilterText">Topics</span>
+                            <span id="topicCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        </button>
+                        
+                        <!-- Topic Dropdown -->
+                        <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            <div class="p-3">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
+                                    <button type="button" id="clearTopics" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                </div>
+                                <input type="text" id="topicSearchFilter" placeholder="Search topics..." 
+                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                <div id="topicListFilter" class="space-y-2">
+                                    <!-- Topics will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Filter -->
+                    <div class="flex items-center gap-2">
+                        <div class="relative">
+                            <input type="date" id="dateFromFilter" 
+                                class="px-2.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                        <span class="text-gray-500 text-sm">to</span>
+                        <div class="relative">
+                            <input type="date" id="dateToFilter" 
+                                class="px-2.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                    </div>
+
+                    <!-- Search Button -->
+                    <button type="button" id="performSearchBtn" 
+                        class="px-3.5 py-2 bg-violet-500 text-white rounded-lg text-sm hover:bg-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1 flex items-center gap-2">
+                        <i class="fas fa-search text-sm"></i>
+                        Search
+                    </button>
+
+                    <!-- Clear All Button -->
+                    <button type="button" id="clearAllFilters" class="hidden px-3 py-2 text-gray-600 hover:text-gray-800 text-sm dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-zinc-600 rounded-lg">
+                        <i class="fas fa-times text-sm"></i>
+                        Clear All
+                    </button>
+
+                    <!-- Delete Button - inline with search elements -->
                     <button id="bulk-delete-btn" type="button"
-                        class="hidden px-6 py-2 text-white bg-red-500 rounded hover:bg-red-600">
+                        class="hidden px-3.5 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm flex items-center gap-1.5">
+                        <i class="fas fa-trash text-sm"></i>
                         Delete
                     </button>
                 </div>
@@ -51,9 +209,7 @@
                                 <th class="p-3">
                                     <div class="flex items-center justify-center">
                                         <input id="checkbox-all" type="checkbox"
-                                            class="w-4 h-4 border-gray-300 rounded 
-                                                dark:bg-zinc-700 dark:border-zinc-500 
-                                                checked:bg-blue-600 dark:checked:bg-blue-600">
+                                            class="w-4 h-4 border-gray-300 rounded bg-white">
                                         <label for="checkbox-all" class="sr-only">checkbox</label>
                                     </div>
                                 </th>
@@ -68,14 +224,16 @@
                         <tbody>
                             @forelse($records as $row)
                                 <tr data-id="{{ $row->AssessmentID }}"
+                                    data-participant-name="{{ $row->participant->name ?? '' }}"
+                                    data-participant-phone="{{ $row->participant->phone_number ?? '' }}"
+                                    data-participant-email="{{ $row->participant->email ?? '' }}"
+                                    data-event-id="{{ $row->EventID ?? '' }}"
+                                    data-date-answered="{{ $row->DateCreate }}"
                                     class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:border-zinc-600">
                                     <td class="w-4 p-3">
                                         <div class="flex items-center justify-center">
                                             <input type="checkbox"
-                                                class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white
-                                                    checked:bg-blue-600 checked:border-blue-600
-                                                    dark:bg-zinc-700 dark:border-zinc-500
-                                                    dark:checked:bg-blue-600 dark:checked:border-zinc-500">
+                                                class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                                         </div>
                                     </td>
                                     <td class="px-3 py-2">{{ $row->participant->name ?? '-' }}</td>
@@ -148,20 +306,503 @@
         const selectAll = document.getElementById('checkbox-all');
         const rowCheckboxes = document.querySelectorAll('.row-checkbox');
         const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+        
+        // Search elements
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('tbody tr');
+        const eventFilterBtn = document.getElementById('eventFilterBtn');
+        const eventDropdownFilter = document.getElementById('eventDropdownFilter');
+        const eventListFilter = document.getElementById('eventListFilter');
+        const eventSearchFilter = document.getElementById('eventSearchFilter');
+        const eventCount = document.getElementById('eventCount');
+        const clearEvents = document.getElementById('clearEvents');
+        
+        const categoryFilterBtn = document.getElementById('categoryFilterBtn');
+        const categoryDropdownFilter = document.getElementById('categoryDropdownFilter');
+        const categoryListFilter = document.getElementById('categoryListFilter');
+        const categorySearchFilter = document.getElementById('categorySearchFilter');
+        const categoryCount = document.getElementById('categoryCount');
+        const clearCategories = document.getElementById('clearCategories');
+        
+        const topicFilterBtn = document.getElementById('topicFilterBtn');
+        const topicDropdownFilter = document.getElementById('topicDropdownFilter');
+        const topicListFilter = document.getElementById('topicListFilter');
+        const topicSearchFilter = document.getElementById('topicSearchFilter');
+        const topicCount = document.getElementById('topicCount');
+        const clearTopics = document.getElementById('clearTopics');
+        
+        const dateFromFilter = document.getElementById('dateFromFilter');
+        const dateToFilter = document.getElementById('dateToFilter');
+        const performSearchBtn = document.getElementById('performSearchBtn');
+        const clearAllFilters = document.getElementById('clearAllFilters');
+        
+        // Search state
+        let allEvents = [];
+        let allCategories = [];
+        let allTopics = [];
+        let selectedEventsForSearch = new Set();
+        let selectedCategoriesForSearch = new Set();
+        let selectedTopicsForSearch = new Set();
+        let searchTimeout = null;
+
+        // Debounced search function
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                performFilteredSearch();
+            }, 300);
+        }
+
+        // Load filter data
+        function loadFiltersData() {
+            console.log('Loading filter data for results...');
+            
+            try {
+                // Load events
+                const events = @json($allEvents ?? []);
+                allEvents = events;
+                renderEventList();
+                
+                // Load categories
+                const categories = @json($allCategories ?? []);
+                allCategories = categories;
+                renderCategoryList();
+                
+                // Load topics
+                const topics = @json($allTopics ?? []);
+                allTopics = topics;
+                renderTopicList();
+                
+                console.log('Filter data loaded successfully!');
+            } catch (error) {
+                console.error('Error loading filter data:', error);
+            }
+        }
+
+        // Render event list
+        function renderEventList() {
+            const searchTerm = eventSearchFilter.value.toLowerCase();
+            const filteredEvents = allEvents.filter(event => 
+                event.EventName.toLowerCase().includes(searchTerm) || 
+                event.EventID.toString().includes(searchTerm)
+            );
+
+            eventListFilter.innerHTML = '';
+            filteredEvents.forEach(event => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <input type="checkbox" id="event_${event.EventID}" 
+                           value="${event.EventID}" 
+                           data-name="${event.EventName}"
+                           class="event-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                    <label for="event_${event.EventID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        ${event.EventName}
+                    </label>
+                `;
+                eventListFilter.appendChild(div);
+            });
+
+            // Restore selected state
+            selectedEventsForSearch.forEach(eventId => {
+                const checkbox = document.getElementById(`event_${eventId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.event-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleEventChange);
+            });
+        }
+
+        // Render category list
+        function renderCategoryList() {
+            const searchTerm = categorySearchFilter.value.toLowerCase();
+            const filteredCategories = allCategories.filter(category => 
+                category.CategoryName.toLowerCase().includes(searchTerm) || 
+                category.CategoryID.toString().includes(searchTerm)
+            );
+
+            categoryListFilter.innerHTML = '';
+            filteredCategories.forEach(category => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <input type="checkbox" id="category_${category.CategoryID}" 
+                           value="${category.CategoryID}" 
+                           data-name="${category.CategoryName}"
+                           class="category-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                    <label for="category_${category.CategoryID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        ${category.CategoryName}
+                    </label>
+                `;
+                categoryListFilter.appendChild(div);
+            });
+
+            // Restore selected state
+            selectedCategoriesForSearch.forEach(categoryId => {
+                const checkbox = document.getElementById(`category_${categoryId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.category-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleCategoryChange);
+            });
+        }
+
+        // Render topic list
+        function renderTopicList() {
+            const searchTerm = topicSearchFilter.value.toLowerCase();
+            const filteredTopics = allTopics.filter(topic => 
+                topic.TopicName.toLowerCase().includes(searchTerm) || 
+                topic.TopicID.toString().includes(searchTerm)
+            );
+
+            topicListFilter.innerHTML = '';
+            filteredTopics.forEach(topic => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <input type="checkbox" id="topic_${topic.TopicID}" 
+                           value="${topic.TopicID}" 
+                           data-name="${topic.TopicName}"
+                           class="topic-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                    <label for="topic_${topic.TopicID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        ${topic.TopicName}
+                    </label>
+                `;
+                topicListFilter.appendChild(div);
+            });
+
+            // Restore selected state
+            selectedTopicsForSearch.forEach(topicId => {
+                const checkbox = document.getElementById(`topic_${topicId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleTopicChange);
+            });
+        }
+
+        // Handle filter changes
+        function handleEventChange(event) {
+            const eventId = event.target.value;
+            if (event.target.checked) {
+                selectedEventsForSearch.add(eventId);
+            } else {
+                selectedEventsForSearch.delete(eventId);
+            }
+            updateEventDisplay();
+        }
+
+        function handleCategoryChange(event) {
+            const categoryId = event.target.value;
+            if (event.target.checked) {
+                selectedCategoriesForSearch.add(categoryId);
+            } else {
+                selectedCategoriesForSearch.delete(categoryId);
+            }
+            updateCategoryDisplay();
+        }
+
+        function handleTopicChange(event) {
+            const topicId = event.target.value;
+            if (event.target.checked) {
+                selectedTopicsForSearch.add(topicId);
+            } else {
+                selectedTopicsForSearch.delete(topicId);
+            }
+            updateTopicDisplay();
+        }
+
+        // Update display counters
+        function updateEventDisplay() {
+            const count = selectedEventsForSearch.size;
+            if (count > 0) {
+                eventCount.textContent = count;
+                eventCount.classList.remove('hidden');
+            } else {
+                eventCount.classList.add('hidden');
+            }
+            updateClearAllButton();
+        }
+
+        function updateCategoryDisplay() {
+            const count = selectedCategoriesForSearch.size;
+            if (count > 0) {
+                categoryCount.textContent = count;
+                categoryCount.classList.remove('hidden');
+            } else {
+                categoryCount.classList.add('hidden');
+            }
+            updateClearAllButton();
+        }
+
+        function updateTopicDisplay() {
+            const count = selectedTopicsForSearch.size;
+            if (count > 0) {
+                topicCount.textContent = count;
+                topicCount.classList.remove('hidden');
+            } else {
+                topicCount.classList.add('hidden');
+            }
+            updateClearAllButton();
+        }
+
+        // Update clear all button visibility
+        function updateClearAllButton() {
+            const hasFilters = selectedEventsForSearch.size > 0 || 
+                             selectedCategoriesForSearch.size > 0 || 
+                             selectedTopicsForSearch.size > 0 || 
+                             searchInput.value.trim() ||
+                             dateFromFilter.value ||
+                             dateToFilter.value;
+            clearAllFilters.classList.toggle('hidden', !hasFilters);
+        }
+
+        // Perform filtered search
+        function performFilteredSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const dateFrom = dateFromFilter.value;
+            const dateTo = dateToFilter.value;
+            let visibleRows = 0;
+
+            tableRows.forEach(row => {
+                if (row.children.length === 1 && row.children[0].getAttribute('colspan')) {
+                    return; // Skip "No records found" row
+                }
+
+                const participantName = row.dataset.participantName?.toLowerCase() || '';
+                const participantPhone = row.dataset.participantPhone?.toLowerCase() || '';
+                const participantEmail = row.dataset.participantEmail?.toLowerCase() || '';
+                const eventId = row.dataset.eventId || '';
+                const dateAnswered = row.dataset.dateAnswered || '';
+
+                // Check text search (name, phone, email)
+                const textMatch = !searchTerm || 
+                    participantName.includes(searchTerm) ||
+                    participantPhone.includes(searchTerm) ||
+                    participantEmail.includes(searchTerm);
+
+                // Check event filter
+                const eventMatch = selectedEventsForSearch.size === 0 || selectedEventsForSearch.has(eventId);
+
+                // Check date filter
+                let dateMatch = true;
+                if (dateFrom || dateTo) {
+                    const answerDate = new Date(dateAnswered).toISOString().split('T')[0];
+                    if (dateFrom && answerDate < dateFrom) dateMatch = false;
+                    if (dateTo && answerDate > dateTo) dateMatch = false;
+                }
+
+                // Show row if all conditions match
+                if (textMatch && eventMatch && dateMatch) {
+                    row.style.display = '';
+                    visibleRows++;
+                } else {
+                    row.style.display = 'none';
+                    // Uncheck hidden rows
+                    const checkbox = row.querySelector('.row-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                }
+            });
+
+            // Update UI
+            updateSelectAllState();  
+            updateBulkDeleteVisibility();
+            showNoResultsMessage(visibleRows === 0 && (searchTerm || selectedEventsForSearch.size > 0 || dateFrom || dateTo));
+
+            console.log(`Search results: ${visibleRows} results found`);
+        }
+
+        // Clear all filters
+        function clearAllFiltersAction() {
+            // Clear text search
+            searchInput.value = '';
+            
+            // Clear event selections  
+            selectedEventsForSearch.clear();
+            document.querySelectorAll('.event-filter-checkbox').forEach(cb => cb.checked = false);
+            updateEventDisplay();
+            
+            // Clear category selections  
+            selectedCategoriesForSearch.clear();
+            document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
+            updateCategoryDisplay();
+            
+            // Clear topic selections  
+            selectedTopicsForSearch.clear();
+            document.querySelectorAll('.topic-filter-checkbox').forEach(cb => cb.checked = false);
+            updateTopicDisplay();
+            
+            // Clear date filters
+            dateFromFilter.value = '';
+            dateToFilter.value = '';
+            
+            // Close dropdowns
+            eventDropdownFilter.classList.add('hidden');
+            categoryDropdownFilter.classList.add('hidden');
+            topicDropdownFilter.classList.add('hidden');
+            
+            // Perform search to show all results
+            performFilteredSearch();
+        }
+
+        // Show no results message
+        function showNoResultsMessage(show) {
+            let noResultsRow = document.querySelector('.no-results-row');
+            
+            if (show) {
+                if (!noResultsRow) {
+                    const tbody = document.querySelector('tbody');
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.className = 'no-results-row';
+                    noResultsRow.innerHTML = `
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                <p class="text-lg font-medium">No results found</p>
+                                <p class="text-sm">Try adjusting your search filters</p>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(noResultsRow);
+                }
+                noResultsRow.style.display = '';
+            } else {
+                if (noResultsRow) {
+                    noResultsRow.style.display = 'none';
+                }
+            }
+        }
+
+        function updateSelectAllState() {
+            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+                cb.closest('tr').style.display !== 'none'
+            );
+            const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
+            
+            if (visibleCheckboxes.length === 0) {
+                selectAll.indeterminate = false;
+                selectAll.checked = false;
+            } else if (checkedVisible.length === visibleCheckboxes.length) {
+                selectAll.indeterminate = false;
+                selectAll.checked = true;
+            } else if (checkedVisible.length > 0) {
+                selectAll.indeterminate = true;
+                selectAll.checked = false;
+            } else {
+                selectAll.indeterminate = false;
+                selectAll.checked = false;
+            }
+        }
+
+        // Event listeners for dropdowns
+        eventFilterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            eventDropdownFilter.classList.toggle('hidden');
+        });
+
+        categoryFilterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            categoryDropdownFilter.classList.toggle('hidden');
+        });
+
+        topicFilterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            topicDropdownFilter.classList.toggle('hidden');
+        });
+
+        // Clear buttons
+        clearEvents.addEventListener('click', () => {
+            selectedEventsForSearch.clear();
+            document.querySelectorAll('.event-filter-checkbox').forEach(cb => cb.checked = false);
+            updateEventDisplay();
+        });
+
+        clearCategories.addEventListener('click', () => {
+            selectedCategoriesForSearch.clear();
+            document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
+            updateCategoryDisplay();
+        });
+
+        clearTopics.addEventListener('click', () => {
+            selectedTopicsForSearch.clear();
+            document.querySelectorAll('.topic-filter-checkbox').forEach(cb => cb.checked = false);
+            updateTopicDisplay();
+        });
+
+        // Search functionality
+        eventSearchFilter.addEventListener('input', renderEventList);
+        categorySearchFilter.addEventListener('input', renderCategoryList);
+        topicSearchFilter.addEventListener('input', renderTopicList);
+        performSearchBtn.addEventListener('click', performFilteredSearch);
+        clearAllFilters.addEventListener('click', clearAllFiltersAction);
+        
+        // Real-time search and date filters
+        searchInput.addEventListener('input', () => {
+            updateClearAllButton();
+            debounceSearch();
+        });
+        
+        dateFromFilter.addEventListener('change', () => {
+            updateClearAllButton();
+            performFilteredSearch();
+        });
+        
+        dateToFilter.addEventListener('change', () => {
+            updateClearAllButton();
+            performFilteredSearch();
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!eventFilterBtn.contains(e.target) && !eventDropdownFilter.contains(e.target)) {
+                eventDropdownFilter.classList.add('hidden');
+            }
+            if (!categoryFilterBtn.contains(e.target) && !categoryDropdownFilter.contains(e.target)) {
+                categoryDropdownFilter.classList.add('hidden');
+            }
+            if (!topicFilterBtn.contains(e.target) && !topicDropdownFilter.contains(e.target)) {
+                topicDropdownFilter.classList.add('hidden');
+            }
+        });
+
+        // Initialize filters
+        loadFiltersData();
 
         function updateBulkDeleteVisibility() {
-            const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+                cb.closest('tr').style.display !== 'none'
+            );
+            const anyChecked = visibleCheckboxes.some(cb => cb.checked);
             bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
         }
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+                    cb.closest('tr').style.display !== 'none'
+                );
+                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
                 updateBulkDeleteVisibility();
             });
         }
 
-        rowCheckboxes.forEach(cb => cb.addEventListener('change', updateBulkDeleteVisibility));
+        rowCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateSelectAllState();
+                updateBulkDeleteVisibility();
+            });
+        });
 
         bulkDeleteBtn.addEventListener('click', () => {
             const selectedIds = Array.from(rowCheckboxes)

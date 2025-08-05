@@ -16,13 +16,21 @@ class QuizController extends Controller
 
 public function showQuiz($eventCode)
 {
-    if (session()->has("quiz_questions_$eventCode")) {
+    // Check if this is a new quiz session or returning to existing one
+    $isNewSession = !session()->has("quiz_questions_$eventCode") || 
+                    request()->has('new') || 
+                    request()->has('fresh');
+
+    if (session()->has("quiz_questions_$eventCode") && !$isNewSession) {
         // Re-fetch models by IDs
         $questionIds = session("quiz_questions_$eventCode");
         $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)
             ->orderByRaw("FIELD(QuestionID, ".implode(',', $questionIds).")")
             ->get();
     } else {
+        // Mark as new session for JavaScript
+        session(['new_session' => true]);
+        
         $event = AssessmentEvent::where('EventCode', $eventCode)->firstOrFail();
         $topicIds = array_map('trim', explode(',', $event->TopicID));
         $questionLimit = (int)$event->QuestionLimit;
@@ -70,6 +78,11 @@ public function showQuiz($eventCode)
     }
 
     $savedAnswers = session("quiz_answers_$eventCode", []);
+
+    // Clear the new session flag after first load
+    if (session()->has('new_session')) {
+        session()->forget('new_session');
+    }
 
     return view('participants.quizPage', [
         'eventCode' => $eventCode,
@@ -218,18 +231,24 @@ public function checkActiveSession(Request $request, $eventCode)
 
     // Check if there's an active session in cache/database
     $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+    $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
     $activeSession = cache()->get($activeSessionKey);
+    $currentTabId = $request->input('tabId');
     
-    if ($activeSession && $activeSession !== $request->input('tabId')) {
-        // Another session is active
-        return response()->json([
-            'allowed' => false, 
-            'message' => 'Quiz is already active in another browser or device'
-        ]);
+    if ($activeSession && $activeSession !== $currentTabId) {
+        // Check if the existing session is still alive (heartbeat within last 30 seconds)
+        $lastHeartbeat = cache()->get($heartbeatKey);
+        if ($lastHeartbeat && (time() - $lastHeartbeat) < 30) {
+            return response()->json([
+                'allowed' => false, 
+                'message' => 'Quiz is already active in another browser or device'
+            ]);
+        }
     }
 
     // Store this session as active (expires in 2 hours)
-    cache()->put($activeSessionKey, $request->input('tabId'), now()->addHours(2));
+    cache()->put($activeSessionKey, $currentTabId, now()->addHours(2));
+    cache()->put($heartbeatKey, time(), now()->addHours(2));
     
     return response()->json(['allowed' => true]);
 }
@@ -242,7 +261,9 @@ public function clearActiveSession(Request $request, $eventCode)
     $email = session('participant_email');
     if ($email) {
         $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+        $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
         cache()->forget($activeSessionKey);
+        cache()->forget($heartbeatKey);
     }
     
     return response()->json(['success' => true]);
@@ -259,10 +280,13 @@ public function heartbeat(Request $request, $eventCode)
     }
 
     $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+    $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
     $activeSession = cache()->get($activeSessionKey);
     $currentTabId = $request->input('tabId');
     
     if ($activeSession === $currentTabId) {
+        // Update heartbeat timestamp
+        cache()->put($heartbeatKey, time(), now()->addHours(2));
         // Extend the session for another 2 hours
         cache()->put($activeSessionKey, $currentTabId, now()->addHours(2));
         return response()->json(['active' => true]);
