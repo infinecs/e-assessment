@@ -55,6 +55,7 @@ Route::post('/events/bulk-delete', [EventsController::class, 'bulkDestroy'])->na
 Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
 Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
 Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
+Route::get('/events/export-excel', [EventsController::class, 'exportExcel'])->name('events.exportExcel');
 Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 
 Route::view('/results', 'assessment.results')->name('results');
@@ -65,6 +66,10 @@ Route::delete('/assessment-results/delete', [AssessmentResultController::class, 
 
 // Route for assessment details modal AJAX
 Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'details']);
+
+// Route for Excel export
+Route::get('/assessment/export-excel', [AssessmentResultController::class, 'exportExcel'])
+    ->name('assessment.exportExcel');
 
     
 
@@ -84,6 +89,7 @@ Route::delete('/topic/bulk-delete', [AssessmentTopicController::class, 'bulkDest
 Route::delete('/topic/{id}', [AssessmentTopicController::class, 'destroy'])->name('topic.destroy');
 Route::put('/topic/{id}', [AssessmentTopicController::class, 'update'])->name('topic.update');
 Route::get('/topic/{id}/details', [AssessmentTopicController::class, 'getTopicDetails'])->name('topic.details');
+Route::get('/topic/export-excel', [AssessmentTopicController::class, 'exportExcel'])->name('topic.exportExcel');
 
 Route::view('/question', 'assessment.question')->name('question');
 Route::get('/question', [AssessmentQuestionController::class, 'index'])->name('question');
@@ -94,6 +100,7 @@ Route::delete('/question/bulk-delete', [AssessmentQuestionController::class, 'bu
 Route::delete('/question/{id}', [AssessmentQuestionController::class, 'destroy'])->name('question.destroy');
 Route::put('/question/{id}', [AssessmentQuestionController::class, 'update'])->name('question.update');
 Route::get('/question/{id}/details', [AssessmentQuestionController::class, 'getQuestionDetails'])->name('question.details');
+Route::get('/question/export-excel', [AssessmentQuestionController::class, 'exportExcel'])->name('question.exportExcel');
 
 // Question answers routes
 Route::get('/question/{id}/answers', [AssessmentQuestionController::class, 'getAnswers']);

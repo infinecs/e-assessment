@@ -121,6 +121,13 @@
             </div>
             
             <div class="ml-auto flex items-center gap-3">
+                <!-- Export button -->
+                <button id="export-excel-btn" type="button"
+                    class="px-6 py-1.5 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
+                    <i class="fas fa-file-excel"></i>
+                    Export to Excel
+                </button>
+
                 <!-- Delete button (hidden by default) -->
                 <button id="bulk-delete-btn" type="button"
                     class="hidden px-4 py-1.5 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
@@ -246,10 +253,9 @@
 <!-- Edit Topic Modal -->
 <div id="editTopicModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        
+        <!-- Black transparent overlay like question page -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
             <form id="editTopicForm">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
@@ -284,10 +290,9 @@
 <!-- Add Topic Modal -->
 <div id="addTopicModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        
+        <!-- Black transparent overlay like question page -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
             <form id="addTopicForm">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
@@ -330,7 +335,6 @@
         
         // Search elements
         const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('tbody tr');
         const categoryFilterBtn = document.getElementById('categoryFilterBtn');
         const categoryDropdownFilter = document.getElementById('categoryDropdownFilter');
         const categoryListFilter = document.getElementById('categoryListFilter');
@@ -350,7 +354,7 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 performFilteredSearch();
-            }, 300);
+            }, 800); // Increased delay for server requests
         }
 
         // Load categories for filters
@@ -440,49 +444,23 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters
+        // Perform search with filters - SERVER SIDE
         function performFilteredSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            let visibleRows = 0;
-
-            tableRows.forEach(row => {
-                if (row.children.length === 1 && row.children[0].getAttribute('colspan')) {
-                    return; // Skip "No topics found" row
-                }
-
-                const topicName = row.dataset.topicName?.toLowerCase() || '';
-                const categoryIds = row.dataset.categoryIds ? row.dataset.categoryIds.split(',') : [];
-
-                // Check text search
-                const textMatch = !searchTerm || topicName.includes(searchTerm);
-
-                // Check category filter
-                let categoryMatch = selectedCategoriesForSearch.size === 0;
-                if (!categoryMatch && categoryIds.length > 0) {
-                    categoryMatch = categoryIds.some(id => selectedCategoriesForSearch.has(id));
-                }
-
-                // Show row if all conditions match
-                if (textMatch && categoryMatch) {
-                    row.style.display = '';
-                    visibleRows++;
-                } else {
-                    row.style.display = 'none';
-                    // Uncheck hidden rows
-                    const checkbox = row.querySelector('.row-checkbox');
-                    if (checkbox) checkbox.checked = false;
-                }
-            });
-
-            // Update UI
-            updateSelectAllState();  
-            updateBulkDeleteVisibility();
-            showNoResultsMessage(visibleRows === 0 && (searchTerm || selectedCategoriesForSearch.size > 0));
-
-            console.log(`Search results: ${visibleRows} topics found`);
+            const searchTerm = searchInput.value.trim();
+            const selectedCategoryIds = Array.from(selectedCategoriesForSearch);
+            
+            // Build query parameters for server-side filtering
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedCategoryIds.length > 0) params.append('categories', selectedCategoryIds.join(','));
+            
+            // Reload the page with filters applied
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = params.toString();
+            window.location.href = currentUrl.toString();
         }
 
-        // Clear all filters
+        // Clear all filters - SERVER SIDE
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -495,53 +473,25 @@
             // Close dropdowns
             categoryDropdownFilter.classList.add('hidden');
             
-            // Perform search to show all results
-            performFilteredSearch();
+            // Reload page without filters
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = '';
+            window.location.href = currentUrl.toString();
         }
 
-        // Show no results message
-        function showNoResultsMessage(show) {
-            let noResultsRow = document.querySelector('.no-results-row');
-            
-            if (show) {
-                if (!noResultsRow) {
-                    const tbody = document.querySelector('tbody');
-                    noResultsRow = document.createElement('tr');
-                    noResultsRow.className = 'no-results-row';
-                    noResultsRow.innerHTML = `
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                            <div class="flex flex-col items-center">
-                                <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                                <p class="text-lg font-medium">No topics found</p>
-                                <p class="text-sm">Try adjusting your search filters</p>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(noResultsRow);
-                }
-                noResultsRow.style.display = '';
-            } else {
-                if (noResultsRow) {
-                    noResultsRow.style.display = 'none';
-                }
-            }
-        }
+        // Remove the showNoResultsMessage function since server-side filtering handles this
 
         function updateSelectAllState() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
-            const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
+            // With server-side filtering, work with all checkboxes on current page
+            const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
             
-            if (visibleCheckboxes.length === 0) {
+            if (rowCheckboxes.length === 0) {
                 selectAll.indeterminate = false;
                 selectAll.checked = false;
-            } else if (checkedVisible.length === visibleCheckboxes.length) {
+            } else if (checkedBoxes.length === rowCheckboxes.length) {
                 selectAll.indeterminate = false;
                 selectAll.checked = true;
-            } else if (checkedVisible.length > 0) {
+            } else if (checkedBoxes.length > 0) {
                 selectAll.indeterminate = true;
                 selectAll.checked = false;
             } else {
@@ -573,9 +523,10 @@
             updateClearAllButton();
             debounceSearch();
         });
+        
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
-                clearTimeout(searchTimeout);
+                clearTimeout(searchTimeout); // Cancel debounce on Enter
                 performFilteredSearch();
             }
         });
@@ -590,13 +541,42 @@
         // Initialize search
         console.log('Initializing search functionality...');
         loadFiltersData();
+        initializeFilters(); // Restore filters from URL
         console.log('Search initialization complete');
 
+        // Initialize filters and restore state from URL parameters
+        function initializeFilters() {
+            // Restore filter states from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Restore search term
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                searchInput.value = searchParam;
+                updateClearAllButton();
+            }
+            
+            // Restore category selections
+            const categoriesParam = urlParams.get('categories');
+            if (categoriesParam) {
+                const categoryIds = categoriesParam.split(',');
+                
+                // Check the appropriate checkboxes when they're rendered and sync selectedCategoriesForSearch
+                setTimeout(() => {
+                    selectedCategoriesForSearch.clear(); // Clear first to avoid duplicates
+                    categoryIds.forEach(categoryId => {
+                        selectedCategoriesForSearch.add(categoryId);
+                        const checkbox = document.getElementById(`category_${categoryId}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    updateCategoryDisplay();
+                }, 100);
+            }
+        }
+
         function updateBulkDeleteVisibility() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
-            const anyChecked = visibleCheckboxes.some(cb => cb.checked);
+            // With server-side filtering, all rows on current page are visible
+            const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
             if (bulkDeleteBtn) {
                 bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
             }
@@ -604,10 +584,8 @@
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                    cb.closest('tr').style.display !== 'none'
-                );
-                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                // With server-side filtering, all rows on current page are visible
+                rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
                 updateBulkDeleteVisibility();
             });
         }
@@ -691,6 +669,41 @@
         document.getElementById('addTopicForm').addEventListener('submit', function(e) {
             e.preventDefault();
             addTopic();
+        });
+
+        // Export to Excel functionality
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        exportExcelBtn.addEventListener('click', function() {
+            // Get current filter values
+            const searchTerm = searchInput.value.trim();
+            const selectedCategoryIds = Array.from(selectedCategoriesForSearch);
+            
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedCategoryIds.length > 0) params.append('categories', selectedCategoryIds.join(','));
+            
+            // Create download URL using Laravel route
+            const exportUrl = `{{ route('topic.exportExcel') }}?${params.toString()}`;
+            
+            // Show loading state
+            const originalText = exportExcelBtn.innerHTML;
+            exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportExcelBtn.disabled = true;
+            
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.target = '_blank'; // Open in new tab to handle potential errors
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button state after a delay
+            setTimeout(() => {
+                exportExcelBtn.innerHTML = originalText;
+                exportExcelBtn.disabled = false;
+            }, 2000);
         });
     });
 

@@ -154,6 +154,13 @@
             </div>
             
             <div class="ml-auto flex items-center gap-3">
+                <!-- Export button -->
+                <button id="export-excel-btn" type="button"
+                    class="px-6 py-1.5 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
+                    <i class="fas fa-file-excel"></i>
+                    Export to Excel
+                </button>
+
                 <!-- Delete button (hidden by default) -->
                 <button id="bulk-delete-btn" type="button"
                     class="hidden px-4 py-1.5 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
@@ -257,19 +264,21 @@
 <!-- Edit Event Modal -->
 <div id="editEventModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-3/4 dark:bg-zinc-800">
             <form id="editEventForm">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
                     <div class="sm:flex sm:items-start">
-                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
-                                Edit Event
-                            </h3>
-                            <div class="mt-4 space-y-4">
+                        <div class="mt-3 sm:mt-0 w-full flex gap-6"> <!-- FLEX LAYOUT FOR FORM -->
+                            
+                            <!-- LEFT: Input Fields (1/3) -->
+                            <div class="w-1/3 space-y-4">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
+                                    Edit Event
+                                </h3>
                                 <div>
                                     <label for="edit_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Name</label>
                                     <input type="text" id="edit_event_name" name="EventName" required
@@ -300,8 +309,6 @@
                                     <input type="date" id="edit_end_date" name="EndDate" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
-                                
-                                <!-- Category Selection -->
                                 <div>
                                     <label for="edit_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                                     <select id="edit_category" name="CategoryID" required onchange="loadCategoryTopics(this.value)"
@@ -314,11 +321,13 @@
                                         @endif
                                     </select>
                                 </div>
-                                
-                                <!-- Topic Selection -->
+                            </div>
+
+                            <!-- RIGHT: Topic Checkboxes (2/3) -->
+                            <div class="w-2/3">
                                 <div id="topics-section" class="hidden">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Event</label>
-                                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="eventTopicsContainer">
+                                    <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="eventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -326,6 +335,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -345,19 +355,21 @@
 <!-- Add Event Modal -->
 <div id="addEventModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-3/4 dark:bg-zinc-800">
             <form id="addEventForm">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
                     <div class="sm:flex sm:items-start">
-                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
-                                Add New Event
-                            </h3>
-                            <div class="mt-4 space-y-4">
+                        <div class="mt-3 sm:mt-0 w-full flex gap-6"> <!-- FLEX LAYOUT FOR FORM -->
+                            
+                            <!-- LEFT: Input Fields (1/3) -->
+                            <div class="w-1/3 space-y-4">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
+                                    Add New Event
+                                </h3>
                                 <div>
                                     <label for="add_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Name</label>
                                     <input type="text" id="add_event_name" name="EventName" required
@@ -388,8 +400,6 @@
                                     <input type="date" id="add_end_date" name="EndDate" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
-                                
-                                <!-- Category Selection -->
                                 <div>
                                     <label for="add_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                                     <select id="add_category" name="CategoryID" required onchange="loadAddCategoryTopics(this.value)"
@@ -402,11 +412,13 @@
                                         @endif
                                     </select>
                                 </div>
-                                
-                                <!-- Topic Selection -->
+                            </div>
+
+                            <!-- RIGHT: Topic Checkboxes (2/3) -->
+                            <div class="w-2/3">
                                 <div id="add-topics-section" class="hidden">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Event</label>
-                                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addEventTopicsContainer">
+                                    <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addEventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -414,6 +426,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -463,6 +476,7 @@
         // Search state
         let allCategories = [];
         let allTopics = [];
+        let categoryTopicsMap = new Map(); // Maps categoryId to array of topic names
         let selectedCategories = new Set();
         let selectedTopics = new Set();
         let eventTopicMap = new Map(); // Maps eventId to topic names
@@ -473,7 +487,7 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 performFilteredSearch();
-            }, 300); // Wait 300ms after user stops typing
+            }, 800); // Increased delay for server requests
         }
 
         // Load categories and topics for filters
@@ -485,6 +499,21 @@
                 const categories = @json($allCategories ?? []);
                 allCategories = categories;
                 renderCategoryList();
+
+                // Load category-topic relationships
+                for (const category of allCategories) {
+                    try {
+                        const response = await fetch(`/category/${category.CategoryID}/topics`);
+                        const data = await response.json();
+                        
+                        if (data.success && data.topics) {
+                            const topicNames = data.topics.map(topic => topic.TopicName);
+                            categoryTopicsMap.set(category.CategoryID, topicNames);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to load topics for category ${category.CategoryID}:`, error);
+                    }
+                }
 
                 // Load all topics from events
                 const eventRows = Array.from(tableRows).filter(row => 
@@ -555,7 +584,29 @@
         // Render topic list
         function renderTopicList() {
             const searchTerm = topicSearch.value.toLowerCase();
-            const filteredTopics = allTopics.filter(topic => 
+            
+            // Get available topics based on selected categories
+            let availableTopics = [];
+            if (selectedCategories.size === 0) {
+                // If no categories selected, show all topics
+                availableTopics = allTopics;
+            } else {
+                // Only show topics from selected categories
+                const topicsSet = new Set();
+                selectedCategories.forEach(categoryName => {
+                    // Find category ID by name
+                    const category = allCategories.find(cat => cat.CategoryName === categoryName);
+                    if (category && categoryTopicsMap.has(category.CategoryID)) {
+                        categoryTopicsMap.get(category.CategoryID).forEach(topic => {
+                            topicsSet.add(topic);
+                        });
+                    }
+                });
+                availableTopics = Array.from(topicsSet).sort();
+            }
+            
+            // Filter topics by search term
+            const filteredTopics = availableTopics.filter(topic => 
                 topic.toLowerCase().includes(searchTerm)
             );
 
@@ -574,16 +625,27 @@
                 topicList.appendChild(div);
             });
 
-            // Restore selected state
+            // Restore selected state for topics that are still available
             selectedTopics.forEach(topic => {
                 const checkbox = document.getElementById(`topic_${topic.replace(/\s+/g, '_')}`);
                 if (checkbox) checkbox.checked = true;
+            });
+
+            // Remove topics from selected set that are no longer available
+            const availableTopicsSet = new Set(filteredTopics);
+            selectedTopics.forEach(topic => {
+                if (!availableTopicsSet.has(topic)) {
+                    selectedTopics.delete(topic);
+                }
             });
 
             // Add event listeners
             document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleTopicChange);
             });
+            
+            // Update display after filtering
+            updateTopicDisplay();
         }
 
         // Handle category selection
@@ -598,6 +660,8 @@
             }
             
             updateCategoryDisplay();
+            // Re-render topics list based on new category selection
+            renderTopicList();
         }
 
         // Handle topic selection
@@ -643,76 +707,46 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters
+        // Perform search with filters - SERVER SIDE
         function performFilteredSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
-            let visibleRows = 0;
-
-            tableRows.forEach(row => {
-                if (row.children.length === 1 && row.children[0].getAttribute('colspan')) {
-                    return; // Skip "No events found" row
-                }
-
-                const eventId = row.dataset.eventId;
-                const eventName = row.children[1]?.textContent.toLowerCase() || '';
-                const eventCode = row.children[2]?.textContent.toLowerCase() || '';
-                const categoryName = row.dataset.categoryName || '';
-                const eventTopics = eventTopicMap.get(eventId) || [];
-
-                // Check text search
-                const textMatch = !searchTerm || 
-                    eventName.includes(searchTerm) || 
-                    eventCode.includes(searchTerm);
-
-                // Check category filter
-                const categoryMatch = selectedCategories.size === 0 || 
-                    selectedCategories.has(categoryName);
-
-                // Check topic filter
-                const topicMatch = selectedTopics.size === 0 || 
-                    eventTopics.some(topic => selectedTopics.has(topic));
-
-                // Show row if all conditions match
-                if (textMatch && categoryMatch && topicMatch) {
-                    row.style.display = '';
-                    visibleRows++;
-                } else {
-                    row.style.display = 'none';
-                    // Uncheck hidden rows
-                    const checkbox = row.querySelector('.row-checkbox');
-                    if (checkbox) checkbox.checked = false;
-                }
-            });
-
-            // Update UI
-            updateSelectAllState();
-            updateBulkDeleteVisibility();
-            showNoResultsMessage(visibleRows === 0 && (searchTerm || selectedCategories.size > 0 || selectedTopics.size > 0));
-
-            console.log(`Search results: ${visibleRows} events found`);
+            const selectedCategoryNames = Array.from(selectedCategories);
+            const selectedTopicNames = Array.from(selectedTopics);
+            
+            // Build query parameters for server-side filtering
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
+            if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+            
+            // Reload the page with filters applied
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = params.toString();
+            window.location.href = currentUrl.toString();
         }
 
-        // Clear all filters
+        // Clear all filters - SERVER SIDE
         function clearAllFiltersAction() {
-            // Clear text search
+            // Clear all form inputs
             searchInput.value = '';
-            
-            // Clear category selections
             selectedCategories.clear();
             document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
             updateCategoryDisplay();
-            
-            // Clear topic selections  
             selectedTopics.clear();
             document.querySelectorAll('.topic-filter-checkbox').forEach(cb => cb.checked = false);
             updateTopicDisplay();
+            
+            // Re-render topics list to show all topics when categories are cleared
+            renderTopicList();
             
             // Close dropdowns
             categoryDropdown.classList.add('hidden');
             topicDropdown.classList.add('hidden');
             
-            // Perform search to show all results
-            performFilteredSearch();
+            // Reload page without filters
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = '';
+            window.location.href = currentUrl.toString();
         }
 
         // Event listeners
@@ -730,6 +764,8 @@
             selectedCategories.clear();
             document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
             updateCategoryDisplay();
+            // Re-render topics list when categories are cleared
+            renderTopicList();
         });
 
         clearTopics.addEventListener('click', () => {
@@ -764,8 +800,62 @@
             }
         });
 
+        // Initialize filters and restore state from URL parameters
+        function initializeFilters() {
+            loadFiltersData();
+            
+            // Restore filter states from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Restore search term
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                searchInput.value = searchParam;
+                updateClearAllButton();
+            }
+            
+            // Restore category selections
+            const categoriesParam = urlParams.get('categories');
+            if (categoriesParam) {
+                const categories = categoriesParam.split(',');
+                
+                // Check the appropriate checkboxes when they're rendered and sync selectedCategories
+                setTimeout(() => {
+                    selectedCategories.clear(); // Clear first to avoid duplicates
+                    categories.forEach(categoryName => {
+                        const checkbox = document.querySelector(`input[data-name="${categoryName}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            selectedCategories.add(categoryName); // Only add if checkbox exists
+                        }
+                    });
+                    updateCategoryDisplay();
+                    // Re-render topics list after category selection is restored
+                    renderTopicList();
+                }, 100);
+            }
+            
+            // Restore topic selections
+            const topicsParam = urlParams.get('topics');
+            if (topicsParam) {
+                const topics = topicsParam.split(',');
+                
+                setTimeout(() => {
+                    selectedTopics.clear(); // Clear first to avoid duplicates
+                    topics.forEach(topicName => {
+                        const checkbox = document.getElementById(`topic_${topicName.replace(/\s+/g, '_')}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            selectedTopics.add(topicName); // Only add if checkbox exists
+                        }
+                    });
+                    updateTopicDisplay();
+                }, 200); // Slightly longer delay to ensure topics are rendered
+            }
+        }
+
         // Initialize
-        loadFiltersData();
+        initializeFilters();
 
         // Show no results message
         function showNoResultsMessage(show) {
@@ -920,6 +1010,43 @@
         document.getElementById('addEventForm').addEventListener('submit', function(e) {
             e.preventDefault();
             addEvent();
+        });
+
+        // Export to Excel functionality
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        exportExcelBtn.addEventListener('click', function() {
+            // Get current filter values
+            const searchTerm = searchInput.value.trim();
+            const selectedCategoryNames = Array.from(selectedCategories);
+            const selectedTopicNames = Array.from(selectedTopics);
+            
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
+            if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+            
+            // Create download URL using Laravel route
+            const exportUrl = `{{ route('events.exportExcel') }}?${params.toString()}`;
+            
+            // Show loading state
+            const originalText = exportExcelBtn.innerHTML;
+            exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportExcelBtn.disabled = true;
+            
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.target = '_blank'; // Open in new tab to handle potential errors
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button state after a delay
+            setTimeout(() => {
+                exportExcelBtn.innerHTML = originalText;
+                exportExcelBtn.disabled = false;
+            }, 2000);
         });
     });
 

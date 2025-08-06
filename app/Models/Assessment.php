@@ -21,6 +21,7 @@ class Assessment extends Model
     // Mass-assignable fields
     protected $fillable = [
         'ParticipantID',
+        'EventID',
         'TotalScore',
         'TotalQuestion',
         'AdminID',
@@ -32,6 +33,11 @@ class Assessment extends Model
 public function participant()
 {
     return $this->belongsTo(Participant::class, 'ParticipantID', 'id');
+}
+
+public function event()
+{
+    return $this->belongsTo(AssessmentEvent::class, 'EventID', 'EventID');
 }
 
 public function resultSets()

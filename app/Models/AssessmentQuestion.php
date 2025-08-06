@@ -34,7 +34,12 @@ class AssessmentQuestion extends Model
     ];
 
     public function answers()
-{
-    return $this->hasMany(AssessmentAnswer::class, 'QuestionID', 'QuestionID');
-}
+    {
+        return $this->hasMany(AssessmentAnswer::class, 'QuestionID', 'QuestionID');
+    }
+
+    public function topic()
+    {
+        return $this->belongsTo(AssessmentTopic::class, 'DefaultTopic', 'TopicID');
+    }
 }

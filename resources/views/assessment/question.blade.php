@@ -120,6 +120,13 @@
             </div>
             
             <div class="ml-auto flex items-center gap-3">
+                <!-- Export to Excel Button -->
+                <button id="export-excel-btn" type="button"
+                    class="px-4 py-1.5 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
+                    <i class="fas fa-file-excel"></i>
+                    Export to Excel
+                </button>
+
                 <!-- Delete button (hidden by default) -->
                 <button id="bulk-delete-btn" type="button"
                     class="hidden px-4 py-1.5 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
@@ -254,12 +261,12 @@
         </div>
         
         <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-600 flex justify-end gap-3">
-            <button type="button" id="cancel-btn" class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
-                Cancel
-            </button>
-            <button type="button" id="save-btn" class="px-4 py-2 text-sm text-white bg-violet-600 rounded hover:bg-violet-700">
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 border-t border-gray-200 dark:border-zinc-600">
+            <button type="button" id="save-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
                 Save Changes
+            </button>
+            <button type="button" id="cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                Cancel
             </button>
         </div>
     </div>
@@ -267,7 +274,7 @@
 
 <!-- Edit Question Modal -->
 <div id="edit-question-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
+    <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col h-full" style="max-height: 90vh;">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-600 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Question</h3>
@@ -277,7 +284,7 @@
         </div>
         
         <!-- Modal Body -->
-        <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+        <div class="px-6 py-4 flex-1 overflow-y-auto">
             <form id="edit-question-form" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Text</label>
@@ -317,12 +324,12 @@
         </div>
         
         <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-600 flex justify-end gap-3">
-            <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
-                Cancel
-            </button>
-            <button type="button" id="save-edit-btn" class="px-4 py-2 text-sm text-white bg-violet-600 rounded hover:bg-violet-700">
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 border-t border-gray-200 dark:border-zinc-600">
+            <button type="button" id="save-edit-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
                 Save Changes
+            </button>
+            <button type="button" id="cancel-edit-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                Cancel
             </button>
         </div>
     </div>
@@ -453,12 +460,12 @@
         </div>
         
         <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-600 flex justify-end gap-3">
-            <button type="button" id="cancel-add-btn" class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300">
-                Cancel
-            </button>
-            <button type="button" id="save-add-btn" class="px-4 py-2 text-sm text-white bg-violet-600 rounded hover:bg-violet-700">
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 border-t border-gray-200 dark:border-zinc-600">
+            <button type="button" id="save-add-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
                 Add Question
+            </button>
+            <button type="button" id="cancel-add-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                Cancel
             </button>
         </div>
     </div>
@@ -536,7 +543,7 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 performFilteredSearch();
-            }, 300);
+            }, 800); // Increased delay for server requests
         }
 
         // Load topics for filters
@@ -626,46 +633,23 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters
+        // Perform search with filters - SERVER SIDE
         function performFilteredSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            let visibleRows = 0;
-
-            tableRows.forEach(row => {
-                if (row.children.length === 1 && row.children[0].getAttribute('colspan')) {
-                    return; // Skip "No questions found" row
-                }
-
-                const questionText = row.children[1]?.textContent.toLowerCase() || '';
-                const defaultTopic = row.dataset.defaultTopic || '';
-
-                // Check text search
-                const textMatch = !searchTerm || questionText.includes(searchTerm);
-
-                // Check topic filter
-                const topicMatch = selectedTopicsForSearch.size === 0 || selectedTopicsForSearch.has(defaultTopic);
-
-                // Show row if all conditions match
-                if (textMatch && topicMatch) {
-                    row.style.display = '';
-                    visibleRows++;
-                } else {
-                    row.style.display = 'none';
-                    // Uncheck hidden rows
-                    const checkbox = row.querySelector('.row-checkbox');
-                    if (checkbox) checkbox.checked = false;
-                }
-            });
-
-            // Update UI
-            updateSelectAllState();  
-            updateBulkDeleteVisibility();
-            showNoResultsMessage(visibleRows === 0 && (searchTerm || selectedTopicsForSearch.size > 0));
-
-            console.log(`Search results: ${visibleRows} questions found`);
+            const searchTerm = searchInput.value.trim();
+            const selectedTopicIds = Array.from(selectedTopicsForSearch);
+            
+            // Build query parameters for server-side filtering
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedTopicIds.length > 0) params.append('topics', selectedTopicIds.join(','));
+            
+            // Reload the page with filters applied
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = params.toString();
+            window.location.href = currentUrl.toString();
         }
 
-        // Clear all filters
+        // Clear all filters - SERVER SIDE
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -678,53 +662,25 @@
             // Close dropdowns
             topicDropdownFilter.classList.add('hidden');
             
-            // Perform search to show all results
-            performFilteredSearch();
+            // Reload page without filters
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = '';
+            window.location.href = currentUrl.toString();
         }
 
-        // Show no results message
-        function showNoResultsMessage(show) {
-            let noResultsRow = document.querySelector('.no-results-row');
-            
-            if (show) {
-                if (!noResultsRow) {
-                    const tbody = document.querySelector('tbody');
-                    noResultsRow = document.createElement('tr');
-                    noResultsRow.className = 'no-results-row';
-                    noResultsRow.innerHTML = `
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                            <div class="flex flex-col items-center">
-                                <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                                <p class="text-lg font-medium">No questions found</p>
-                                <p class="text-sm">Try adjusting your search filters</p>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(noResultsRow);
-                }
-                noResultsRow.style.display = '';
-            } else {
-                if (noResultsRow) {
-                    noResultsRow.style.display = 'none';
-                }
-            }
-        }
+        // Remove the showNoResultsMessage function since server-side filtering handles this
 
         function updateSelectAllState() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
-            const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
+            // With server-side filtering, work with all checkboxes on current page
+            const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
             
-            if (visibleCheckboxes.length === 0) {
+            if (rowCheckboxes.length === 0) {
                 selectAll.indeterminate = false;
                 selectAll.checked = false;
-            } else if (checkedVisible.length === visibleCheckboxes.length) {
+            } else if (checkedBoxes.length === rowCheckboxes.length) {
                 selectAll.indeterminate = false;
                 selectAll.checked = true;
-            } else if (checkedVisible.length > 0) {
+            } else if (checkedBoxes.length > 0) {
                 selectAll.indeterminate = true;
                 selectAll.checked = false;
             } else {
@@ -758,9 +714,10 @@
             updateClearAllButton();
             debounceSearch();
         });
+        
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
-                clearTimeout(searchTimeout);
+                clearTimeout(searchTimeout); // Cancel debounce on Enter
                 performFilteredSearch();
             }
         });
@@ -780,7 +737,38 @@
         console.log('- topicListFilter:', !!topicListFilter);
         console.log('- topicSearchFilter:', !!topicSearchFilter);
         loadFiltersData();
+        initializeFilters(); // Restore filters from URL
         console.log('Search initialization complete'); // Debug log
+
+        // Initialize filters and restore state from URL parameters
+        function initializeFilters() {
+            // Restore filter states from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Restore search term
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                searchInput.value = searchParam;
+                updateClearAllButton();
+            }
+            
+            // Restore topic selections
+            const topicsParam = urlParams.get('topics');
+            if (topicsParam) {
+                const topicIds = topicsParam.split(',');
+                
+                // Check the appropriate checkboxes when they're rendered and sync selectedTopicsForSearch
+                setTimeout(() => {
+                    selectedTopicsForSearch.clear(); // Clear first to avoid duplicates
+                    topicIds.forEach(topicId => {
+                        selectedTopicsForSearch.add(topicId);
+                        const checkbox = document.getElementById(`topic_${topicId}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                    updateTopicDisplay();
+                }, 100);
+            }
+        }
         
         // Edit modal elements
         const editModal = document.getElementById('edit-question-modal');
@@ -815,10 +803,8 @@
         let addSelectedTopics = new Set();
 
         function updateBulkDeleteVisibility() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
-            const anyChecked = visibleCheckboxes.some(cb => cb.checked);
+            // With server-side filtering, all rows on current page are visible
+            const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
             if (bulkDeleteBtn) {
                 bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
             }
@@ -826,10 +812,8 @@
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                    cb.closest('tr').style.display !== 'none'
-                );
-                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+                // With server-side filtering, all rows on current page are visible
+                rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
                 updateBulkDeleteVisibility();
             });
         }
@@ -1145,6 +1129,41 @@
             
             addTopicSearch.value = '';
         }
+        
+        // Export to Excel functionality
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        exportExcelBtn.addEventListener('click', function() {
+            // Get current filter values
+            const searchTerm = searchInput.value.trim();
+            const selectedTopics = Array.from(selectedTopicsForSearch);
+            
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            
+            // Create download URL using Laravel route
+            const exportUrl = `/question/export-excel?${params.toString()}`;
+            
+            // Show loading state
+            const originalText = exportExcelBtn.innerHTML;
+            exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportExcelBtn.disabled = true;
+            
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.target = '_blank'; // Open in new tab to handle potential errors
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button state after a delay
+            setTimeout(() => {
+                exportExcelBtn.innerHTML = originalText;
+                exportExcelBtn.disabled = false;
+            }, 2000);
+        });
 
         // Question click handler
         document.querySelectorAll('.question-btn').forEach(btn => {
@@ -1374,12 +1393,25 @@
 
         // Load question details for editing
         function loadQuestionForEdit(questionId) {
+            console.log('Loading question details for ID:', questionId); // Debug log
+            
             fetch(`/question/${questionId}/details`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status); // Debug log
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Received data:', data); // Debug log
+                    
                     if (data.success) {
                         const question = data.question;
                         const selectedTopicIds = data.selected_topic_ids || [];
+                        
+                        console.log('Question data:', question); // Debug log
+                        console.log('Selected topic IDs:', selectedTopicIds); // Debug log
                         
                         // Populate form fields
                         document.getElementById('edit-question-text').value = question.QuestionText || '';
@@ -1397,7 +1429,7 @@
                                 console.log('Loading preselected topic:', topicId, topicName); // Debug log
                                 
                                 // Add to selected topics set
-                                selectedTopics.add(topicId);
+                                selectedTopicsForEdit.add(topicId);
                                 
                                 // Create the purple tag - ensure it's visible
                                 addSelectedTopic(topicId, topicName);
@@ -1429,12 +1461,13 @@
                             editModal.classList.remove('hidden');
                         }, 100);
                     } else {
+                        console.error('Server returned success: false', data); // Debug log
                         alert('Error loading question details: ' + (data.message || 'Unknown error'));
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error loading question details');
+                    console.error('Fetch error:', error); // Debug log
+                    alert('Error loading question details: ' + error.message);
                 });
         }
 
@@ -1475,7 +1508,7 @@
             }
             
             // Check if at least one topic is selected
-            if (selectedTopics.size === 0) {
+            if (selectedTopicsForEdit.size === 0) {
                 alert('Please select a default topic before saving.');
                 return;
             }

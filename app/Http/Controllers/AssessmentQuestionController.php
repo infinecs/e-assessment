@@ -3,18 +3,37 @@
 namespace App\Http\Controllers;
 use App\Models\AssessmentQuestion;
 use App\Models\AssessmentAnswer;
+use App\Models\AssessmentTopic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentQuestionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Use the MODEL, not the controller, also get all topics for edit modal
-        // Order by most recent first (DateCreate descending)
-        $records = AssessmentQuestion::orderBy('DateCreate', 'desc')->paginate(10); // 10 per page
+        // Build query with filters
+        $query = AssessmentQuestion::orderBy('DateCreate', 'desc');
+
+        // Apply server-side search filter
+        $search = $request->input('search');
+        if ($search) {
+            $query->where('QuestionText', 'LIKE', "%{$search}%");
+        }
+
+        // Apply topic filter
+        $topics = $request->input('topics');
+        if ($topics) {
+            $topicIds = explode(',', $topics);
+            $query->whereIn('DefaultTopic', $topicIds);
+        }
+
+        // Get paginated results
+        $records = $query->paginate(10);
         
-        // Get all topics for the edit modal dropdown
+        // Append query parameters to pagination links
+        $records->appends($request->query());
+        
+        // Get all topics for the edit modal dropdown and filters
         $allTopics = DB::table('assessmenttopic')
             ->select('TopicID', 'TopicName')
             ->orderBy('TopicName')
@@ -230,5 +249,103 @@ class AssessmentQuestionController extends Controller
                 'message' => 'Error updating answers: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        // Get filter parameters
+        $search = $request->input('search');
+        $topics = $request->input('topics') ? explode(',', $request->input('topics')) : [];
+
+        // Build query with filters
+        $query = AssessmentQuestion::with(['answers', 'topic'])
+            ->orderBy('DateCreate', 'desc');
+
+        // Apply search filter (question text)
+        if ($search) {
+            $query->where('QuestionText', 'LIKE', "%{$search}%");
+        }
+
+        // Apply topic filter
+        if (!empty($topics)) {
+            $query->whereIn('DefaultTopic', $topics);
+        }
+
+        // Get the filtered data
+        $records = $query->get();
+
+        // Create CSV content
+        $csvData = [];
+        
+        // CSV Headers
+        $csvData[] = [
+            'No',
+            'Default Topic',
+            'Question',
+            'Correct Answer',
+            'Wrong Answers',
+            'Date Created',
+            'Date Updated'
+        ];
+
+        // CSV Data rows
+        $counter = 1;
+        foreach ($records as $record) {
+            // Get topic name
+            $topicName = 'N/A';
+            if ($record->DefaultTopic) {
+                $topic = DB::table('assessmenttopic')
+                    ->where('TopicID', $record->DefaultTopic)
+                    ->first();
+                $topicName = $topic ? $topic->TopicName : 'Topic ID: ' . $record->DefaultTopic;
+            }
+
+            // Get correct and wrong answers
+            $correctAnswers = [];
+            $wrongAnswers = [];
+            
+            foreach ($record->answers as $answer) {
+                if ($answer->ExpectedAnswer === 'Y') {
+                    $correctAnswers[] = $answer->AnswerText;
+                } else {
+                    $wrongAnswers[] = $answer->AnswerText;
+                }
+            }
+            
+            // Format wrong answers with line breaks and spacing for Excel
+            $wrongAnswersText = implode("\n\n", $wrongAnswers);
+            
+            $csvData[] = [
+                $counter++,
+                $topicName,
+                $record->QuestionText,
+                implode(' | ', $correctAnswers),
+                $wrongAnswersText,
+                \Carbon\Carbon::parse($record->DateCreate)->format('Y-m-d H:i:s'),
+                \Carbon\Carbon::parse($record->DateUpdate)->format('Y-m-d H:i:s')
+            ];
+        }
+
+        // Generate filename with timestamp
+        $filename = 'assessment-questions-' . date('Y-m-d-H-i-s') . '.csv';
+
+        // Create response
+        $response = response()->streamDownload(function () use ($csvData) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add BOM for proper UTF-8 encoding in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            foreach ($csvData as $row) {
+                fputcsv($handle, $row);
+            }
+            
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+
+        return $response;
     }
 }

@@ -74,127 +74,130 @@
     <div class="col-span-12 xl:col-span-6">
         <div class="card dark:bg-zinc-800 dark:border-zinc-600">
             <!-- Header with search and filters -->
-            <div class="card-body border-b border-gray-100 dark:border-zinc-600 flex items-center justify-between">
-                <!-- Search Bar and Filters -->
-                <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Main Search Input -->
-                    <div class="relative">
-                        <input type="text" id="searchInput" placeholder="Search by name, email, or phone..." 
-                            class="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm w-60 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:placeholder-gray-400">
-                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400 text-sm"></i>
-                        </div>
-                    </div>
-
-                    <!-- Event Filter -->
-                    <div class="relative">
-                        <button type="button" id="eventFilterBtn" 
-                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
-                            <i class="fas fa-calendar-alt text-gray-500 text-sm"></i>
-                            <span id="eventFilterText">Events</span>
-                            <span id="eventCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                        </button>
-                        
-                        <!-- Event Dropdown -->
-                        <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                            <div class="p-3">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Events</span>
-                                    <button type="button" id="clearEvents" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
-                                </div>
-                                <input type="text" id="eventSearchFilter" placeholder="Search events..." 
-                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                                <div id="eventListFilter" class="space-y-2">
-                                    <!-- Events will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Category Filter -->
-                    <div class="relative">
-                        <button type="button" id="categoryFilterBtn" 
-                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
-                            <i class="fas fa-folder text-gray-500 text-sm"></i>
-                            <span id="categoryFilterText">Categories</span>
-                            <span id="categoryCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                        </button>
-                        
-                        <!-- Category Dropdown -->
-                        <div id="categoryDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                            <div class="p-3">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Categories</span>
-                                    <button type="button" id="clearCategories" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
-                                </div>
-                                <input type="text" id="categorySearchFilter" placeholder="Search categories..." 
-                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                                <div id="categoryListFilter" class="space-y-2">
-                                    <!-- Categories will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Topic Filter -->
-                    <div class="relative">
-                        <button type="button" id="topicFilterBtn" 
-                            class="px-3.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
-                            <i class="fas fa-tags text-gray-500 text-sm"></i>
-                            <span id="topicFilterText">Topics</span>
-                            <span id="topicCount" class="hidden bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
-                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                        </button>
-                        
-                        <!-- Topic Dropdown -->
-                        <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                            <div class="p-3">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
-                                    <button type="button" id="clearTopics" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
-                                </div>
-                                <input type="text" id="topicSearchFilter" placeholder="Search topics..." 
-                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                                <div id="topicListFilter" class="space-y-2">
-                                    <!-- Topics will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Date Filter -->
-                    <div class="flex items-center gap-2">
+            <div class="card-body border-b border-gray-100 dark:border-zinc-600">
+                <!-- Search Bar and Filters Row -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Main Search Input -->
                         <div class="relative">
-                            <input type="date" id="dateFromFilter" 
-                                class="px-2.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                            <input type="text" id="searchInput" placeholder="Search by name, email, or phone..." 
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm w-64 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:placeholder-gray-400">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400 text-sm"></i>
+                            </div>
                         </div>
-                        <span class="text-gray-500 text-sm">to</span>
+
+                        <!-- Event Filter -->
                         <div class="relative">
-                            <input type="date" id="dateToFilter" 
-                                class="px-2.5 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                            <button type="button" id="eventFilterBtn" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                                <i class="fas fa-calendar-alt text-gray-500"></i>
+                                <span id="eventFilterText">Events</span>
+                                <span id="eventCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </button>
+                            
+                            <!-- Event Dropdown -->
+                            <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div class="p-3">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Events</span>
+                                        <button type="button" id="clearEvents" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                    </div>
+                                    <input type="text" id="eventSearchFilter" placeholder="Search events..." 
+                                        class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                    <div id="eventListFilter" class="space-y-2">
+                                        <!-- Events will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Category Filter -->
+                        <div class="relative">
+                            <button type="button" id="categoryFilterBtn" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                                <i class="fas fa-folder text-gray-500"></i>
+                                <span id="categoryFilterText">Categories</span>
+                                <span id="categoryCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </button>
+                            
+                            <!-- Category Dropdown -->
+                            <div id="categoryDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div class="p-3">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Categories</span>
+                                        <button type="button" id="clearCategories" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                    </div>
+                                    <input type="text" id="categorySearchFilter" placeholder="Search categories..." 
+                                        class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                    <div id="categoryListFilter" class="space-y-2">
+                                        <!-- Categories will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Topic Filter -->
+                        <div class="relative">
+                            <button type="button" id="topicFilterBtn" 
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
+                                <i class="fas fa-tags text-gray-500"></i>
+                                <span id="topicFilterText">Topics</span>
+                                <span id="topicCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </button>
+                            
+                            <!-- Topic Dropdown -->
+                            <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                <div class="p-3">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
+                                        <button type="button" id="clearTopics" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
+                                    </div>
+                                    <input type="text" id="topicSearchFilter" placeholder="Search topics..." 
+                                        class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                                    <div id="topicListFilter" class="space-y-2">
+                                        <!-- Topics will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Filter -->
+                        <div class="relative">
+                            <input type="date" id="dateAnsweredFilter" placeholder="Date Answered"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+
+                        <!-- Search Button -->
+                        <button type="button" id="performSearchBtn" 
+                            class="px-4 py-2 bg-violet-500 text-white rounded-lg text-sm hover:bg-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1 flex items-center gap-2">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+
+                        <!-- Clear All Button -->
+                        <button type="button" id="clearAllFilters" class="hidden px-3 py-2 text-gray-600 hover:text-gray-800 text-sm dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-zinc-600 rounded-lg">
+                            <i class="fas fa-times"></i>
+                            Clear All
+                        </button>
                     </div>
 
-                    <!-- Search Button -->
-                    <button type="button" id="performSearchBtn" 
-                        class="px-3.5 py-2 bg-violet-500 text-white rounded-lg text-sm hover:bg-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1 flex items-center gap-2">
-                        <i class="fas fa-search text-sm"></i>
-                        Search
-                    </button>
-
-                    <!-- Clear All Button -->
-                    <button type="button" id="clearAllFilters" class="hidden px-3 py-2 text-gray-600 hover:text-gray-800 text-sm dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-zinc-600 rounded-lg">
-                        <i class="fas fa-times text-sm"></i>
-                        Clear All
-                    </button>
-
-                    <!-- Delete Button - inline with search elements -->
+                    <!-- Bulk Delete Button (only when rows are selected) -->
                     <button id="bulk-delete-btn" type="button"
-                        class="hidden px-3.5 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 text-sm flex items-center gap-1.5">
-                        <i class="fas fa-trash text-sm"></i>
+                        class="hidden px-6 py-2 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
                         Delete
+                    </button>
+                </div>
+
+                <!-- Export Button Row -->
+                <div class="flex justify-start">
+                    <button id="export-excel-btn" type="button"
+                        class="px-6 py-2 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
+                        <i class="fas fa-file-excel"></i>
+                        Export to Excel
                     </button>
                 </div>
             </div>
@@ -216,6 +219,7 @@
                                 <th class="px-3 py-2">Name</th>
                                 <th class="px-3 py-2">Phone Number</th>
                                 <th class="px-3 py-2">Email</th>
+                                <th class="px-3 py-2">Event Name</th>
                                 <th class="px-3 py-2">Score</th>
                                 <th class="px-3 py-2">Date Answered</th>
                                 <th class="px-3 py-2">Actions</th> 
@@ -239,6 +243,7 @@
                                     <td class="px-3 py-2">{{ $row->participant->name ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->participant->phone_number ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->participant->email ?? '-' }}</td>
+                                    <td class="px-3 py-2">{{ $row->event->EventName ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->TotalScore }} / {{ $row->TotalQuestion }}</td>
                                     <td class="px-3 py-2">{{ \Carbon\Carbon::parse($row->DateCreate)->format('d M Y') }}
                                     </td>
@@ -252,7 +257,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-3 py-2 text-center">No records found</td>
+                                    <td colspan="8" class="px-3 py-2 text-center">No records found</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -331,8 +336,7 @@
         const topicCount = document.getElementById('topicCount');
         const clearTopics = document.getElementById('clearTopics');
         
-        const dateFromFilter = document.getElementById('dateFromFilter');
-        const dateToFilter = document.getElementById('dateToFilter');
+        const dateAnsweredFilter = document.getElementById('dateAnsweredFilter');
         const performSearchBtn = document.getElementById('performSearchBtn');
         const clearAllFilters = document.getElementById('clearAllFilters');
         
@@ -340,6 +344,7 @@
         let allEvents = [];
         let allCategories = [];
         let allTopics = [];
+        let categoryTopicsMap = new Map(); // Maps categoryId to array of topic objects
         let selectedEventsForSearch = new Set();
         let selectedCategoriesForSearch = new Set();
         let selectedTopicsForSearch = new Set();
@@ -350,11 +355,11 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 performFilteredSearch();
-            }, 300);
+            }, 800); // Increased delay for server requests
         }
 
         // Load filter data
-        function loadFiltersData() {
+        async function loadFiltersData() {
             console.log('Loading filter data for results...');
             
             try {
@@ -367,6 +372,28 @@
                 const categories = @json($allCategories ?? []);
                 allCategories = categories;
                 renderCategoryList();
+                
+                // Load category-topic relationships
+                for (const category of allCategories) {
+                    try {
+                        console.log(`Loading topics for category ${category.CategoryID} (${category.CategoryName})`);
+                        const response = await fetch(`/category/${category.CategoryID}/topics`);
+                        const data = await response.json();
+                        
+                        console.log(`Response for category ${category.CategoryID}:`, data);
+                        
+                        if (data.success && data.topics) {
+                            // Store with both string and number keys to handle type mismatches
+                            categoryTopicsMap.set(category.CategoryID.toString(), data.topics);
+                            categoryTopicsMap.set(category.CategoryID, data.topics);
+                            console.log(`Stored ${data.topics.length} topics for category ${category.CategoryID}`);
+                        } else {
+                            console.log(`No topics found for category ${category.CategoryID}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to load topics for category ${category.CategoryID}:`, error);
+                    }
+                }
                 
                 // Load topics
                 const topics = @json($allTopics ?? []);
@@ -453,11 +480,47 @@
 
         // Render topic list
         function renderTopicList() {
+            console.log('renderTopicList called');
+            console.log('selectedCategoriesForSearch:', Array.from(selectedCategoriesForSearch));
+            console.log('categoryTopicsMap:', categoryTopicsMap);
+            
             const searchTerm = topicSearchFilter.value.toLowerCase();
-            const filteredTopics = allTopics.filter(topic => 
+            
+            // Get available topics based on selected categories
+            let availableTopics = [];
+            if (selectedCategoriesForSearch.size === 0) {
+                // If no categories selected, show all topics
+                availableTopics = allTopics;
+                console.log('No categories selected, showing all topics:', availableTopics.length);
+            } else {
+                // Only show topics from selected categories
+                const topicsSet = new Set();
+                selectedCategoriesForSearch.forEach(categoryId => {
+                    console.log(`Looking for topics in category ${categoryId}`);
+                    // Try both string and number versions of the categoryId
+                    let categoryTopics = categoryTopicsMap.get(categoryId) || categoryTopicsMap.get(categoryId.toString()) || categoryTopicsMap.get(parseInt(categoryId));
+                    
+                    if (categoryTopics) {
+                        console.log(`Found ${categoryTopics.length} topics for category ${categoryId}:`, categoryTopics);
+                        categoryTopics.forEach(topic => {
+                            topicsSet.add(topic);
+                        });
+                    } else {
+                        console.log(`No topics found for category ${categoryId} in categoryTopicsMap`);
+                        console.log('Available keys in categoryTopicsMap:', Array.from(categoryTopicsMap.keys()));
+                    }
+                });
+                availableTopics = Array.from(topicsSet);
+                console.log('Available topics from selected categories:', availableTopics);
+            }
+            
+            // Filter topics by search term
+            const filteredTopics = availableTopics.filter(topic => 
                 topic.TopicName.toLowerCase().includes(searchTerm) || 
                 topic.TopicID.toString().includes(searchTerm)
             );
+            
+            console.log('Filtered topics after search:', filteredTopics);
 
             topicListFilter.innerHTML = '';
             filteredTopics.forEach(topic => {
@@ -475,16 +538,27 @@
                 topicListFilter.appendChild(div);
             });
 
-            // Restore selected state
+            // Restore selected state for topics that are still available
             selectedTopicsForSearch.forEach(topicId => {
                 const checkbox = document.getElementById(`topic_${topicId}`);
                 if (checkbox) checkbox.checked = true;
+            });
+
+            // Remove topics from selected set that are no longer available
+            const availableTopicIds = new Set(filteredTopics.map(topic => topic.TopicID.toString()));
+            selectedTopicsForSearch.forEach(topicId => {
+                if (!availableTopicIds.has(topicId)) {
+                    selectedTopicsForSearch.delete(topicId);
+                }
             });
 
             // Add event listeners
             document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleTopicChange);
             });
+            
+            // Update display after filtering
+            updateTopicDisplay();
         }
 
         // Handle filter changes
@@ -500,12 +574,16 @@
 
         function handleCategoryChange(event) {
             const categoryId = event.target.value;
+            console.log('Category change:', categoryId, 'checked:', event.target.checked);
+            
             if (event.target.checked) {
                 selectedCategoriesForSearch.add(categoryId);
             } else {
                 selectedCategoriesForSearch.delete(categoryId);
             }
             updateCategoryDisplay();
+            // Re-render topics list based on new category selection
+            renderTopicList();
         }
 
         function handleTopicChange(event) {
@@ -558,67 +636,33 @@
                              selectedCategoriesForSearch.size > 0 || 
                              selectedTopicsForSearch.size > 0 || 
                              searchInput.value.trim() ||
-                             dateFromFilter.value ||
-                             dateToFilter.value;
+                             dateAnsweredFilter.value;
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform filtered search
+        // Perform filtered search - SERVER SIDE
         function performFilteredSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const dateFrom = dateFromFilter.value;
-            const dateTo = dateToFilter.value;
-            let visibleRows = 0;
-
-            tableRows.forEach(row => {
-                if (row.children.length === 1 && row.children[0].getAttribute('colspan')) {
-                    return; // Skip "No records found" row
-                }
-
-                const participantName = row.dataset.participantName?.toLowerCase() || '';
-                const participantPhone = row.dataset.participantPhone?.toLowerCase() || '';
-                const participantEmail = row.dataset.participantEmail?.toLowerCase() || '';
-                const eventId = row.dataset.eventId || '';
-                const dateAnswered = row.dataset.dateAnswered || '';
-
-                // Check text search (name, phone, email)
-                const textMatch = !searchTerm || 
-                    participantName.includes(searchTerm) ||
-                    participantPhone.includes(searchTerm) ||
-                    participantEmail.includes(searchTerm);
-
-                // Check event filter
-                const eventMatch = selectedEventsForSearch.size === 0 || selectedEventsForSearch.has(eventId);
-
-                // Check date filter
-                let dateMatch = true;
-                if (dateFrom || dateTo) {
-                    const answerDate = new Date(dateAnswered).toISOString().split('T')[0];
-                    if (dateFrom && answerDate < dateFrom) dateMatch = false;
-                    if (dateTo && answerDate > dateTo) dateMatch = false;
-                }
-
-                // Show row if all conditions match
-                if (textMatch && eventMatch && dateMatch) {
-                    row.style.display = '';
-                    visibleRows++;
-                } else {
-                    row.style.display = 'none';
-                    // Uncheck hidden rows
-                    const checkbox = row.querySelector('.row-checkbox');
-                    if (checkbox) checkbox.checked = false;
-                }
-            });
-
-            // Update UI
-            updateSelectAllState();  
-            updateBulkDeleteVisibility();
-            showNoResultsMessage(visibleRows === 0 && (searchTerm || selectedEventsForSearch.size > 0 || dateFrom || dateTo));
-
-            console.log(`Search results: ${visibleRows} results found`);
+            const searchTerm = searchInput.value.trim();
+            const dateAnswered = dateAnsweredFilter.value;
+            const selectedEvents = Array.from(selectedEventsForSearch);
+            const selectedCategories = Array.from(selectedCategoriesForSearch);
+            const selectedTopics = Array.from(selectedTopicsForSearch);
+            
+            // Build query parameters for server-side filtering
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (dateAnswered) params.append('date_answered', dateAnswered);
+            if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
+            if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
+            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            
+            // Reload the page with filters applied
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = params.toString();
+            window.location.href = currentUrl.toString();
         }
 
-        // Clear all filters
+        // Clear all filters - SERVER SIDE
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -638,53 +682,32 @@
             document.querySelectorAll('.topic-filter-checkbox').forEach(cb => cb.checked = false);
             updateTopicDisplay();
             
-            // Clear date filters
-            dateFromFilter.value = '';
-            dateToFilter.value = '';
+            // Re-render topics list to show all topics when categories are cleared
+            renderTopicList();
+            
+            // Clear date filter
+            dateAnsweredFilter.value = '';
             
             // Close dropdowns
             eventDropdownFilter.classList.add('hidden');
             categoryDropdownFilter.classList.add('hidden');
             topicDropdownFilter.classList.add('hidden');
             
-            // Perform search to show all results
-            performFilteredSearch();
+            // Reload page without filters
+            const currentUrl = new URL(window.location.href);
+            currentUrl.search = '';
+            window.location.href = currentUrl.toString();
         }
 
-        // Show no results message
+        // Show no results message (not needed for server-side filtering)
         function showNoResultsMessage(show) {
-            let noResultsRow = document.querySelector('.no-results-row');
-            
-            if (show) {
-                if (!noResultsRow) {
-                    const tbody = document.querySelector('tbody');
-                    noResultsRow = document.createElement('tr');
-                    noResultsRow.className = 'no-results-row';
-                    noResultsRow.innerHTML = `
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                            <div class="flex flex-col items-center">
-                                <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                                <p class="text-lg font-medium">No results found</p>
-                                <p class="text-sm">Try adjusting your search filters</p>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(noResultsRow);
-                }
-                noResultsRow.style.display = '';
-            } else {
-                if (noResultsRow) {
-                    noResultsRow.style.display = 'none';
-                }
-            }
+            // This function is not needed with server-side filtering
+            // The server will handle displaying "No records found" message
         }
 
         function updateSelectAllState() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
+            // With server-side filtering, all rows shown are visible
+            const visibleCheckboxes = Array.from(rowCheckboxes);
             const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
             
             if (visibleCheckboxes.length === 0) {
@@ -732,6 +755,8 @@
             selectedCategoriesForSearch.clear();
             document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
             updateCategoryDisplay();
+            // Re-render topics list when categories are cleared
+            renderTopicList();
         });
 
         clearTopics.addEventListener('click', () => {
@@ -747,20 +772,22 @@
         performSearchBtn.addEventListener('click', performFilteredSearch);
         clearAllFilters.addEventListener('click', clearAllFiltersAction);
         
-        // Real-time search and date filters
+        // Real-time search and date filter with debouncing
         searchInput.addEventListener('input', () => {
             updateClearAllButton();
             debounceSearch();
         });
         
-        dateFromFilter.addEventListener('change', () => {
-            updateClearAllButton();
-            performFilteredSearch();
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout); // Cancel debounce on Enter
+                performFilteredSearch();
+            }
         });
         
-        dateToFilter.addEventListener('change', () => {
+        dateAnsweredFilter.addEventListener('change', () => {
             updateClearAllButton();
-            performFilteredSearch();
+            performFilteredSearch(); // No debounce needed for date changes
         });
 
         // Close dropdowns when clicking outside
@@ -776,22 +803,95 @@
             }
         });
 
+        // Initialize filters and restore state from URL parameters
+        function initializeFilters() {
+            loadFiltersData();
+            
+            // Restore filter states from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Restore search term
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                searchInput.value = searchParam;
+                updateClearAllButton();
+            }
+            
+            // Restore date filter
+            const dateParam = urlParams.get('date_answered');
+            if (dateParam) {
+                dateAnsweredFilter.value = dateParam;
+                updateClearAllButton();
+            }
+            
+            // Restore event selections
+            const eventsParam = urlParams.get('events');
+            if (eventsParam) {
+                const events = eventsParam.split(',');
+                setTimeout(() => {
+                    selectedEventsForSearch.clear();
+                    events.forEach(eventId => {
+                        const checkbox = document.getElementById(`event_${eventId}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            selectedEventsForSearch.add(eventId);
+                        }
+                    });
+                    updateEventDisplay();
+                }, 100);
+            }
+            
+            // Restore category selections
+            const categoriesParam = urlParams.get('categories');
+            if (categoriesParam) {
+                const categories = categoriesParam.split(',');
+                setTimeout(() => {
+                    selectedCategoriesForSearch.clear();
+                    categories.forEach(categoryId => {
+                        const checkbox = document.getElementById(`category_${categoryId}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            selectedCategoriesForSearch.add(categoryId);
+                        }
+                    });
+                    updateCategoryDisplay();
+                    // Re-render topics list after category selection is restored
+                    renderTopicList();
+                }, 150);
+            }
+            
+            // Restore topic selections
+            const topicsParam = urlParams.get('topics');
+            if (topicsParam) {
+                const topics = topicsParam.split(',');
+                setTimeout(() => {
+                    selectedTopicsForSearch.clear();
+                    topics.forEach(topicId => {
+                        const checkbox = document.getElementById(`topic_${topicId}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            selectedTopicsForSearch.add(topicId);
+                        }
+                    });
+                    updateTopicDisplay();
+                }, 200);
+            }
+        }
+
         // Initialize filters
-        loadFiltersData();
+        initializeFilters();
 
         function updateBulkDeleteVisibility() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                cb.closest('tr').style.display !== 'none'
-            );
+            // With server-side filtering, all rows shown are visible
+            const visibleCheckboxes = Array.from(rowCheckboxes);
             const anyChecked = visibleCheckboxes.some(cb => cb.checked);
             bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
         }
 
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
-                    cb.closest('tr').style.display !== 'none'
-                );
+                // With server-side filtering, all visible rows are on current page
+                const visibleCheckboxes = Array.from(rowCheckboxes);
                 visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
                 updateBulkDeleteVisibility();
             });
@@ -832,6 +932,47 @@
                 })
                 .catch(err => alert('Error deleting records.'));
         });
+
+        // Export to Excel functionality
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+        exportExcelBtn.addEventListener('click', function() {
+            // Get current filter values
+            const searchTerm = searchInput.value.trim();
+            const dateAnswered = dateAnsweredFilter.value;
+            const selectedEvents = Array.from(selectedEventsForSearch);
+            const selectedCategories = Array.from(selectedCategoriesForSearch);
+            const selectedTopics = Array.from(selectedTopicsForSearch);
+            
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (dateAnswered) params.append('date_answered', dateAnswered);
+            if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
+            if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
+            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            
+            // Create download URL using Laravel route
+            const exportUrl = `{{ route('assessment.exportExcel') }}?${params.toString()}`;
+            
+            // Show loading state
+            const originalText = exportExcelBtn.innerHTML;
+            exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportExcelBtn.disabled = true;
+            
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.target = '_blank'; // Open in new tab to handle potential errors
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button state after a delay
+            setTimeout(() => {
+                exportExcelBtn.innerHTML = originalText;
+                exportExcelBtn.disabled = false;
+            }, 2000);
+        });
     });
 
     
@@ -855,37 +996,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (data.status === 'success') {
         let html = '';
 
-
-        data.results.forEach(item => {
-            const isCorrect = item.participantAnswer === item.correctAnswer;
-            const correctClass = isCorrect
-                ? 'bg-green-50 border-green-400 text-green-700'
-                : 'bg-red-50 border-red-400 text-red-700';
-
-            html += `
-                <div class="border rounded-lg p-4 mb-4 shadow-sm bg-gray-50 dark:bg-zinc-800">
-                    <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-2 text-xs md:text-sm">
-                        <span class="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded mr-2 text-xs">Q</span>
-                        ${item.question}
-                    </h3>
-                    <div class="space-y-2">
-                        <div class="p-2 border rounded ${correctClass} text-xs md:text-sm">
-                            <span class="font-semibold">Your Answer:</span>
-                            ${item.participantAnswer || '-'}
-                        </div>
-                        ${!isCorrect ? `
-                        <div class="p-2 border rounded bg-green-50 border-green-400 text-green-700 text-xs md:text-sm">
-                            <span class="font-semibold">Correct Answer:</span>
-                            ${item.correctAnswer || '-'}
-                        </div>` : ''}
+        // Show basic assessment information instead of questions/answers
+        html = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-zinc-800 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-2">Assessment Summary</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            This assessment has been completed successfully.
+                        </p>
+                    </div>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-2">Performance</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            View the score details in the main results table.
+                        </p>
                     </div>
                 </div>
-            `;
-        });
-
-        if (!data.results.length) {
-            html = '<div class="text-center text-gray-600 dark:text-gray-300 text-sm">No details found.</div>';
-        }
+            </div>
+        `;
 
         document.getElementById('modal-content').innerHTML = html;
     } else {

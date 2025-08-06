@@ -116,6 +116,10 @@ if ($email) {
             ->with('error', 'Session expired, please retake the quiz.');
     }
 
+    // Get EventID from eventCode
+    $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+    $eventId = $event ? $event->EventID : null;
+
     // Calculate score
     $score = 0;
     $total = count($questionIds);
@@ -140,11 +144,12 @@ if ($email) {
     }
 
     // Save Assessment + Results
-    \DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds) {
+    \DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId) {
         $assessment = Assessment::create([
             'ParticipantID' => $participantId,
             'TotalScore'    => $score,
             'TotalQuestion' => $total,
+            'EventID'       => $eventId,
             'AdminID'       => 0,
             'DateCreate'    => now(),
             'DateUpdate'    => now(),

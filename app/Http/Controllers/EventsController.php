@@ -8,14 +8,50 @@ use Illuminate\Support\Facades\DB;
 
 class EventsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Use Eloquent and paginate, also get category names and get all categories for edit modal
-        $records = DB::table('assessmentevent as e')
+        // Build query with potential filters
+        $query = DB::table('assessmentevent as e')
             ->leftJoin('assessmentcategory as c', 'e.CategoryID', '=', 'c.CategoryID')
             ->select('e.*', 'c.CategoryName')
-            ->orderBy('e.EventID', 'desc')
-            ->paginate(10);
+            ->orderBy('e.EventID', 'desc');
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('e.EventName', 'LIKE', "%{$search}%")
+                  ->orWhere('e.EventCode', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Apply category filter if provided
+        if ($request->has('categories') && !empty($request->categories)) {
+            $categories = explode(',', $request->categories);
+            $query->whereIn('c.CategoryName', $categories);
+        }
+
+        // Apply topic filter if provided (this is more complex as it requires checking TopicID field)
+        if ($request->has('topics') && !empty($request->topics)) {
+            $topics = explode(',', $request->topics);
+            // We need to get topic IDs first
+            $topicIds = DB::table('assessmenttopic')
+                ->whereIn('TopicName', $topics)
+                ->pluck('TopicID')
+                ->toArray();
+            
+            if (!empty($topicIds)) {
+                $query->where(function ($q) use ($topicIds) {
+                    foreach ($topicIds as $topicId) {
+                        $q->orWhere('e.TopicID', 'LIKE', "%{$topicId}%");
+                    }
+                });
+            }
+        }
+
+        // Paginate the filtered results and preserve query parameters
+        $records = $query->paginate(10);
+        $records->appends($request->all());
             
         // Get all categories for the edit modal dropdown
         $allCategories = DB::table('assessmentcategory')
@@ -246,5 +282,128 @@ class EventsController extends Controller
                 'message' => 'Error fetching category topics: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        // Get filter parameters
+        $search = $request->input('search');
+        $categories = $request->input('categories') ? explode(',', $request->input('categories')) : [];
+        $topics = $request->input('topics') ? explode(',', $request->input('topics')) : [];
+
+        // Build query with filters
+        $query = DB::table('assessmentevent as e')
+            ->leftJoin('assessmentcategory as c', 'e.CategoryID', '=', 'c.CategoryID')
+            ->select('e.*', 'c.CategoryName')
+            ->orderBy('e.EventID', 'desc');
+
+        // Apply search filter (event name or code)
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('e.EventName', 'LIKE', "%{$search}%")
+                  ->orWhere('e.EventCode', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Apply category filter
+        if (!empty($categories)) {
+            $query->whereIn('c.CategoryName', $categories);
+        }
+
+        // Get the filtered data
+        $records = $query->get();
+
+        // Apply topic filter if needed
+        if (!empty($topics)) {
+            $records = $records->filter(function ($record) use ($topics) {
+                if (!$record->TopicID) return false;
+                
+                // Get topic names for this event
+                $eventTopicIds = array_map('trim', explode(',', $record->TopicID));
+                $eventTopicIds = array_unique(array_filter($eventTopicIds));
+                
+                if (empty($eventTopicIds)) return false;
+                
+                $eventTopicNames = DB::table('assessmenttopic')
+                    ->whereIn('TopicID', $eventTopicIds)
+                    ->pluck('TopicName')
+                    ->toArray();
+                
+                // Check if any of the event's topics match the filter
+                return !empty(array_intersect($eventTopicNames, $topics));
+            });
+        }
+
+        // Create CSV content
+        $csvData = [];
+        
+        // CSV Headers
+        $csvData[] = [
+            'No',
+            'Event Name',
+            'Event Code',
+            'Category',
+            'Topics',
+            'Question Limit',
+            'Duration Each Question (seconds)',
+            'Start Date',
+            'End Date'
+        ];
+
+        // CSV Data rows
+        $rowNumber = 1;
+        foreach ($records as $record) {
+            // Get topic names for this event
+            $topicNames = [];
+            if ($record->TopicID) {
+                $topicIds = array_map('trim', explode(',', $record->TopicID));
+                $topicIds = array_unique(array_filter($topicIds));
+                
+                if (!empty($topicIds)) {
+                    $topics = DB::table('assessmenttopic')
+                        ->whereIn('TopicID', $topicIds)
+                        ->pluck('TopicName')
+                        ->toArray();
+                    $topicNames = $topics;
+                }
+            }
+            $topicNamesStr = !empty($topicNames) ? implode("\n\n", $topicNames) : 'N/A';
+            
+            $csvData[] = [
+                $rowNumber,
+                $record->EventName ?? 'N/A',
+                $record->EventCode ?? 'N/A',
+                $record->CategoryName ?? 'N/A',
+                $topicNamesStr,
+                $record->QuestionLimit ?? 'N/A',
+                $record->DurationEachQuestion ?? 'N/A',
+                $record->StartDate ? \Carbon\Carbon::parse($record->StartDate)->format('Y-m-d') : 'N/A',
+                $record->EndDate ? \Carbon\Carbon::parse($record->EndDate)->format('Y-m-d') : 'N/A'
+            ];
+            
+            $rowNumber++;
+        }
+
+        // Generate filename with timestamp
+        $filename = 'assessment-events-' . date('Y-m-d-H-i-s') . '.csv';
+
+        // Create response
+        $response = response()->streamDownload(function () use ($csvData) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add BOM for proper UTF-8 encoding in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            foreach ($csvData as $row) {
+                fputcsv($handle, $row);
+            }
+            
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+
+        return $response;
     }
 }

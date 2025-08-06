@@ -8,6 +8,7 @@
 <style>
 .topic-checkbox:checked,
 .add-topic-checkbox:checked,
+.edit-topic-checkbox:checked,
 .row-checkbox:checked,
 #checkbox-all:checked {
     background-color: #7c3aed !important; /* violet-600 */
@@ -16,6 +17,7 @@
 
 .topic-checkbox:checked:after,
 .add-topic-checkbox:checked:after,
+.edit-topic-checkbox:checked:after,
 .row-checkbox:checked:after,
 #checkbox-all:checked:after {
     content: '✓';
@@ -30,6 +32,7 @@
 
 .topic-checkbox,
 .add-topic-checkbox,
+.edit-topic-checkbox,
 .row-checkbox,
 #checkbox-all {
     position: relative;
@@ -207,13 +210,13 @@
 <!-- Edit Category Modal -->
 <div id="editCategoryModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
-            <form id="editCategoryForm">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800" style="max-height: 90vh;">
+            <form id="editCategoryForm" class="flex flex-col h-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800 flex-1 overflow-y-auto" style="max-height: calc(90vh - 60px);">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
@@ -228,26 +231,42 @@
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics</label>
-                                    <div class="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="topicsContainer">
-                                        @if(isset($allTopics) && count($allTopics) > 0)
-                                            @foreach($allTopics as $topic)
-                                            <div class="flex items-center mb-2">
-                                                <input type="checkbox" 
-                                                       id="topic_{{ $topic->TopicID }}" 
-                                                       name="topic_ids[]" 
-                                                       value="{{ $topic->TopicID }}"
-                                                       class="topic-checkbox w-4 h-4 border-gray-300 rounded bg-white">
-                                                <label for="topic_{{ $topic->TopicID }}" class="ml-2 text-sm font-medium text-gray-900">
-                                                    {{ $topic->TopicName }} (ID: {{ $topic->TopicID }})
-                                                </label>
+                                    
+                                    <!-- Topic Dropdown -->
+                                    <div class="relative">
+                                        <button type="button" id="editTopicDropdownBtn" 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center justify-between">
+                                            <span id="editTopicDropdownText">Select Topics</span>
+                                            <div class="flex items-center gap-2">
+                                                <span id="editTopicCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                                             </div>
-                                            @endforeach
-                                        @else
-                                            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                                No topics available
+                                        </button>
+                                        
+                                        <!-- Dropdown Menu -->
+                                        <div id="editTopicDropdownMenu" class="hidden absolute top-full left-0 mt-2 w-full bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                            <div class="p-3">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
+                                                    <button type="button" id="editClearTopics" class="text-xs text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300">Clear All</button>
+                                                </div>
+                                                <input type="text" id="editTopicSearch" placeholder="Search topics..." 
+                                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                                                <div id="editTopicList" class="space-y-2">
+                                                    <!-- Topics will be loaded here dynamically -->
+                                                </div>
                                             </div>
-                                        @endif
+                                        </div>
                                     </div>
+                                    
+                                    <!-- Selected Topics Display -->
+                                    <div id="editSelectedTopicsDisplay" class="mt-3 hidden">
+                                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Topics:</div>
+                                        <div id="editSelectedTopicsList" class="flex flex-wrap gap-2">
+                                            <!-- Selected topics will appear here as tags -->
+                                        </div>
+                                    </div>
+                                    
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         Select the topics that should be associated with this category.
                                     </div>
@@ -256,7 +275,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
+                <div class="bg-gray-50 px-4 py-2 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 ">
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
                         Update Category
                     </button>
@@ -272,7 +291,7 @@
 <!-- Topics Modal -->
 <div id="topicsModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
@@ -316,13 +335,13 @@
 <!-- Add Category Modal -->
 <div id="addCategoryModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
         
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
-            <form id="addCategoryForm">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800" style="max-height: 90vh;">
+            <form id="addCategoryForm" class="flex flex-col h-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800 flex-1 overflow-y-auto" style="max-height: calc(90vh - 60px);">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
@@ -338,26 +357,42 @@
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics</label>
-                                    <div class="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addTopicsContainer">
-                                        @if(isset($allTopics) && count($allTopics) > 0)
-                                            @foreach($allTopics as $topic)
-                                            <div class="flex items-center mb-2">
-                                                <input type="checkbox" 
-                                                       id="add_topic_{{ $topic->TopicID }}" 
-                                                       name="topic_ids[]" 
-                                                       value="{{ $topic->TopicID }}"
-                                                       class="add-topic-checkbox w-4 h-4 border-gray-300 rounded bg-white">
-                                                <label for="add_topic_{{ $topic->TopicID }}" class="ml-2 text-sm font-medium text-gray-900 dark:text-white">
-                                                    {{ $topic->TopicName }} (ID: {{ $topic->TopicID }})
-                                                </label>
+                                    
+                                    <!-- Topic Dropdown -->
+                                    <div class="relative">
+                                        <button type="button" id="addTopicDropdownBtn" 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center justify-between">
+                                            <span id="addTopicDropdownText">Select Topics</span>
+                                            <div class="flex items-center gap-2">
+                                                <span id="addTopicCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                                             </div>
-                                            @endforeach
-                                        @else
-                                            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-                                                No topics available
+                                        </button>
+                                        
+                                        <!-- Dropdown Menu -->
+                                        <div id="addTopicDropdownMenu" class="hidden absolute top-full left-0 mt-2 w-full bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                                            <div class="p-3">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
+                                                    <button type="button" id="addClearTopics" class="text-xs text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300">Clear All</button>
+                                                </div>
+                                                <input type="text" id="addTopicSearch" placeholder="Search topics..." 
+                                                    class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white dark:placeholder-gray-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                                                <div id="addTopicList" class="space-y-2">
+                                                    <!-- Topics will be loaded here dynamically -->
+                                                </div>
                                             </div>
-                                        @endif
+                                        </div>
                                     </div>
+                                    
+                                    <!-- Selected Topics Display -->
+                                    <div id="addSelectedTopicsDisplay" class="mt-3 hidden">
+                                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Topics:</div>
+                                        <div id="addSelectedTopicsList" class="flex flex-wrap gap-2">
+                                            <!-- Selected topics will appear here as tags -->
+                                        </div>
+                                    </div>
+                                    
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         Select the topics that should be associated with this category.
                                     </div>
@@ -366,7 +401,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
+                <div class="bg-gray-50 px-4 py-2 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 ">
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
                         Add Category
                     </button>
@@ -401,10 +436,10 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 performFilteredSearch();
-            }, 300);
+            }, 150); // Reduced delay for faster response
         }
 
-        // Perform search with filters
+        // Perform search with filters - CLIENT SIDE (no page refresh)
         function performFilteredSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
             let visibleRows = 0;
@@ -439,12 +474,15 @@
             console.log(`Search results: ${visibleRows} categories found`);
         }
 
-        // Clear all filters
+        // Clear all filters - CLIENT SIDE (no page refresh)
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
             
-            // Perform search to show all results
+            // Update clear button visibility
+            updateClearAllButton();
+            
+            // Perform search to show all results (no page refresh)
             performFilteredSearch();
         }
 
@@ -505,17 +543,27 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Event listeners for search
-        performSearchBtn.addEventListener('click', performFilteredSearch);
-        clearAllFilters.addEventListener('click', clearAllFiltersAction);
+        // Event listeners for search (prevent page refresh)
+        performSearchBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent any form submission
+            performFilteredSearch();
+        });
         
-        // Real-time search as user types with debouncing
-        searchInput.addEventListener('input', () => {
+        clearAllFilters.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent any form submission
+            clearAllFiltersAction();
+        });
+        
+        // Real-time search as user types with debouncing (no page refresh)
+        searchInput.addEventListener('input', (e) => {
+            e.preventDefault(); // Prevent any default behavior
             updateClearAllButton();
             debounceSearch();
         });
+        
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission on Enter
                 clearTimeout(searchTimeout);
                 performFilteredSearch();
             }
@@ -581,6 +629,12 @@
             addCategory();
         });
 
+        // Initialize Add Topic Dropdown
+        initializeAddTopicDropdown();
+
+        // Initialize Edit Topic Dropdown
+        initializeEditTopicDropdown();
+
         // Bulk delete button event listener
         if (bulkDeleteBtn) {
             bulkDeleteBtn.addEventListener('click', function() {
@@ -588,6 +642,357 @@
             });
         }
     });
+
+    // Add Topic Dropdown Functions
+    function initializeAddTopicDropdown() {
+        const allTopics = @json($allTopics ?? []);
+        const dropdownBtn = document.getElementById('addTopicDropdownBtn');
+        const dropdownMenu = document.getElementById('addTopicDropdownMenu');
+        const searchInput = document.getElementById('addTopicSearch');
+        const topicList = document.getElementById('addTopicList');
+        const clearBtn = document.getElementById('addClearTopics');
+        const dropdownText = document.getElementById('addTopicDropdownText');
+        const countSpan = document.getElementById('addTopicCount');
+        const selectedDisplay = document.getElementById('addSelectedTopicsDisplay');
+        const selectedList = document.getElementById('addSelectedTopicsList');
+
+        let selectedTopics = new Set();
+        let selectedTopicData = new Map(); // Store topic data for display
+
+        // Load topics into dropdown
+        function loadTopics(searchTerm = '') {
+            const filteredTopics = allTopics.filter(topic => 
+                topic.TopicName.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            topicList.innerHTML = '';
+
+            if (filteredTopics.length === 0) {
+                topicList.innerHTML = `
+                    <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                        <p>No topics found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredTopics.forEach(topic => {
+                const isSelected = selectedTopics.has(topic.TopicID.toString());
+                const topicItem = document.createElement('div');
+                topicItem.className = 'flex items-center p-2 hover:bg-gray-50 dark:hover:bg-zinc-600 rounded cursor-pointer';
+                topicItem.innerHTML = `
+                    <input type="checkbox" 
+                           id="add_topic_${topic.TopicID}" 
+                           name="topic_ids[]" 
+                           value="${topic.TopicID}"
+                           class="add-topic-checkbox w-4 h-4 border-gray-300 rounded bg-white dark:bg-zinc-600 dark:border-zinc-500 text-violet-600 focus:ring-violet-500"
+                           ${isSelected ? 'checked' : ''}>
+                    <label for="add_topic_${topic.TopicID}" class="ml-2 text-sm text-gray-900 dark:text-white cursor-pointer flex-1">
+                        ${topic.TopicName} (ID: ${topic.TopicID})
+                    </label>
+                `;
+                
+                topicItem.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        const checkbox = topicItem.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                const checkbox = topicItem.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedTopics.add(topic.TopicID.toString());
+                        selectedTopicData.set(topic.TopicID.toString(), {
+                            name: topic.TopicName,
+                            id: topic.TopicID
+                        });
+                    } else {
+                        selectedTopics.delete(topic.TopicID.toString());
+                        selectedTopicData.delete(topic.TopicID.toString());
+                    }
+                    updateDropdownText();
+                });
+
+                topicList.appendChild(topicItem);
+            });
+        }
+
+        // Update dropdown button text and count
+        function updateDropdownText() {
+            if (selectedTopics.size === 0) {
+                dropdownText.textContent = 'Select Topics';
+                countSpan.classList.add('hidden');
+                selectedDisplay.classList.add('hidden');
+            } else {
+                dropdownText.textContent = `${selectedTopics.size} topic(s) selected`;
+                countSpan.textContent = selectedTopics.size;
+                countSpan.classList.remove('hidden');
+                selectedDisplay.classList.remove('hidden');
+                updateSelectedTopicsDisplay();
+            }
+        }
+
+        // Update selected topics display
+        function updateSelectedTopicsDisplay() {
+            selectedList.innerHTML = '';
+            
+            selectedTopicData.forEach((topicInfo, topicId) => {
+                const tag = document.createElement('div');
+                tag.className = 'inline-flex items-center gap-1 px-3 py-1 bg-violet-500 text-white text-sm rounded-full';
+                tag.innerHTML = `
+                    <span>${topicInfo.name}</span>
+                    <button type="button" onclick="removeSelectedTopic('${topicId}')" class="hover:bg-violet-600 rounded-full p-1 ml-1">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                `;
+                selectedList.appendChild(tag);
+            });
+        }
+
+        // Toggle dropdown
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+            if (!dropdownMenu.classList.contains('hidden')) {
+                searchInput.focus();
+            }
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            loadTopics(e.target.value);
+        });
+
+        // Clear all selections
+        clearBtn.addEventListener('click', () => {
+            selectedTopics.clear();
+            selectedTopicData.clear();
+            loadTopics(searchInput.value);
+            updateDropdownText();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        // Prevent dropdown from closing when clicking inside
+        dropdownMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Initialize dropdown
+        loadTopics();
+        updateDropdownText();
+
+        // Expose clear function globally for modal reset
+        window.clearAddTopicDropdown = function() {
+            selectedTopics.clear();
+            selectedTopicData.clear();
+            searchInput.value = '';
+            loadTopics();
+            updateDropdownText();
+        };
+
+        // Expose remove function globally for tag removal
+        window.removeSelectedTopic = function(topicId) {
+            selectedTopics.delete(topicId);
+            selectedTopicData.delete(topicId);
+            loadTopics(searchInput.value); // Refresh to update checkboxes
+            updateDropdownText();
+        };
+    }
+
+    // Edit Topic Dropdown Functions
+    function initializeEditTopicDropdown() {
+        const allTopics = @json($allTopics ?? []);
+        const dropdownBtn = document.getElementById('editTopicDropdownBtn');
+        const dropdownMenu = document.getElementById('editTopicDropdownMenu');
+        const searchInput = document.getElementById('editTopicSearch');
+        const topicList = document.getElementById('editTopicList');
+        const clearBtn = document.getElementById('editClearTopics');
+        const dropdownText = document.getElementById('editTopicDropdownText');
+        const countSpan = document.getElementById('editTopicCount');
+        const selectedDisplay = document.getElementById('editSelectedTopicsDisplay');
+        const selectedList = document.getElementById('editSelectedTopicsList');
+
+        let selectedTopics = new Set();
+        let selectedTopicData = new Map(); // Store topic data for display
+
+        // Load topics into dropdown
+        function loadTopics(searchTerm = '') {
+            const filteredTopics = allTopics.filter(topic => 
+                topic.TopicName.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            topicList.innerHTML = '';
+
+            if (filteredTopics.length === 0) {
+                topicList.innerHTML = `
+                    <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                        <p>No topics found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredTopics.forEach(topic => {
+                const isSelected = selectedTopics.has(topic.TopicID.toString());
+                const topicItem = document.createElement('div');
+                topicItem.className = 'flex items-center p-2 hover:bg-gray-50 dark:hover:bg-zinc-600 rounded cursor-pointer';
+                topicItem.innerHTML = `
+                    <input type="checkbox" 
+                           id="edit_topic_${topic.TopicID}" 
+                           name="topic_ids[]" 
+                           value="${topic.TopicID}"
+                           class="edit-topic-checkbox w-4 h-4 border-gray-300 rounded bg-white dark:bg-zinc-600 dark:border-zinc-500 text-violet-600 focus:ring-violet-500"
+                           ${isSelected ? 'checked' : ''}>
+                    <label for="edit_topic_${topic.TopicID}" class="ml-2 text-sm text-gray-900 dark:text-white cursor-pointer flex-1">
+                        ${topic.TopicName} (ID: ${topic.TopicID})
+                    </label>
+                `;
+                
+                topicItem.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        const checkbox = topicItem.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                const checkbox = topicItem.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedTopics.add(topic.TopicID.toString());
+                        selectedTopicData.set(topic.TopicID.toString(), {
+                            name: topic.TopicName,
+                            id: topic.TopicID
+                        });
+                    } else {
+                        selectedTopics.delete(topic.TopicID.toString());
+                        selectedTopicData.delete(topic.TopicID.toString());
+                    }
+                    updateDropdownText();
+                });
+
+                topicList.appendChild(topicItem);
+            });
+        }
+
+        // Update dropdown button text and count
+        function updateDropdownText() {
+            if (selectedTopics.size === 0) {
+                dropdownText.textContent = 'Select Topics';
+                countSpan.classList.add('hidden');
+                selectedDisplay.classList.add('hidden');
+            } else {
+                dropdownText.textContent = `${selectedTopics.size} topic(s) selected`;
+                countSpan.textContent = selectedTopics.size;
+                countSpan.classList.remove('hidden');
+                selectedDisplay.classList.remove('hidden');
+                updateSelectedTopicsDisplay();
+            }
+        }
+
+        // Update selected topics display
+        function updateSelectedTopicsDisplay() {
+            selectedList.innerHTML = '';
+            
+            selectedTopicData.forEach((topicInfo, topicId) => {
+                const tag = document.createElement('div');
+                tag.className = 'inline-flex items-center gap-1 px-3 py-1 bg-violet-500 text-white text-sm rounded-full';
+                tag.innerHTML = `
+                    <span>${topicInfo.name}</span>
+                    <button type="button" onclick="removeEditSelectedTopic('${topicId}')" class="hover:bg-violet-600 rounded-full p-1 ml-1">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                `;
+                selectedList.appendChild(tag);
+            });
+        }
+
+        // Toggle dropdown
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+            if (!dropdownMenu.classList.contains('hidden')) {
+                searchInput.focus();
+            }
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            loadTopics(e.target.value);
+        });
+
+        // Clear all selections
+        clearBtn.addEventListener('click', () => {
+            selectedTopics.clear();
+            selectedTopicData.clear();
+            loadTopics(searchInput.value);
+            updateDropdownText();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        // Prevent dropdown from closing when clicking inside
+        dropdownMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Initialize dropdown
+        loadTopics();
+        updateDropdownText();
+
+        // Set selected topics from external call
+        window.setEditSelectedTopics = function(topicIds) {
+            selectedTopics.clear();
+            selectedTopicData.clear();
+            
+            if (topicIds && topicIds.length > 0) {
+                topicIds.forEach(topicId => {
+                    const topicIdStr = String(topicId);
+                    const topic = allTopics.find(t => String(t.TopicID) === topicIdStr);
+                    if (topic) {
+                        selectedTopics.add(topicIdStr);
+                        selectedTopicData.set(topicIdStr, {
+                            name: topic.TopicName,
+                            id: topic.TopicID
+                        });
+                    }
+                });
+            }
+            
+            loadTopics(searchInput.value);
+            updateDropdownText();
+        };
+
+        // Expose clear function globally for modal reset
+        window.clearEditTopicDropdown = function() {
+            selectedTopics.clear();
+            selectedTopicData.clear();
+            searchInput.value = '';
+            loadTopics();
+            updateDropdownText();
+        };
+
+        // Expose remove function globally for tag removal
+        window.removeEditSelectedTopic = function(topicId) {
+            selectedTopics.delete(topicId);
+            selectedTopicData.delete(topicId);
+            loadTopics(searchInput.value); // Refresh to update checkboxes
+            updateDropdownText();
+        };
+    }
 
     let currentCategoryId = null;
 
@@ -603,31 +1008,9 @@
                     // Populate category name
                     document.getElementById('edit_category_name').value = data.category.CategoryName;
                     
-                    // Clear all checkboxes first
-                    document.querySelectorAll('.topic-checkbox').forEach(checkbox => {
-                        checkbox.checked = false;
-                    });
-                    
-                    // Check assigned topics
-                    if (data.assigned_topic_ids && data.assigned_topic_ids.length > 0) {
-                        console.log('Assigned topic IDs:', data.assigned_topic_ids); // Debug log
-                        
-                        data.assigned_topic_ids.forEach(topicId => {
-                            // Convert to string to ensure proper comparison
-                            const topicIdStr = String(topicId);
-                            const checkbox = document.getElementById(`topic_${topicIdStr}`);
-                            
-                            console.log(`Looking for checkbox: topic_${topicIdStr}`, checkbox); // Debug log
-                            
-                            if (checkbox) {
-                                checkbox.checked = true;
-                                console.log(`Checked checkbox for topic ID: ${topicIdStr}`); // Debug log
-                            } else {
-                                console.log(`Checkbox not found for topic ID: ${topicIdStr}`); // Debug log
-                            }
-                        });
-                    } else {
-                        console.log('No assigned topics found'); // Debug log
+                    // Set selected topics in dropdown
+                    if (window.setEditSelectedTopics) {
+                        window.setEditSelectedTopics(data.assigned_topic_ids || []);
                     }
                     
                     // Show modal
@@ -645,16 +1028,20 @@
     function closeEditCategoryModal() {
         document.getElementById('editCategoryModal').classList.add('hidden');
         currentCategoryId = null;
+        // Clear dropdown selections
+        if (window.clearEditTopicDropdown) {
+            window.clearEditTopicDropdown();
+        }
     }
 
     function closeAddCategoryModal() {
         document.getElementById('addCategoryModal').classList.add('hidden');
         // Clear the form
         document.getElementById('addCategoryForm').reset();
-        // Uncheck all topic checkboxes
-        document.querySelectorAll('.add-topic-checkbox').forEach(checkbox => {
-            checkbox.checked = false;
-        });
+        // Clear dropdown selections
+        if (window.clearAddTopicDropdown) {
+            window.clearAddTopicDropdown();
+        }
     }
 
     function addCategory() {
@@ -729,9 +1116,9 @@
             return;
         }
         
-        // Get selected topic IDs
+        // Get selected topic IDs from dropdown
         const selectedTopics = [];
-        document.querySelectorAll('.topic-checkbox:checked').forEach(checkbox => {
+        document.querySelectorAll('.edit-topic-checkbox:checked').forEach(checkbox => {
             selectedTopics.push(checkbox.value);
         });
         
