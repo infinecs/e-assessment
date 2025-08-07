@@ -6,8 +6,8 @@
         <div class="flex items-center topbar-brand">
             <div class="hidden lg:flex navbar-brand items-center justify-between shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none">
                 <a href="#" class="flex items-center text-lg flex-shrink-0 font-bold dark:text-white leading-[69px]">
-                    <img src="images/logo-sm.svg" alt="Logo" class="inline-block w-6 h-6 align-middle ltr:xl:mr-2 rtl:xl:ml-2">
-                    <span class="hidden font-bold text-gray-700 align-middle xl:block dark:text-gray-100 leading-[69px]">Minia</span>
+                    <img src="images/Infinecs-with-slogan.png" alt="Logo" class="inline-block w-50   h-10    align-middle ltr:xl:mr-2 rtl:xl:ml-2">
+
                 </a>
             </div>
         </div>
@@ -21,9 +21,7 @@
                     aria-haspopup="true"
                     aria-expanded="false"
                     onclick="document.getElementById('profile/log').classList.toggle('hidden')">
-                    <img class="border-[3px] border-gray-700 dark:border-zinc-400 rounded-full w-9 h-9 ltr:xl:mr-2 rtl:xl:ml-2"
-                        src="images/avatar-1.jpg" alt="Header Avatar">
-                    <span class="hidden font-medium xl:block">Shawn L.</span>
+                    <span class="hidden font-medium xl:block">{{ Auth::user()->email ?? '' }}</span>
                     <i class="hidden align-bottom mdi mdi-chevron-down xl:block"></i>
                 </button>
 

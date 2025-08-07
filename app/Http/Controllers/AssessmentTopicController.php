@@ -56,6 +56,93 @@ class AssessmentTopicController extends Controller
             ->select('CategoryID', 'CategoryName', 'TopicIDs')
             ->orderBy('CategoryName')
             ->get();
+
+        // Handle AJAX requests
+        if ($request->ajax()) {
+            $html = '';
+            foreach ($records as $row) {
+                // Find categories that contain this topic
+                $topicCategories = collect($allCategories)->filter(function($category) use ($row) {
+                    $topicIds = explode(',', $category->TopicIDs ?? '');
+                    return in_array($row->TopicID, $topicIds);
+                });
+                $categoryNames = $topicCategories->pluck('CategoryName')->join(', ');
+                $categoryIds = $topicCategories->pluck('CategoryID')->join(',');
+
+                $html .= '<tr class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600"
+                             data-topic-id="' . $row->TopicID . '"
+                             data-topic-name="' . htmlspecialchars($row->TopicName) . '"
+                             data-category-ids="' . $categoryIds . '"
+                             data-category-names="' . htmlspecialchars($categoryNames) . '">';
+                
+                $html .= '<td class="w-4 p-3">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white" data-topic-id="' . $row->TopicID . '">
+                            </div>
+                          </td>';
+                
+                $html .= '<td class="px-2 py-1.5">' . htmlspecialchars($row->TopicName) . '</td>';
+                
+                // Categories
+                $html .= '<td class="px-2 py-1.5">';
+                if ($categoryNames) {
+                    $html .= '<div class="flex flex-wrap gap-1">';
+                    foreach ($topicCategories as $category) {
+                        $html .= '<span class="inline-block px-2 py-1 text-xs bg-violet-100 text-violet-800 rounded-full dark:bg-violet-900 dark:text-violet-200">' . 
+                                htmlspecialchars($category->CategoryName) . '</span>';
+                    }
+                    $html .= '</div>';
+                } else {
+                    $html .= '<span class="text-gray-400 text-xs italic">No categories</span>';
+                }
+                $html .= '</td>';
+
+                // Actions
+                $html .= '<td class="px-2 py-1.5 text-center">
+                            <div class="relative inline-block dropdown">
+                                <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
+                                    <i class="bx bx-dots-vertical text-base"></i>
+                                </button>
+                                <div class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
+                                    <div class="p-1 flex flex-col gap-1">
+                                        <button type="button" onclick="editTopic(' . $row->TopicID . ', \'' . addslashes($row->TopicName) . '\')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                            <i class="mdi mdi-pencil text-base"></i>
+                                            <span>Edit</span>
+                                        </button>
+                                        <button type="button" onclick="deleteTopic(' . $row->TopicID . ')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                            <i class="mdi mdi-trash-can text-base"></i>
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                          </td>';
+                
+                $html .= '<td class="px-2 py-1.5">' . \Carbon\Carbon::parse($row->DateCreate)->format('d M Y') . '</td>';
+                $html .= '<td class="px-2 py-1.5">' . \Carbon\Carbon::parse($row->DateUpdate)->format('d M Y') . '</td>';
+                
+                $html .= '</tr>';
+            }
+
+            // If no records found
+            if ($records->isEmpty()) {
+                $html = '<tr><td colspan="6" class="px-2 py-1.5 text-center">No topics found</td></tr>';
+            }
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'pagination' => [
+                    'current_page' => $records->currentPage(),
+                    'last_page' => $records->lastPage(),
+                    'per_page' => $records->perPage(),
+                    'total' => $records->total(),
+                    'from' => $records->firstItem(),
+                    'to' => $records->lastItem(),
+                    'links' => $records->links('pagination::tailwind')->render()
+                ]
+            ]);
+        }
             
         return view('assessment.topic', compact('records', 'allCategories'));
     }

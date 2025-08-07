@@ -2,12 +2,12 @@
 <html lang="en" dir="ltr">
     <head>
         <meta charset="utf-8">
-        <title>Starter Page | Minia - Admin & Dashboard Template</title>
+        <title>Infinecs Assessment Page</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta content="Tailwind Admin & Dashboard Template" name="description">
         <meta content="Themesbrand" name="author">
         <!-- App favicon -->
-        <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
+        <link rel="shortcut icon" href="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}">
         <!-- Tailwind CSS -->
         <link rel="stylesheet" href="{{ asset('css/tailwind2.css') }}">
     </head>

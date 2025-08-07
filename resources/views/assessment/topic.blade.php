@@ -444,23 +444,60 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters - SERVER SIDE
+        // Perform search with filters - AJAX VERSION
         function performFilteredSearch() {
             const searchTerm = searchInput.value.trim();
             const selectedCategoryIds = Array.from(selectedCategoriesForSearch);
             
-            // Build query parameters for server-side filtering
+            // Show loading state
+            const tableBody = document.querySelector('tbody');
+            const originalContent = tableBody.innerHTML;
+            tableBody.innerHTML = '<tr><td colspan="6" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Build query parameters for AJAX request
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
             if (selectedCategoryIds.length > 0) params.append('categories', selectedCategoryIds.join(','));
             
-            // Reload the page with filters applied
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = params.toString();
-            window.location.href = currentUrl.toString();
+            // Update URL without page reload
+            const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            
+            // Make AJAX request
+            fetch(`/topic?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table content
+                    tableBody.innerHTML = data.html;
+                    
+                    // Update pagination if exists
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.pagination && data.pagination.links) {
+                        paginationContainer.innerHTML = data.pagination.links;
+                    }
+                    
+                    // Reinitialize dynamic content
+                    initializeRowCheckboxes();
+                    initializeDropdowns();
+                } else {
+                    console.error('Search failed:', data.message);
+                    tableBody.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Error performing search:', error);
+                tableBody.innerHTML = originalContent;
+            });
         }
 
-        // Clear all filters - SERVER SIDE
+        // Clear all filters - AJAX VERSION
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -473,22 +510,113 @@
             // Close dropdowns
             categoryDropdownFilter.classList.add('hidden');
             
-            // Reload page without filters
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = '';
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tableBody = document.querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="6" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Update URL without page reload
+            const newUrl = window.location.pathname;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            
+            // Make AJAX request to get all topics
+            fetch('/topic', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table content
+                    tableBody.innerHTML = data.html;
+                    
+                    // Update pagination if exists
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.pagination && data.pagination.links) {
+                        paginationContainer.innerHTML = data.pagination.links;
+                    }
+                    
+                    // Reinitialize dynamic content
+                    initializeRowCheckboxes();
+                    initializeDropdowns();
+                } else {
+                    console.error('Clear filters failed:', data.message);
+                    location.reload(); // Fallback to page reload
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing filters:', error);
+                location.reload(); // Fallback to page reload
+            });
+        }
+
+        // Reinitialize row checkboxes after AJAX content update
+        function initializeRowCheckboxes() {
+            const selectAllElement = document.getElementById('checkbox-all');
+            const newRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            
+            // Update select all functionality
+            if (selectAllElement) {
+                // Remove old event listeners by cloning the element
+                const newSelectAll = selectAllElement.cloneNode(true);
+                selectAllElement.parentNode.replaceChild(newSelectAll, selectAllElement);
+                
+                newSelectAll.addEventListener('change', () => {
+                    newRowCheckboxes.forEach(cb => cb.checked = newSelectAll.checked);
+                    updateBulkDeleteVisibility();
+                });
+            }
+            
+            // Add event listeners to new checkboxes
+            newRowCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    updateSelectAllState();
+                    updateBulkDeleteVisibility();
+                });
+            });
+            
+            // Update state
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+        }
+
+        // Reinitialize dropdown functionality after AJAX content update
+        function initializeDropdowns() {
+            document.querySelectorAll('.dropdown').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                
+                if (toggle && menu) {
+                    // Remove existing event listener by cloning
+                    const newToggle = toggle.cloneNode(true);
+                    toggle.parentNode.replaceChild(newToggle, toggle);
+                    
+                    newToggle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                        menu.classList.toggle('hidden');
+                    });
+                }
+            });
         }
 
         // Remove the showNoResultsMessage function since server-side filtering handles this
 
         function updateSelectAllState() {
             // With server-side filtering, work with all checkboxes on current page
-            const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
+            const selectAll = document.getElementById('checkbox-all');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const checkedBoxes = Array.from(currentRowCheckboxes).filter(cb => cb.checked);
             
-            if (rowCheckboxes.length === 0) {
+            if (!selectAll) return; // Safety check
+            
+            if (currentRowCheckboxes.length === 0) {
                 selectAll.indeterminate = false;
                 selectAll.checked = false;
-            } else if (checkedBoxes.length === rowCheckboxes.length) {
+            } else if (checkedBoxes.length === currentRowCheckboxes.length) {
                 selectAll.indeterminate = false;
                 selectAll.checked = true;
             } else if (checkedBoxes.length > 0) {
@@ -542,7 +670,12 @@
         console.log('Initializing search functionality...');
         loadFiltersData();
         initializeFilters(); // Restore filters from URL
+        initializeRowCheckboxes(); // Initialize checkbox functionality
+        initializeDropdowns(); // Initialize dropdown functionality
         console.log('Search initialization complete');
+
+        // Make performFilteredSearch available globally for modal callbacks
+        window.performFilteredSearch = performFilteredSearch;
 
         // Initialize filters and restore state from URL parameters
         function initializeFilters() {
@@ -576,26 +709,17 @@
 
         function updateBulkDeleteVisibility() {
             // With server-side filtering, all rows on current page are visible
-            const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const anyChecked = Array.from(currentRowCheckboxes).some(cb => cb.checked);
+            
             if (bulkDeleteBtn) {
                 bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
             }
         }
 
-        if (selectAll) {
-            selectAll.addEventListener('change', () => {
-                // With server-side filtering, all rows on current page are visible
-                rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-                updateBulkDeleteVisibility();
-            });
-        }
-
-        rowCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                updateSelectAllState();
-                updateBulkDeleteVisibility();
-            });
-        });
+        // Note: selectAll and initial rowCheckboxes event listeners are now handled in initializeRowCheckboxes()
+        // This ensures they work properly after AJAX content updates
 
         // Bulk delete functionality
         if (bulkDeleteBtn) {
@@ -626,7 +750,8 @@
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        location.reload();
+                        // Refresh the current filtered view instead of full page reload
+                        performFilteredSearch();
                     } else {
                         alert('Error deleting topics: ' + (data.message || 'Unknown error'));
                     }
@@ -674,7 +799,7 @@
         // Export to Excel functionality
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
-            // Get current filter values
+            // Get current filter values from the search state
             const searchTerm = searchInput.value.trim();
             const selectedCategoryIds = Array.from(selectedCategoriesForSearch);
             
@@ -765,7 +890,8 @@
             if (data.success) {
                 alert(data.message);
                 closeAddTopicModal();
-                location.reload(); // Refresh the page to show new topic
+                // Refresh the current filtered view instead of full page reload
+                performFilteredSearch();
             } else {
                 alert('Error: ' + (data.message || 'Unknown error occurred'));
                 console.error('Server error:', data);
@@ -806,7 +932,9 @@
         .then(data => {
             if (data.success) {
                 alert(data.message);
-                location.reload(); // Refresh the page to show updated data
+                closeEditTopicModal();
+                // Refresh the current filtered view instead of full page reload
+                performFilteredSearch();
             } else {
                 alert('Error: ' + data.message);
             }
@@ -832,7 +960,8 @@
         .then(data => {
             if (data.success) {
                 alert(data.message);
-                location.reload(); // Refresh the page to remove deleted row
+                // Refresh the current filtered view instead of full page reload
+                performFilteredSearch();
             } else {
                 alert('Error: ' + data.message);
             }

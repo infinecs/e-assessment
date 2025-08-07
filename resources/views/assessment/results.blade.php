@@ -15,6 +15,16 @@
     border-color: #7c3aed !important;
 }
 
+/* Modal shadow overlay effect */
+.modal-shadow::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 49;
+    pointer-events: none;
+}
+
 .row-checkbox:checked:after,
 #checkbox-all:checked:after,
 .event-filter-checkbox:checked:after,
@@ -278,7 +288,7 @@
 
 <div id="details-modal"
     class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 transition">
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-2 transform scale-100 transition-all overflow-hidden border border-gray-200 dark:border-zinc-700 flex flex-col" style="max-height:90vh;">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-2 transform scale-100 transition-all overflow-hidden border border-gray-200 dark:border-zinc-700 flex flex-col" style="max-height:96vh; min-height:60vh;">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex justify-between items-center bg-gray-50 dark:bg-zinc-800">
             <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
@@ -290,7 +300,7 @@
             </button>
         </div>
         <!-- Body -->
-        <div class="p-6 overflow-y-auto flex-1 space-y-4 bg-white dark:bg-zinc-900" id="modal-content" style="min-height:100px; max-height:60vh;">
+        <div class="p-6 overflow-y-auto flex-1 space-y-4 bg-white dark:bg-zinc-900" id="modal-content" style="min-height:95px;">
             <div class="text-center text-gray-600 dark:text-gray-300">Loading...</div>
         </div>
         <!-- Footer -->
@@ -308,6 +318,55 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Export to Excel route from Blade
+        const exportExcelRoute = "{{ route('assessment.exportExcel') }}";
+
+        function handleExportExcel() {
+            const exportExcelBtn = document.getElementById('export-excel-btn');
+            // Get current filter values from the search state
+            const searchTerm = searchInput.value.trim();
+            const dateAnswered = dateAnsweredFilter.value;
+            const selectedEvents = Array.from(selectedEventsForSearch);
+            const selectedCategories = Array.from(selectedCategoriesForSearch);
+            const selectedTopics = Array.from(selectedTopicsForSearch);
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (dateAnswered) params.append('date_answered', dateAnswered);
+            if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
+            if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
+            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            // Create download URL using Laravel route
+            const exportUrl = `${exportExcelRoute}?${params.toString()}`;
+            // Show loading state
+            const originalText = exportExcelBtn.innerHTML;
+            exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportExcelBtn.disabled = true;
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.target = '_blank'; // Open in new tab to handle potential errors
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            // Reset button state after a delay
+            setTimeout(() => {
+                exportExcelBtn.innerHTML = originalText;
+                exportExcelBtn.disabled = false;
+            }, 2000);
+        }
+
+        // Attach export button event listener (initial and after AJAX)
+        function initializeExportButton() {
+            const exportExcelBtn = document.getElementById('export-excel-btn');
+            if (exportExcelBtn) {
+                exportExcelBtn.removeEventListener('click', handleExportExcel);
+                exportExcelBtn.addEventListener('click', handleExportExcel);
+            }
+        }
+
+        // Call on initial load
+        initializeExportButton();
         const selectAll = document.getElementById('checkbox-all');
         const rowCheckboxes = document.querySelectorAll('.row-checkbox');
         const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
@@ -640,7 +699,7 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform filtered search - SERVER SIDE
+        // Perform filtered search - AJAX VERSION
         function performFilteredSearch() {
             const searchTerm = searchInput.value.trim();
             const dateAnswered = dateAnsweredFilter.value;
@@ -648,7 +707,12 @@
             const selectedCategories = Array.from(selectedCategoriesForSearch);
             const selectedTopics = Array.from(selectedTopicsForSearch);
             
-            // Build query parameters for server-side filtering
+            // Show loading state
+            const tableBody = document.querySelector('tbody');
+            const originalContent = tableBody.innerHTML;
+            tableBody.innerHTML = '<tr><td colspan="8" class="px-3 py-2 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Build query parameters for AJAX request
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
             if (dateAnswered) params.append('date_answered', dateAnswered);
@@ -656,13 +720,46 @@
             if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
             if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
             
-            // Reload the page with filters applied
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = params.toString();
-            window.location.href = currentUrl.toString();
+            // Update URL without page reload
+            const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            
+            // Make AJAX request
+            fetch(`/results?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table content
+                    tableBody.innerHTML = data.html;
+                    
+                    // Update pagination if exists
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.pagination && data.pagination.links) {
+                        paginationContainer.innerHTML = data.pagination.links;
+                    }
+                    
+        // Reinitialize dynamic content
+        initializeRowCheckboxes();
+        initializeViewButtons();
+        initializeExportButton();
+                } else {
+                    console.error('Search failed:', data.message);
+                    tableBody.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Error performing search:', error);
+                tableBody.innerHTML = originalContent;
+            });
         }
 
-        // Clear all filters - SERVER SIDE
+        // Clear all filters - AJAX VERSION
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -693,10 +790,91 @@
             categoryDropdownFilter.classList.add('hidden');
             topicDropdownFilter.classList.add('hidden');
             
-            // Reload page without filters
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = '';
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tableBody = document.querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="8" class="px-3 py-2 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Update URL without page reload
+            const newUrl = window.location.pathname;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            
+            // Make AJAX request to get all results
+            fetch('/results', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table content
+                    tableBody.innerHTML = data.html;
+                    
+                    // Update pagination if exists
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.pagination && data.pagination.links) {
+                        paginationContainer.innerHTML = data.pagination.links;
+                    }
+                    
+        // Reinitialize dynamic content
+        initializeRowCheckboxes();
+        initializeViewButtons();
+        initializeExportButton();
+                } else {
+                    console.error('Clear filters failed:', data.message);
+                    location.reload(); // Fallback to page reload
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing filters:', error);
+                location.reload(); // Fallback to page reload
+            });
+        }
+
+        // Reinitialize row checkboxes after AJAX content update
+        function initializeRowCheckboxes() {
+            const selectAllElement = document.getElementById('checkbox-all');
+            const newRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            
+            // Update select all functionality
+            if (selectAllElement) {
+                // Remove old event listeners by cloning the element
+                const newSelectAll = selectAllElement.cloneNode(true);
+                selectAllElement.parentNode.replaceChild(newSelectAll, selectAllElement);
+                
+                newSelectAll.addEventListener('change', () => {
+                    newRowCheckboxes.forEach(cb => cb.checked = newSelectAll.checked);
+                    updateBulkDeleteVisibility();
+                });
+            }
+            
+            // Add event listeners to new checkboxes
+            newRowCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    updateSelectAllState();
+                    updateBulkDeleteVisibility();
+                });
+            });
+            
+            // Update state
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+        }
+
+        // Reinitialize view buttons after AJAX content update
+        function initializeViewButtons() {
+            document.querySelectorAll('.view-details').forEach(btn => {
+                // Remove existing event listeners by cloning
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', () => {
+                    openModal(newBtn.dataset.id);
+                });
+            });
         }
 
         // Show no results message (not needed for server-side filtering)
@@ -707,8 +885,12 @@
 
         function updateSelectAllState() {
             // With server-side filtering, all rows shown are visible
-            const visibleCheckboxes = Array.from(rowCheckboxes);
+            const selectAll = document.getElementById('checkbox-all');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const visibleCheckboxes = Array.from(currentRowCheckboxes);
             const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
+            
+            if (!selectAll) return; // Safety check
             
             if (visibleCheckboxes.length === 0) {
                 selectAll.indeterminate = false;
@@ -880,33 +1062,31 @@
 
         // Initialize filters
         initializeFilters();
+        initializeRowCheckboxes(); // Initialize checkbox functionality
+        initializeViewButtons(); // Initialize view button functionality
+
+        // Make functions available globally for modal callbacks
+        window.performFilteredSearch = performFilteredSearch;
+        window.openModal = openModal;
 
         function updateBulkDeleteVisibility() {
             // With server-side filtering, all rows shown are visible
-            const visibleCheckboxes = Array.from(rowCheckboxes);
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const visibleCheckboxes = Array.from(currentRowCheckboxes);
             const anyChecked = visibleCheckboxes.some(cb => cb.checked);
-            bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
+            
+            if (bulkDeleteBtn) {
+                bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
+            }
         }
 
-        if (selectAll) {
-            selectAll.addEventListener('change', () => {
-                // With server-side filtering, all visible rows are on current page
-                const visibleCheckboxes = Array.from(rowCheckboxes);
-                visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-                updateBulkDeleteVisibility();
-            });
-        }
-
-        rowCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                updateSelectAllState();
-                updateBulkDeleteVisibility();
-            });
-        });
+        // Note: selectAll and initial rowCheckboxes event listeners are now handled in initializeRowCheckboxes()
+        // This ensures they work properly after AJAX content updates
 
         bulkDeleteBtn.addEventListener('click', () => {
-            const selectedIds = Array.from(rowCheckboxes)
-                .map(cb => cb.checked ? cb.closest('tr').dataset.id : null)
+            const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
+                .map(cb => cb.closest('tr').dataset.id)
                 .filter(id => id !== null);
 
             if (selectedIds.length === 0) return;
@@ -925,7 +1105,8 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        location.reload();
+                        // Refresh the current filtered view instead of full page reload
+                        performFilteredSearch();
                     } else {
                         alert('Failed to delete records.');
                     }
@@ -936,7 +1117,7 @@
         // Export to Excel functionality
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
-            // Get current filter values
+            // Get current filter values from the search state
             const searchTerm = searchInput.value.trim();
             const dateAnswered = dateAnsweredFilter.value;
             const selectedEvents = Array.from(selectedEventsForSearch);
@@ -985,48 +1166,63 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeModal = document.getElementById('close-modal');
     const closeModalFooter = document.getElementById('close-modal-footer'); // optional if footer button exists
 
-    // Function to open modal and load details
-    function openModal(id) {
+    // Function to open modal and load details - make it globally available
+    window.openModal = function(id) {
         modal.classList.remove('hidden');
+        document.body.classList.add('modal-shadow');
         modalContent.innerHTML = 'Loading...';
 
         fetch(`/assessment/${id}/details`)
             .then(res => res.json())
             .then(data => {
-    if (data.status === 'success') {
-        let html = '';
-
-        // Show basic assessment information instead of questions/answers
-        html = `
-            <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-gray-50 dark:bg-zinc-800 p-4 rounded-lg">
-                        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-2">Assessment Summary</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            This assessment has been completed successfully.
-                        </p>
-                    </div>
-                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-2">Performance</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            View the score details in the main results table.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('modal-content').innerHTML = html;
-    } else {
-        document.getElementById('modal-content').innerHTML = '<div class="text-sm text-gray-600">Failed to load details.</div>';
-    }
-})
+                if (data.status === 'success' && data.questions) {
+                    let html = `<div class="space-y-6">
+                        <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-100 mb-4">Assessment Questions & Answers</h3>`;
+                    data.questions.forEach((q, idx) => {
+                        html += `<div class="border rounded-lg p-4 mb-4 bg-gray-50 dark:bg-zinc-800">
+                            <div class="font-semibold text-gray-900 dark:text-gray-100 mb-2">Q${idx+1}: ${q.text}</div>`;
+                        if (q.answers && q.answers.length > 0) {
+                            html += `<div class="space-y-2">`;
+                            q.answers.forEach((ans, aidx) => {
+                                // Determine if this is the participant's answer
+                                const isParticipant = ans.is_participant;
+                                // Determine if this is the correct answer
+                                const isCorrect = ans.is_correct;
+                                // If participant's answer is wrong, highlight correct
+                                let answerClass = '';
+                                if (isParticipant && isCorrect) {
+                                    answerClass = 'bg-green-100 dark:bg-green-900/20 border-green-500';
+                                } else if (isParticipant && !isCorrect) {
+                                    answerClass = 'bg-red-100 dark:bg-red-900/20 border-red-500';
+                                } else if (!isParticipant && isCorrect) {
+                                    answerClass = 'bg-blue-50 dark:bg-blue-900/20 border-blue-500';
+                                } else {
+                                    answerClass = 'bg-gray-50 dark:bg-zinc-700';
+                                }
+                                html += `<div class="border rounded p-2 ${answerClass}">
+                                    <span class="font-bold">${String.fromCharCode(65+aidx)}.</span> ${ans.text}
+                                    ${isParticipant ? '<span class="ml-2 px-2 py-1 text-xs rounded bg-yellow-200 text-yellow-900">Participant Answer</span>' : ''}
+                                    ${isCorrect ? '<span class="ml-2 px-2 py-1 text-xs rounded bg-green-200 text-green-900">Correct</span>' : ''}
+                                </div>`;
+                            });
+                            html += `</div>`;
+                        } else {
+                            html += `<div class="text-gray-500">No answers available.</div>`;
+                        }
+                        html += `</div>`;
+                    });
+                    html += `</div>`;
+                    modalContent.innerHTML = html;
+                } else {
+                    modalContent.innerHTML = '<div class="text-sm text-gray-600">Failed to load questions and answers.</div>';
+                }
+            })
             .catch(() => {
                 modalContent.innerHTML = 'Error fetching data.';
             });
     }
 
-    // Attach click to all "View Details" buttons
+    // Attach click to all "View Details" buttons (initial load)
     document.querySelectorAll('.view-details').forEach(btn => {
         btn.addEventListener('click', () => {
             openModal(btn.dataset.id);
@@ -1034,8 +1230,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Close modal on clicking close buttons
-    closeModal?.addEventListener('click', () => modal.classList.add('hidden'));
-    closeModalFooter?.addEventListener('click', () => modal.classList.add('hidden'));
+    closeModal?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-shadow');
+    });
+    closeModalFooter?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-shadow');
+    });
 
 });
 </script>

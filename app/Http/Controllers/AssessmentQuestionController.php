@@ -30,8 +30,75 @@ class AssessmentQuestionController extends Controller
         // Get paginated results
         $records = $query->paginate(10);
         
-        // Append query parameters to pagination links
-        $records->appends($request->query());
+        // Append query parameters to pagination links (exclude ajax parameter)
+        $records->appends($request->except('ajax'));
+        
+        // Handle AJAX requests
+        if ($request->ajax() || $request->has('ajax')) {
+            $html = '';
+            
+            if ($records->total() > 0) {
+                foreach ($records as $row) {
+                    $html .= '<tr class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600"
+                                data-question-id="' . $row->QuestionID . '"
+                                data-default-topic="' . htmlspecialchars($row->DefaultTopic ?? '') . '">
+                                <td class="w-4 p-3">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" data-question-id="' . $row->QuestionID . '"
+                                            class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                                    </div>
+                                </td>
+                                <td class="px-2 py-1.5 text-left">
+                                    <button type="button" 
+                                        class="text-blue-600 hover:text-blue-800 hover:underline text-left question-btn"
+                                        data-question-id="' . $row->QuestionID . '"
+                                        data-question-text="' . htmlspecialchars($row->QuestionText) . '">
+                                        ' . htmlspecialchars($row->QuestionText) . '
+                                    </button>
+                                </td>
+                                <td class="px-2 py-1.5">' . htmlspecialchars($row->DefaultTopic) . '</td>
+                                <td class="px-2 py-1.5 text-center">
+                                    <div class="relative inline-block dropdown">
+                                        <button type="button"
+                                            class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
+                                            <i class="bx bx-dots-vertical text-base"></i>
+                                        </button>
+                                        <div
+                                            class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
+                                            <div class="p-1 flex flex-col gap-1">
+                                                <button type="button"
+                                                    onclick="editQuestion(' . $row->QuestionID . ')"
+                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    <i class="mdi mdi-pencil text-base"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button type="button"
+                                                    onclick="deleteQuestion(' . $row->QuestionID . ')"
+                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    <i class="mdi mdi-trash-can text-base"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-1.5">' . \Carbon\Carbon::parse($row->DateCreate)->format('d M Y') . '</td>
+                                <td class="px-2 py-1.5">' . \Carbon\Carbon::parse($row->DateUpdate)->format('d M Y') . '</td>
+                            </tr>';
+                }
+            } else {
+                $html = '<tr><td colspan="7" class="px-2 py-1.5 text-center">No questions found</td></tr>';
+            }
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'total' => $records->total(),
+                'current_page' => $records->currentPage(),
+                'last_page' => $records->lastPage(),
+                'per_page' => $records->perPage()
+            ]);
+        }
         
         // Get all topics for the edit modal dropdown and filters
         $allTopics = DB::table('assessmenttopic')

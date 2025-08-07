@@ -707,7 +707,7 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters - SERVER SIDE
+        // Perform search with filters - SERVER SIDE (AJAX - no page refresh)
         function performFilteredSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
             const selectedCategoryNames = Array.from(selectedCategories);
@@ -718,14 +718,66 @@
             if (searchTerm) params.append('search', searchTerm);
             if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
             if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+            params.append('ajax', '1'); // Add AJAX flag
             
-            // Reload the page with filters applied
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = params.toString();
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Make AJAX request to get filtered results
+            fetch(`/events?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table body with new data
+                    tbody.innerHTML = data.html;
+                    
+                    // Update pagination info display (simple text)
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.total !== undefined) {
+                        let paginationText = `Showing ${data.total} results`;
+                        if (data.current_page && data.last_page && data.last_page > 1) {
+                            paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                        }
+                        paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
+                    }
+                    
+                    // Update URL without page refresh
+                    const currentUrl = new URL(window.location.href);
+                    const newParams = new URLSearchParams();
+                    if (searchTerm) newParams.append('search', searchTerm);
+                    if (selectedCategoryNames.length > 0) newParams.append('categories', selectedCategoryNames.join(','));
+                    if (selectedTopicNames.length > 0) newParams.append('topics', selectedTopicNames.join(','));
+                    currentUrl.search = newParams.toString();
+                    window.history.pushState({}, '', currentUrl.toString());
+                    
+                    // Re-initialize row checkboxes for new content
+                    initializeRowCheckboxes();
+                    
+                    // Update filter displays
+                    updateCategoryDisplay();
+                    updateTopicDisplay();
+                    updateClearAllButton();
+                    
+                    console.log(`AJAX search completed: ${data.total || 0} events found`);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    console.error('Search error:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('AJAX error:', error);
+                tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+            });
         }
 
-        // Clear all filters - SERVER SIDE
+        // Clear all filters - SERVER SIDE (AJAX - no page refresh)
         function clearAllFiltersAction() {
             // Clear all form inputs
             searchInput.value = '';
@@ -743,10 +795,52 @@
             categoryDropdown.classList.add('hidden');
             topicDropdown.classList.add('hidden');
             
-            // Reload page without filters
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = '';
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Make AJAX request to get all results (no filters)
+            fetch('/events?ajax=1', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table body with new data
+                    tbody.innerHTML = data.html;
+                    
+                    // Update pagination info display (simple text)
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.total !== undefined) {
+                        let paginationText = `Showing ${data.total} results`;
+                        if (data.current_page && data.last_page && data.last_page > 1) {
+                            paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                        }
+                        paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
+                    }
+                    
+                    // Update URL without page refresh
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.search = '';
+                    window.history.pushState({}, '', currentUrl.toString());
+                    
+                    // Re-initialize row checkboxes for new content
+                    initializeRowCheckboxes();
+                    
+                    console.log('Filters cleared successfully');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    console.error('Clear filters error:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('AJAX error:', error);
+                tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+            });
         }
 
         // Event listeners
@@ -888,7 +982,8 @@
         }
 
         function updateSelectAllState() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const visibleCheckboxes = Array.from(currentRowCheckboxes).filter(cb => 
                 cb.closest('tr').style.display !== 'none'
             );
             const checkedVisible = visibleCheckboxes.filter(cb => cb.checked);
@@ -909,7 +1004,8 @@
         }
 
         function updateBulkDeleteVisibility() {
-            const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const visibleCheckboxes = Array.from(currentRowCheckboxes).filter(cb => 
                 cb.closest('tr').style.display !== 'none'
             );
             const anyChecked = visibleCheckboxes.some(cb => cb.checked);
@@ -918,10 +1014,51 @@
             }
         }
 
+        // Initialize row checkboxes after AJAX content update
+        function initializeRowCheckboxes() {
+            // Remove old event listeners
+            const oldCheckboxes = document.querySelectorAll('.row-checkbox');
+            oldCheckboxes.forEach(cb => {
+                cb.removeEventListener('change', handleRowCheckboxChange);
+            });
+            
+            // Get new checkboxes and add event listeners
+            const newCheckboxes = document.querySelectorAll('.row-checkbox');
+            newCheckboxes.forEach(cb => {
+                cb.addEventListener('change', handleRowCheckboxChange);
+            });
+            
+            // Update select all state
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+            
+            // Re-initialize dropdown menus for new content
+            document.querySelectorAll('.dropdown').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
+
+                // Remove old listeners by cloning
+                const newToggle = toggle.cloneNode(true);
+                toggle.parentNode.replaceChild(newToggle, toggle);
+
+                newToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                    menu.classList.toggle('hidden');
+                });
+            });
+        }
+
+        // Handle row checkbox change
+        function handleRowCheckboxChange() {
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+        }
+
         // Checkbox management
         if (selectAll) {
             selectAll.addEventListener('change', () => {
-                const visibleCheckboxes = Array.from(rowCheckboxes).filter(cb => 
+                const visibleCheckboxes = Array.from(document.querySelectorAll('.row-checkbox')).filter(cb => 
                     cb.closest('tr').style.display !== 'none'
                 );
                 visibleCheckboxes.forEach(cb => cb.checked = selectAll.checked);
@@ -930,10 +1067,7 @@
         }
 
         rowCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                updateSelectAllState();
-                updateBulkDeleteVisibility();
-            });
+            cb.addEventListener('change', handleRowCheckboxChange);
         });
 
         // Bulk delete functionality
@@ -1012,7 +1146,7 @@
             addEvent();
         });
 
-        // Export to Excel functionality
+        // Export to Excel functionality (uses current filters)
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
             // Get current filter values

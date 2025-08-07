@@ -633,7 +633,7 @@
             clearAllFilters.classList.toggle('hidden', !hasFilters);
         }
 
-        // Perform search with filters - SERVER SIDE
+        // Perform search with filters - SERVER SIDE (AJAX - no page refresh)
         function performFilteredSearch() {
             const searchTerm = searchInput.value.trim();
             const selectedTopicIds = Array.from(selectedTopicsForSearch);
@@ -642,14 +642,65 @@
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
             if (selectedTopicIds.length > 0) params.append('topics', selectedTopicIds.join(','));
+            params.append('ajax', '1'); // Add AJAX flag
             
-            // Reload the page with filters applied
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = params.toString();
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Make AJAX request to get filtered results
+            fetch(`/question?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table body with new data
+                    tbody.innerHTML = data.html;
+                    
+                    // Update pagination info display (simple text)
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.total !== undefined) {
+                        let paginationText = `Showing ${data.total} results`;
+                        if (data.current_page && data.last_page && data.last_page > 1) {
+                            paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                        }
+                        paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
+                    }
+                    
+                    // Update URL without page refresh
+                    const currentUrl = new URL(window.location.href);
+                    const newParams = new URLSearchParams();
+                    if (searchTerm) newParams.append('search', searchTerm);
+                    if (selectedTopicIds.length > 0) newParams.append('topics', selectedTopicIds.join(','));
+                    currentUrl.search = newParams.toString();
+                    window.history.pushState({}, '', currentUrl.toString());
+                    
+                    // Re-initialize row checkboxes and buttons for new content
+                    initializeRowCheckboxes(); // Must run after filtering completes
+                    initializeQuestionButtons();
+                    
+                    // Update filter displays
+                    updateTopicDisplay();
+                    updateClearAllButton();
+                    
+                    console.log(`AJAX search completed: ${data.total || 0} questions found`);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    console.error('Search error:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('AJAX error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+            });
         }
 
-        // Clear all filters - SERVER SIDE
+        // Clear all filters - SERVER SIDE (AJAX - no page refresh)
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
@@ -662,22 +713,173 @@
             // Close dropdowns
             topicDropdownFilter.classList.add('hidden');
             
-            // Reload page without filters
-            const currentUrl = new URL(window.location.href);
-            currentUrl.search = '';
-            window.location.href = currentUrl.toString();
+            // Show loading state
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+            
+            // Make AJAX request to get all results (no filters)
+            fetch('/question?ajax=1', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update table body with new data
+                    tbody.innerHTML = data.html;
+                    
+                    // Update pagination info display (simple text)
+                    const paginationContainer = document.querySelector('.mt-4');
+                    if (paginationContainer && data.total !== undefined) {
+                        let paginationText = `Showing ${data.total} results`;
+                        if (data.current_page && data.last_page && data.last_page > 1) {
+                            paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                        }
+                        paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
+                    }
+                    
+                    // Update URL without page refresh
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.search = '';
+                    window.history.pushState({}, '', currentUrl.toString());
+                    
+                    // Re-initialize row checkboxes and buttons for new content
+                    initializeRowCheckboxes();
+                    initializeQuestionButtons();
+                    
+                    console.log('Filters cleared successfully');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    console.error('Clear filters error:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('AJAX error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+            });
         }
 
         // Remove the showNoResultsMessage function since server-side filtering handles this
 
-        function updateSelectAllState() {
-            // With server-side filtering, work with all checkboxes on current page
-            const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
+        // Initialize row checkboxes after AJAX content update
+        function initializeRowCheckboxes() {
+            // Remove old event listeners
+            const oldCheckboxes = document.querySelectorAll('.row-checkbox');
+            oldCheckboxes.forEach(cb => {
+                cb.removeEventListener('change', handleRowCheckboxChange);
+            });
             
-            if (rowCheckboxes.length === 0) {
+            // Get new checkboxes and add event listeners
+            const newCheckboxes = document.querySelectorAll('.row-checkbox');
+            newCheckboxes.forEach(cb => {
+                // Remove previous listeners by cloning
+                const newCb = cb.cloneNode(true);
+                cb.parentNode.replaceChild(newCb, cb);
+                newCb.addEventListener('change', function() {
+                    handleRowCheckboxChange.call(this);
+                    updateBulkDeleteVisibility();
+                });
+            });
+
+            // Update select all functionality
+            const selectAllElement = document.getElementById('checkbox-all');
+            if (selectAllElement) {
+                // Remove previous listeners by cloning
+                const newSelectAll = selectAllElement.cloneNode(true);
+                selectAllElement.parentNode.replaceChild(newSelectAll, selectAllElement);
+                newSelectAll.addEventListener('change', () => {
+                    const checkboxes = document.querySelectorAll('.row-checkbox');
+                    checkboxes.forEach(cb => cb.checked = newSelectAll.checked);
+                    updateBulkDeleteVisibility();
+                    updateSelectAllState();
+                });
+            }
+
+            // Update select all state and bulk delete button visibility
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+
+            // Re-initialize dropdown menus for new content
+            document.querySelectorAll('.dropdown').forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                if (toggle) {
+                    const newToggle = toggle.cloneNode(true);
+                    toggle.parentNode.replaceChild(newToggle, toggle);
+                    newToggle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                        menu.classList.toggle('hidden');
+                    });
+                }
+            });
+        }
+
+        // Initialize question buttons after AJAX content update
+        function initializeQuestionButtons() {
+            // Remove old event listeners and add new ones for question view buttons
+            document.querySelectorAll('.question-btn').forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', function() {
+                    currentQuestionId = this.dataset.questionId;
+                    const questionText = this.dataset.questionText;
+                    
+                    modalQuestionText.textContent = questionText;
+                    loadAnswers(currentQuestionId);
+                    modal.classList.remove('hidden');
+                });
+            });
+            
+            // Reinitialize edit question button handlers
+            document.querySelectorAll('.edit-question-btn').forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentEditQuestionId = this.dataset.questionId;
+                    loadQuestionForEdit(currentEditQuestionId);
+                });
+            });
+
+            // Reinitialize delete question button handlers
+            document.querySelectorAll('.delete-question-btn').forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const questionId = this.dataset.questionId;
+                    deleteQuestion(questionId);
+                });
+            });
+        }
+
+        // Handle row checkbox change
+        function handleRowCheckboxChange() {
+            updateSelectAllState();
+            updateBulkDeleteVisibility();
+        }
+
+        function updateSelectAllState() {
+            // With AJAX content, work with current checkboxes on page
+            const selectAll = document.getElementById('checkbox-all');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const checkedBoxes = Array.from(currentRowCheckboxes).filter(cb => cb.checked);
+            
+            if (!selectAll) return; // Safety check
+            
+            if (currentRowCheckboxes.length === 0) {
                 selectAll.indeterminate = false;
                 selectAll.checked = false;
-            } else if (checkedBoxes.length === rowCheckboxes.length) {
+            } else if (checkedBoxes.length === currentRowCheckboxes.length) {
                 selectAll.indeterminate = false;
                 selectAll.checked = true;
             } else if (checkedBoxes.length > 0) {
@@ -686,6 +888,17 @@
             } else {
                 selectAll.indeterminate = false;
                 selectAll.checked = false;
+            }
+        }
+
+        function updateBulkDeleteVisibility() {
+            // With AJAX content, work with current checkboxes on page
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            const currentRowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const anyChecked = Array.from(currentRowCheckboxes).some(cb => cb.checked);
+            
+            if (bulkDeleteBtn) {
+                bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
             }
         }
 
@@ -706,8 +919,17 @@
         });
 
         topicSearchFilter.addEventListener('input', renderTopicList);
-        performSearchBtn.addEventListener('click', performFilteredSearch);
-        clearAllFilters.addEventListener('click', clearAllFiltersAction);
+        performSearchBtn.addEventListener('click', function() {
+            const searchTerm = searchInput.value.trim();
+            const selectedTopicIds = Array.from(selectedTopicsForSearch);
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (selectedTopicIds.length > 0) params.append('topics', selectedTopicIds.join(','));
+            window.location.href = '/question?' + params.toString();
+        });
+        clearAllFilters.addEventListener('click', function() {
+            window.location.href = '/question';
+        });
         
         // Real-time search as user types with debouncing
         searchInput.addEventListener('input', () => {
@@ -802,28 +1024,8 @@
         let selectedTopicsForEdit = new Set();
         let addSelectedTopics = new Set();
 
-        function updateBulkDeleteVisibility() {
-            // With server-side filtering, all rows on current page are visible
-            const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
-            if (bulkDeleteBtn) {
-                bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
-            }
-        }
-
-        if (selectAll) {
-            selectAll.addEventListener('change', () => {
-                // With server-side filtering, all rows on current page are visible
-                rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-                updateBulkDeleteVisibility();
-            });
-        }
-
-        rowCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                updateSelectAllState();
-                updateBulkDeleteVisibility();
-            });
-        });
+        // Note: selectAll and initial rowCheckboxes event listeners are now handled in initializeRowCheckboxes()
+        // This ensures they work properly after AJAX content updates
 
         // Bulk delete functionality
         if (bulkDeleteBtn) {
@@ -854,7 +1056,8 @@
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        location.reload();
+                        // Refresh current view with AJAX instead of page reload
+                        performFilteredSearch();
                     } else {
                         alert('Error deleting questions: ' + (data.message || 'Unknown error'));
                     }
@@ -1130,7 +1333,7 @@
             addTopicSearch.value = '';
         }
         
-        // Export to Excel functionality
+        // Export to Excel functionality (uses current filters)
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
             // Get current filter values
@@ -1165,34 +1368,29 @@
             }, 2000);
         });
 
-        // Question click handler
-        document.querySelectorAll('.question-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                currentQuestionId = this.dataset.questionId;
-                const questionText = this.dataset.questionText;
-                
-                modalQuestionText.textContent = questionText;
-                loadAnswers(currentQuestionId);
-                modal.classList.remove('hidden');
-            });
-        });
+        // Always update bulk delete button visibility on page load
+        updateBulkDeleteVisibility();
+
+        // Question click handler - initialize for existing content
+        initializeRowCheckboxes();
+        initializeQuestionButtons();
 
         // Modal close handlers
         closeModal.addEventListener('click', closeModalHandler);
         cancelBtn.addEventListener('click', closeModalHandler);
-        
+
         // Edit modal close handlers
         closeEditModal.addEventListener('click', closeEditModalHandler);
         cancelEditBtn.addEventListener('click', closeEditModalHandler);
-        
+
         // Add modal handlers
         addQuestionBtn.addEventListener('click', function() {
             addModal.classList.remove('hidden');
         });
-        
+
         closeAddModal.addEventListener('click', closeAddModalHandler);
         cancelAddBtn.addEventListener('click', closeAddModalHandler);
-        
+
         function closeAddModalHandler() {
             addModal.classList.add('hidden');
             addQuestionForm.reset();
@@ -1200,12 +1398,12 @@
             addTopicSearch.value = '';
             addTopicDropdown.classList.add('hidden');
         }
-        
+
         function closeModalHandler() {
             modal.classList.add('hidden');
             currentQuestionId = null;
         }
-        
+
         function closeEditModalHandler() {
             editModal.classList.add('hidden');
             currentEditQuestionId = null;
@@ -1215,25 +1413,8 @@
             topicDropdown.classList.add('hidden');
         }
 
-        // Edit question button handlers
-        document.querySelectorAll('.edit-question-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                currentEditQuestionId = this.dataset.questionId;
-                loadQuestionForEdit(currentEditQuestionId);
-            });
-        });
-
-        // Delete question button handlers
-        document.querySelectorAll('.delete-question-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const questionId = this.dataset.questionId;
-                deleteQuestion(questionId);
-            });
-        });
+        // Note: Edit and delete question button handlers are now in initializeQuestionButtons()
+        // This ensures they work properly after AJAX content updates
 
         // Load answers for a question
         function loadAnswers(questionId) {

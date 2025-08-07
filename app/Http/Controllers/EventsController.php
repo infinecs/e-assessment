@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssessmentEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class EventsController extends Controller
 {
@@ -51,7 +52,76 @@ class EventsController extends Controller
 
         // Paginate the filtered results and preserve query parameters
         $records = $query->paginate(10);
-        $records->appends($request->all());
+        $records->appends($request->except('ajax'));
+        
+        // Handle AJAX requests
+        if ($request->ajax() || $request->has('ajax')) {
+            $html = '';
+            
+            if ($records->total() > 0) {
+                foreach ($records as $row) {
+                    $html .= '<tr data-event-id="' . $row->EventID . '"
+                                data-event-name="' . htmlspecialchars($row->EventName) . '"
+                                data-category-name="' . htmlspecialchars($row->CategoryName) . '"
+                                class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
+                                <td class="w-4 p-3">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" data-event-id="' . $row->EventID . '"
+                                            class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                                        <label class="sr-only">checkbox</label>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-1.5">' . htmlspecialchars($row->EventName) . '</td>
+                                <td class="px-2 py-1.5">
+                                    <a href="' . url('participantRegister/' . urlencode($row->EventCode)) . '"
+                                        class="text-blue-600 hover:underline" target="_blank">
+                                        ' . htmlspecialchars($row->EventCode) . '
+                                    </a>
+                                </td>
+                                <td class="px-2 py-1.5 text-center">
+                                    <div class="relative inline-block dropdown">
+                                        <button type="button"
+                                            class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
+                                            <i class="bx bx-dots-vertical text-base"></i>
+                                        </button>
+                                        <div
+                                            class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
+                                            <div class="p-1 flex flex-col gap-1">
+                                                <button type="button"
+                                                    onclick="editEvent(' . $row->EventID . ', \'' . addslashes($row->EventName) . '\', \'' . addslashes($row->EventCode) . '\', ' . $row->QuestionLimit . ', ' . $row->DurationEachQuestion . ', \'' . $row->StartDate . '\', \'' . $row->EndDate . '\')"
+                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    <i class="mdi mdi-pencil text-base"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button type="button"
+                                                    onclick="deleteEvent(' . $row->EventID . ')"
+                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    <i class="mdi mdi-trash-can text-base"></i>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-1.5">' . $row->QuestionLimit . '</td>
+                                <td class="px-2 py-1.5">' . $row->DurationEachQuestion . '</td>
+                                <td class="px-2 py-1.5">' . Carbon::parse($row->StartDate)->format('d M Y') . '</td>
+                                <td class="px-2 py-1.5">' . Carbon::parse($row->EndDate)->format('d M Y') . '</td>
+                            </tr>';
+                }
+            } else {
+                $html = '<tr><td colspan="8" class="px-2 py-1.5 text-center">No events found</td></tr>';
+            }
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'total' => $records->total(),
+                'current_page' => $records->currentPage(),
+                'last_page' => $records->lastPage(),
+                'per_page' => $records->perPage()
+            ]);
+        }
             
         // Get all categories for the edit modal dropdown
         $allCategories = DB::table('assessmentcategory')
