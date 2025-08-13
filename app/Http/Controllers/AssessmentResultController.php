@@ -144,19 +144,37 @@ class AssessmentResultController extends Controller
 
     public function bulkDelete(Request $request)
     {
-        $ids = $request->input('ids', []);
-
-        if (!empty($ids)) {
-            // First delete related resultset rows
-            AssessmentResultSet::whereIn('AssessmentID', $ids)->delete();
-
-            // Then delete the assessments themselves
-            Assessment::whereIn('AssessmentID', $ids)->delete();
-
-            return response()->json(['status' => 'success']);
+        // Accept both JSON and form data for ids
+        $ids = $request->input('ids');
+        if (empty($ids) && $request->isJson()) {
+            $data = $request->json()->all();
+            $ids = $data['ids'] ?? [];
         }
+        if (!is_array($ids)) {
+            // Try to decode if it's a string
+            $ids = json_decode($ids, true);
+        }
+        if (!is_array($ids) || empty($ids)) {
+            return response()->json(['status' => 'error', 'message' => 'No IDs provided', 'debug' => ['ids' => $ids, 'raw' => $request->all()]], 400);
+        }
+        // Find participant IDs for the selected assessments
+        $participantIds = Assessment::whereIn('AssessmentID', $ids)->pluck('ParticipantID')->unique()->toArray();
 
-        return response()->json(['status' => 'no_ids'], 400);
+        // First delete related resultset rows
+        AssessmentResultSet::whereIn('AssessmentID', $ids)->delete();
+        // Then delete the assessments themselves
+        Assessment::whereIn('AssessmentID', $ids)->delete();
+
+        // Delete participants only if they have no other assessments
+        $deletedParticipants = [];
+        foreach ($participantIds as $pid) {
+            $remainingAssessments = Assessment::where('ParticipantID', $pid)->count();
+            if ($remainingAssessments === 0) {
+                \App\Models\Participant::where('id', $pid)->delete();
+                $deletedParticipants[] = $pid;
+            }
+        }
+        return response()->json(['status' => 'success', 'deleted_ids' => $ids, 'deleted_participants' => $deletedParticipants]);
     }
 
    public function details($id)

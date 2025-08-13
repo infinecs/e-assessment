@@ -102,7 +102,7 @@
                             <button type="button" id="eventFilterBtn" 
                                 class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 flex items-center gap-2">
                                 <i class="fas fa-calendar-alt text-gray-500"></i>
-                                <span id="eventFilterText">Events</span>
+                                <span id="eventFilterText">Assessments</span>
                                 <span id="eventCount" class="hidden bg-violet-500 text-white text-xs px-2 py-1 rounded-full">0</span>
                                 <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                             </button>
@@ -111,10 +111,10 @@
                             <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                                 <div class="p-3">
                                     <div class="flex items-center justify-between mb-3">
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Events</span>
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Assessments</span>
                                         <button type="button" id="clearEvents" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
                                     </div>
-                                    <input type="text" id="eventSearchFilter" placeholder="Search events..." 
+                                    <input type="text" id="eventSearchFilter" placeholder="Search assessments..." 
                                         class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
                                     <div id="eventListFilter" class="space-y-2">
                                         <!-- Events will be loaded here -->
@@ -178,7 +178,7 @@
                         <!-- Date Filter -->
                         <div class="relative">
                             <input type="date" id="dateAnsweredFilter" placeholder="Date Answered"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
+                                class="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white dark:bg-zinc-700 dark:border-zinc-600 dark:text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500">
                         </div>
 
                         <!-- Search Button -->
@@ -195,26 +195,30 @@
                         </button>
                     </div>
 
-                    <!-- Bulk Delete Button (only when rows are selected) -->
-                    <button id="bulk-delete-btn" type="button"
-                        class="hidden px-6 py-2 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
-                        Delete
-                    </button>
+                    
                 </div>
 
-                <!-- Export Button Row -->
-                <div class="flex justify-start">
-                    <button id="export-excel-btn" type="button"
-                        class="px-6 py-2 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
-                        <i class="fas fa-file-excel"></i>
-                        Export to Excel
-                    </button>
+                <!-- Export and Bulk Delete Buttons Row -->
+                <div class="flex justify-between items-center w-full mt-2">
+                    <div>
+                        <button id="export-excel-btn" type="button"
+                            class="px-6 py-2 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
+                            <i class="fas fa-file-csv"></i>
+                            Export to CSV
+                        </button>
+                    </div>
+                    <div>
+                        <button id="bulk-delete-btn" type="button"
+                            class="hidden px-6 py-2 text-white bg-red-500 rounded hover:bg-red-600 text-sm">
+                            Delete
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="card-body">
                 <div class="isolate">
-                    <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                    <div class="relative rounded-lg" style="max-height: 500px; min-height: 350px; overflow-y: auto; overflow-x: auto; display: flex; flex-direction: column; justify-content: flex-start;">
                         <table class="w-full min-w-[1100px] text-sm text-center text-gray-500">
                             <thead
                                 class="text-xs text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">
@@ -369,7 +373,53 @@
         initializeExportButton();
         const selectAll = document.getElementById('checkbox-all');
         const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-        const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+        // Bulk delete button initialization
+        function initializeBulkDeleteButton() {
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            if (!bulkDeleteBtn) return;
+            // Remove previous listeners by cloning
+            const newBtn = bulkDeleteBtn.cloneNode(true);
+            bulkDeleteBtn.parentNode.replaceChild(newBtn, bulkDeleteBtn);
+            newBtn.addEventListener('click', () => {
+                const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
+                    .map(cb => {
+                        let tr = cb.closest('tr');
+                        return tr && tr.dataset.id ? tr.dataset.id : null;
+                    })
+                    .filter(id => id !== null);
+                if (selectedIds.length === 0) return;
+                if (!confirm(`Delete ${selectedIds.length} records?`)) return;
+                fetch('{{ route('assessment.bulkDelete') }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ids: selectedIds
+                    })
+                })
+                .then(async res => {
+                    let data;
+                    try {
+                        data = await res.json();
+                    } catch (e) {
+                        throw new Error('Invalid JSON response');
+                    }
+                    if (data.status === 'success') {
+                        performFilteredSearch();
+                    } else {
+                        let msg = 'Failed to delete records.';
+                        if (data.message) msg += '\n' + data.message;
+                        if (data.debug) msg += '\nDebug: ' + JSON.stringify(data.debug);
+                        alert(msg);
+                    }
+                })
+                .catch(err => {
+                    alert('Error deleting records. ' + (err && err.message ? err.message : ''));
+                });
+            });
+        }
         
         // Search elements
         const searchInput = document.getElementById('searchInput');
@@ -748,6 +798,7 @@
         initializeRowCheckboxes();
         initializeViewButtons();
         initializeExportButton();
+        initializeBulkDeleteButton();
                 } else {
                     console.error('Search failed:', data.message);
                     tableBody.innerHTML = originalContent;
@@ -822,6 +873,7 @@
         initializeRowCheckboxes();
         initializeViewButtons();
         initializeExportButton();
+        initializeBulkDeleteButton();
                 } else {
                     console.error('Clear filters failed:', data.message);
                     location.reload(); // Fallback to page reload
@@ -1064,6 +1116,7 @@
         initializeFilters();
         initializeRowCheckboxes(); // Initialize checkbox functionality
         initializeViewButtons(); // Initialize view button functionality
+        initializeBulkDeleteButton(); // Initialize bulk delete button functionality
 
         // Make functions available globally for modal callbacks
         window.performFilteredSearch = performFilteredSearch;
@@ -1086,32 +1139,45 @@
 
         bulkDeleteBtn.addEventListener('click', () => {
             const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                .map(cb => cb.closest('tr').dataset.id)
+                .map(cb => {
+                    // Find the closest tr with a data-id attribute
+                    let tr = cb.closest('tr');
+                    return tr && tr.dataset.id ? tr.dataset.id : null;
+                })
                 .filter(id => id !== null);
 
             if (selectedIds.length === 0) return;
             if (!confirm(`Delete ${selectedIds.length} records?`)) return;
 
             fetch('{{ route('assessment.bulkDelete') }}', {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ids: selectedIds
-                    })
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ids: selectedIds
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Refresh the current filtered view instead of full page reload
-                        performFilteredSearch();
-                    } else {
-                        alert('Failed to delete records.');
-                    }
-                })
-                .catch(err => alert('Error deleting records.'));
+            })
+            .then(async res => {
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    throw new Error('Invalid JSON response');
+                }
+                if (data.status === 'success') {
+                    performFilteredSearch();
+                } else {
+                    let msg = 'Failed to delete records.';
+                    if (data.message) msg += '\n' + data.message;
+                    if (data.debug) msg += '\nDebug: ' + JSON.stringify(data.debug);
+                    alert(msg);
+                }
+            })
+            .catch(err => {
+                alert('Error deleting records. ' + (err && err.message ? err.message : ''));
+            });
         });
 
         // Export to Excel functionality

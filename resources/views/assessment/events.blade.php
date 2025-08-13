@@ -49,7 +49,7 @@
 <div class="grid grid-cols-1 pb-6">
     <div class="md:flex items-center justify-between px-[2px]">
         <h4 class="text-[18px] font-medium text-gray-800 mb-sm-0 grow dark:text-gray-100 mb-2 md:mb-0">
-            Assessment Events
+            Assessment 
         </h4>
         <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 ltr:md:space-x-3 rtl:md:space-x-0">
@@ -65,7 +65,7 @@
                             class="font-semibold text-gray-600 align-middle far fa-angle-right text-13 rtl:rotate-180 dark:text-zinc-100"></i>
                         <a href="#"
                             class="text-sm font-medium text-gray-500 ltr:ml-2 rtl:mr-2 hover:text-gray-900 ltr:md:ml-2 rtl:md:mr-2 dark:text-gray-100 dark:hover:text-white">
-                            Assessment Events
+                            Assessments
                         </a>
                     </div>
                 </li>
@@ -82,7 +82,7 @@
             <div class="flex items-center gap-3">
                 <div class="relative">
                     <!-- Main Search Input -->
-                    <input type="text" id="searchInput" placeholder="Search events by name or code..." 
+                    <input type="text" id="searchInput" placeholder="Search Assessment Name/Code" 
                         class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm w-64 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:placeholder-gray-400">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-search text-gray-400 text-sm"></i>
@@ -157,8 +157,8 @@
                 <!-- Export button -->
                 <button id="export-excel-btn" type="button"
                     class="px-6 py-1.5 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
-                    <i class="fas fa-file-excel"></i>
-                    Export to Excel
+                    <i class="fas fa-file-csv"></i>
+                    Export to CSV
                 </button>
 
                 <!-- Delete button (hidden by default) -->
@@ -177,7 +177,7 @@
 
         <div class="card-body">
             <div class="isolate">
-                <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                <div class="relative rounded-lg" style="max-height: 500px; min-height: 350px; overflow-y: auto; overflow-x: auto; display: flex; flex-direction: column; justify-content: flex-start;">
                     <table class="w-full min-w-[1100px] text-xs text-center text-gray-500 leading-tight">
                         <thead
                             class="text-[11px] text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">
@@ -189,8 +189,8 @@
                                     <label for="checkbox-all" class="sr-only">checkbox</label>
                                 </div>
                             </th>
-                            <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Event Name</th>
-                            <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Event Code</th>
+                            <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Assessment Name</th>
+                            <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Assessment Code</th>
                             <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Actions</th>
                             <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Question Limit</th>
                             <th class="px-2 py-1.5 bg-gray-50 dark:bg-zinc-700">Duration Each Question</th>
@@ -203,6 +203,7 @@
                             <tr
                                 class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600"
                                 data-event-id="{{ $row->EventID }}"
+                                data-category-id="{{ $row->CategoryID ?? '' }}"
                                 data-category-name="{{ $row->CategoryName ?? '' }}"
                                 data-topic-names="">
                                 <td class="w-4 p-3">
@@ -211,7 +212,11 @@
                                             class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                                     </div>
                                 </td>
-                                <td class="px-2 py-1.5">{{ $row->EventName }}</td>
+                                <td class="px-2 py-1.5">
+                                    <a href="#" class="assessment-info-link text-violet-600 hover:underline" data-event-id="{{ $row->EventID }}">
+                                        {{ $row->EventName }}
+                                    </a>
+                                </td>
                                 <td class="px-2 py-1.5">
                                     <a href="{{ url('participantRegister/' . urlencode($row->EventCode)) }}"
     class="text-blue-600 hover:underline" target="_blank">
@@ -250,7 +255,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="px-2 py-1.5 text-center">No events found</td>
+                                <td colspan="12" class="px-2 py-1.5 text-center">No assessment found</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -277,15 +282,15 @@
                             <!-- LEFT: Input Fields (1/3) -->
                             <div class="w-1/3 space-y-4">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
-                                    Edit Event
+                                    Edit Assessment
                                 </h3>
                                 <div>
-                                    <label for="edit_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Name</label>
+                                    <label for="edit_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assessment Name</label>
                                     <input type="text" id="edit_event_name" name="EventName" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
                                 <div>
-                                    <label for="edit_event_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Code</label>
+                                    <label for="edit_event_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assessment Code</label>
                                     <input type="text" id="edit_event_code" name="EventCode" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
@@ -326,12 +331,12 @@
                             <!-- RIGHT: Topic Checkboxes (2/3) -->
                             <div class="w-2/3">
                                 <div id="topics-section" class="hidden">
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Event</label>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Assessment</label>
                                     <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="eventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Select specific topics from the category for this event.
+                                        Select specific topics from the category for this assessment.
                                     </div>
                                 </div>
                             </div>
@@ -341,7 +346,7 @@
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Update Event
+                        Update Assessment
                     </button>
                     <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
                         Cancel
@@ -368,15 +373,15 @@
                             <!-- LEFT: Input Fields (1/3) -->
                             <div class="w-1/3 space-y-4">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
-                                    Add New Event
+                                    Add New Assessment
                                 </h3>
                                 <div>
-                                    <label for="add_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Name</label>
+                                    <label for="add_event_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assessment Name</label>
                                     <input type="text" id="add_event_name" name="EventName" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
                                 <div>
-                                    <label for="add_event_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Code</label>
+                                    <label for="add_event_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assessment Code</label>
                                     <input type="text" id="add_event_code" name="EventCode" required
                                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
                                 </div>
@@ -417,12 +422,12 @@
                             <!-- RIGHT: Topic Checkboxes (2/3) -->
                             <div class="w-2/3">
                                 <div id="add-topics-section" class="hidden">
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Event</label>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Assessment</label>
                                     <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addEventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Select at least one topic from the category for this event.
+                                        Select at least one topic from the category for this assessment.
                                     </div>
                                 </div>
                             </div>
@@ -432,7 +437,7 @@
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Add Event
+                        Add Assessment
                     </button>
                     <button type="button" onclick="closeAddModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
                         Cancel
@@ -737,17 +742,21 @@
                 if (data.success) {
                     // Update table body with new data
                     tbody.innerHTML = data.html;
-                    
-                    // Update pagination info display (simple text)
+
+                    // Restore pagination if provided
                     const paginationContainer = document.querySelector('.mt-4');
-                    if (paginationContainer && data.total !== undefined) {
-                        let paginationText = `Showing ${data.total} results`;
-                        if (data.current_page && data.last_page && data.last_page > 1) {
-                            paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                    if (paginationContainer) {
+                        if (data.pagination && data.pagination.links) {
+                            paginationContainer.innerHTML = data.pagination.links;
+                        } else if (data.total !== undefined) {
+                            let paginationText = `Showing ${data.total} results`;
+                            if (data.current_page && data.last_page && data.last_page > 1) {
+                                paginationText += ` (Page ${data.current_page} of ${data.last_page})`;
+                            }
+                            paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
                         }
-                        paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
                     }
-                    
+
                     // Update URL without page refresh
                     const currentUrl = new URL(window.location.href);
                     const newParams = new URLSearchParams();
@@ -756,15 +765,16 @@
                     if (selectedTopicNames.length > 0) newParams.append('topics', selectedTopicNames.join(','));
                     currentUrl.search = newParams.toString();
                     window.history.pushState({}, '', currentUrl.toString());
-                    
-                    // Re-initialize row checkboxes for new content
+
+                    // Re-initialize row checkboxes and assessment info links for new content
                     initializeRowCheckboxes();
-                    
+                    initializeAssessmentInfoLinks();
+
                     // Update filter displays
                     updateCategoryDisplay();
                     updateTopicDisplay();
                     updateClearAllButton();
-                    
+
                     console.log(`AJAX search completed: ${data.total || 0} events found`);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
@@ -812,7 +822,7 @@
                 if (data.success) {
                     // Update table body with new data
                     tbody.innerHTML = data.html;
-                    
+
                     // Update pagination info display (simple text)
                     const paginationContainer = document.querySelector('.mt-4');
                     if (paginationContainer && data.total !== undefined) {
@@ -822,24 +832,29 @@
                         }
                         paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
                     }
-                    
+
                     // Update URL without page refresh
                     const currentUrl = new URL(window.location.href);
                     currentUrl.search = '';
                     window.history.pushState({}, '', currentUrl.toString());
-                    
-                    // Re-initialize row checkboxes for new content
+
+                    // Re-initialize row checkboxes and assessment info links for new content
                     initializeRowCheckboxes();
-                    
+                    initializeAssessmentInfoLinks();
+
                     console.log('Filters cleared successfully');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
                     console.error('Clear filters error:', data.message);
                 }
+                // Always refresh the page after clearing filters
+                window.location.reload();
             })
             .catch(error => {
                 console.error('AJAX error:', error);
                 tbody.innerHTML = '<tr><td colspan="12" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                // Always refresh the page after clearing filters, even on error
+                window.location.reload();
             });
         }
 
@@ -948,8 +963,131 @@
             }
         }
 
+
         // Initialize
         initializeFilters();
+
+        // Modal for assessment info
+
+
+        function showAssessmentInfoModal(eventId) {
+            fetch(`/events/${eventId}/details`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.event) {
+                    let modal = document.getElementById('assessmentInfoModal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'assessmentInfoModal';
+                        modal.className = 'fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center bg-black bg-opacity-50';
+                        modal.innerHTML = `
+                            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
+                                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
+                                    <div class="sm:flex sm:items-start">
+                                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
+                                                Details for <span id="eventNameSpan"></span>
+                                            </h3>
+                                            <div class="mt-4">
+                                                <div class="max-h-96 overflow-y-auto">
+                                                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-zinc-700 dark:text-gray-400">
+                                                            <tr>
+                                                                <th scope="col" class="px-4 py-3">Category Name</th>
+                                                                <th scope="col" class="px-4 py-3">Topics</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td class="px-4 py-3" id="categoryNameCell"></td>
+                                                                <td class="px-4 py-3" id="topicsCell"></td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
+                                    <button type="button" id="closeAssessmentInfoModal" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }
+                    // Set values
+                    modal.querySelector('#eventNameSpan').textContent = data.event.EventName;
+                    // Fallback: if CategoryName is missing, get it from the table row
+                    let categoryName = data.event.CategoryName;
+                    if (!categoryName) {
+                        // Find the row in the table
+                        const row = document.querySelector(`tr[data-event-id='${eventId}']`);
+                        if (row) {
+                            categoryName = row.getAttribute('data-category-name') || '-';
+                        } else {
+                            categoryName = '-';
+                        }
+                    }
+                    modal.querySelector('#categoryNameCell').textContent = categoryName;
+                    modal.querySelector('#topicsCell').textContent = (data.topic_names && data.topic_names.length) ? data.topic_names.join(', ') : '-';
+                    // Show modal
+                    modal.classList.remove('hidden');
+                    // Attach close event just like category modal
+                    const closeBtn = modal.querySelector('#closeAssessmentInfoModal');
+                    closeBtn.onclick = null;
+                    closeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        modal.classList.add('hidden');
+                    });
+                } else {
+                    alert('Failed to load assessment details.');
+                }
+            })
+            .catch(() => {
+                alert('Error loading assessment details.');
+            });
+        }
+
+        // Attach event listeners to assessment name links
+        function initializeAssessmentInfoLinks() {
+            document.querySelectorAll('.assessment-info-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const eventId = this.getAttribute('data-event-id');
+                    showAssessmentInfoModal(eventId);
+                });
+            });
+        }
+
+        // Re-attach after AJAX table reloads
+        function afterTableReload() {
+            initializeRowCheckboxes();
+            initializeAssessmentInfoLinks();
+        }
+
+        // Patch AJAX table reloads to call afterTableReload
+        const origPerformFilteredSearch = performFilteredSearch;
+        performFilteredSearch = function() {
+            origPerformFilteredSearch();
+            setTimeout(afterTableReload, 500);
+        };
+        const origClearAllFiltersAction = clearAllFiltersAction;
+        clearAllFiltersAction = function() {
+            origClearAllFiltersAction();
+            setTimeout(afterTableReload, 500);
+        };
+
+        // Initial attach
+        initializeAssessmentInfoLinks();
 
         // Show no results message
         function showNoResultsMessage(show) {
@@ -1077,7 +1215,7 @@
                 const eventIds = Array.from(checkedBoxes).map(cb => parseInt(cb.getAttribute('data-event-id'))).filter(id => !isNaN(id));
                 
                 if (eventIds.length === 0) {
-                    alert('Please select events to delete.');
+                    alert('Please select assessments to delete.');
                     return;
                 }
                 
@@ -1100,15 +1238,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.message || 'Events deleted successfully!');
+                        alert(data.message || 'Assessments deleted successfully!');
                         location.reload();
                     } else {
-                        alert(data.message || 'Error deleting events');
+                        alert(data.message || 'Error deleting assessments');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error deleting events');
+                    alert('Error deleting assessments');
                 });
             });
         }
@@ -1214,12 +1352,12 @@
                     // Show modal
                     document.getElementById('editEventModal').classList.remove('hidden');
                 } else {
-                    alert('Error loading event details: ' + data.message);
+                    alert('Error loading assessment details: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while loading event details.');
+                alert('An error occurred while loading assessment details.');
             });
     }
 
@@ -1357,7 +1495,7 @@
         
         // Validate that at least one topic is selected
         if (selectedTopics.length === 0) {
-            alert('Please select at least one topic for the event.');
+            alert('Please select at least one topic for the assessment.');
             return;
         }
         
@@ -1389,9 +1527,9 @@
         .then(data => {
             console.log('Response data:', data);
             if (data.success) {
-                alert(data.message || 'Event added successfully!');
+                alert(data.message || 'Assessment added successfully!');
                 closeAddModal();
-                location.reload(); // Refresh the page to show new event
+                location.reload(); // Refresh the page to show new assessment
             } else {
                 // Handle validation errors with simple message
                 if (data.errors && typeof data.errors === 'object') {
@@ -1407,7 +1545,7 @@
         .catch(error => {
             console.error('Detailed error:', error);
             // Try to parse the error response for simple error message
-            let errorMessage = 'An error occurred while adding the event.';
+            let errorMessage = 'An error occurred while adding the assessment.';
             if (error.message && error.message.includes('response:')) {
                 try {
                     const responseStart = error.message.indexOf('response:') + 'response:'.length;
@@ -1424,7 +1562,7 @@
                     }
                 } catch (parseError) {
                     // If parsing fails, use a simple error message
-                    errorMessage = 'An error occurred while adding the event.';
+                    errorMessage = 'An error occurred while adding the assessment.';
                 }
             }
             alert(errorMessage);
@@ -1445,7 +1583,7 @@
         
         // Validate that at least one topic is selected
         if (selectedTopics.length === 0) {
-            alert('Please select at least one topic for the event.');
+            alert('Please select at least one topic for the assessment.');
             return;
         }
         
@@ -1479,12 +1617,12 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while updating the event.');
+            alert('An error occurred while updating the assessment.');
         });
     }
 
     function deleteEvent(eventId) {
-        if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+        if (!confirm('Are you sure you want to delete this assessment? This action cannot be undone.')) {
             return;
         }
 
@@ -1505,7 +1643,7 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while deleting the event.');
+            alert('An error occurred while deleting the assessment.');
         });
     }
 

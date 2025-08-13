@@ -1,3 +1,230 @@
+           
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit modal: answer type switching and image preview for answers
+    document.querySelectorAll('#edit-answers-container .answer-choice').forEach(function(choice) {
+        const radios = choice.querySelectorAll('.edit-answer-type-radio');
+        radios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const textContainer = radio.closest('.answer-choice').querySelector('.edit-answer-text-container');
+                const imageContainer = radio.closest('.answer-choice').querySelector('.edit-answer-image-container');
+                if (this.value === 'text') {
+                    textContainer.classList.remove('hidden');
+                    imageContainer.classList.add('hidden');
+                } else {
+                    textContainer.classList.add('hidden');
+                    imageContainer.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Image upload and preview
+        const imageInput = choice.querySelector('input[type="file"]');
+        const previewDiv = choice.querySelector('[id^="edit-answer-image-preview-"]');
+        const previewImg = previewDiv ? previewDiv.querySelector('img') : null;
+        const removeBtn = previewDiv ? previewDiv.querySelector('.edit-remove-answer-image') : null;
+
+        if (imageInput && previewDiv && previewImg && removeBtn) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewImg.src = event.target.result;
+                        previewDiv.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            removeBtn.addEventListener('click', function() {
+                imageInput.value = '';
+                previewDiv.classList.add('hidden');
+                previewImg.src = '';
+            });
+        }
+    });
+    // Question type toggle
+    document.querySelectorAll('.question-type-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'text') {
+                document.getElementById('question-text-container').classList.remove('hidden');
+                document.getElementById('question-image-container').classList.add('hidden');
+            } else {
+                document.getElementById('question-text-container').classList.add('hidden');
+                document.getElementById('question-image-container').classList.remove('hidden');
+            }
+        });
+    });
+
+    // Handle question image upload
+    const questionImageUpload = document.getElementById('question-image-upload');
+    if (questionImageUpload) {
+        questionImageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const previewImg = document.getElementById('question-image-preview-img');
+                    previewImg.src = event.target.result;
+                    document.getElementById('question-image-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Remove question image
+    const removeQuestionImageBtn = document.getElementById('remove-question-image');
+    if (removeQuestionImageBtn) {
+        removeQuestionImageBtn.addEventListener('click', function() {
+            document.getElementById('question-image-upload').value = '';
+            document.getElementById('question-image-preview').classList.add('hidden');
+        });
+    }
+
+    // Answer type switching and image preview for answers
+    document.querySelectorAll('.answer-choice').forEach(function(choice) {
+        const radios = choice.querySelectorAll('.answer-type-radio');
+        radios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                // Only toggle containers within this answer block
+                const textContainer = radio.closest('.answer-choice').querySelector('.answer-text-container');
+                const imageContainer = radio.closest('.answer-choice').querySelector('.answer-image-container');
+                if (this.value === 'text') {
+                    textContainer.classList.remove('hidden');
+                    imageContainer.classList.add('hidden');
+                } else {
+                    textContainer.classList.add('hidden');
+                    imageContainer.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Image upload and preview
+        const imageInput = choice.querySelector('input[type="file"]');
+        const previewDiv = choice.querySelector('[id^="answer-image-preview-"]');
+        const previewImg = previewDiv ? previewDiv.querySelector('img') : null;
+        const removeBtn = previewDiv ? previewDiv.querySelector('.remove-answer-image') : null;
+
+        if (imageInput && previewDiv && previewImg && removeBtn) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewImg.src = event.target.result;
+                        previewDiv.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            removeBtn.addEventListener('click', function() {
+                imageInput.value = '';
+                previewDiv.classList.add('hidden');
+                previewImg.src = '';
+            });
+        }
+    });
+        // Add modal elements
+        const addModal = document.getElementById('add-question-modal');
+        const addQuestionBtn = document.getElementById('add-question-btn');
+        const closeAddModal = document.getElementById('close-add-modal');
+        const cancelAddBtn = document.getElementById('cancel-add-btn');
+
+        // Add Question button in Add Modal
+        const saveAddBtn = document.getElementById('save-add-btn');
+        if (saveAddBtn) {
+            saveAddBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const addForm = document.getElementById('add-question-form');
+                if (!addForm) return;
+
+                // Build answers array from modal, only include filled answers
+                const answers = [];
+                document.querySelectorAll('#add-answers-container .answer-choice').forEach((choice, idx) => {
+                    const type = choice.querySelector('input[name="answer_type_' + idx + '"]:checked')?.value;
+                    const isCorrect = choice.querySelector('input[name="add_correct_answer"]:checked')?.value == idx;
+                    let text = '';
+                    let answerImage = null;
+                    if (type === 'text') {
+                        text = choice.querySelector('.answer-text-container textarea')?.value?.trim() || '';
+                        if (!text) return; // skip empty text answer
+                    } else if (type === 'image') {
+                        answerImage = choice.querySelector('input[type="file"]')?.files[0] || null;
+                        if (!answerImage) return; // skip empty image answer
+                    } else {
+                        return; // skip if neither type
+                    }
+                    answers.push({ type, is_correct: isCorrect, text, answer_image: answerImage });
+                });
+
+                // Validate at least 2 answers (text or image)
+                if (answers.length < 2) {
+                    alert('Please provide at least 2 answer choices.');
+                    return;
+                }
+
+                // Validate at least one correct answer
+                if (!answers.some(a => a.is_correct)) {
+                    alert('Please mark at least one correct answer.');
+                    return;
+                }
+
+                // Prepare FormData
+                const formData = new FormData(addForm);
+                // Remove any default answer fields
+                for (let pair of Array.from(formData.keys())) {
+                    if (pair.startsWith('answer_type_') || pair.startsWith('answer_image_')) {
+                        formData.delete(pair);
+                    }
+                }
+                // Append answers as indexed fields
+                answers.forEach((ans, i) => {
+                    formData.append(`answers[${i}][type]`, ans.type);
+                    formData.append(`answers[${i}][is_correct]`, ans.is_correct ? '1' : '0');
+                    formData.append(`answers[${i}][text]`, ans.text);
+                    if (ans.type === 'image' && ans.answer_image) {
+                        formData.append(`answers[${i}][answer_image]`, ans.answer_image);
+                    }
+                });
+
+                // Add CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // Disable button to prevent double submit
+                saveAddBtn.disabled = true;
+                saveAddBtn.textContent = 'Saving...';
+
+                fetch('/question', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    saveAddBtn.disabled = false;
+                    saveAddBtn.textContent = 'Add Question';
+                    if (data.success) {
+                        if (addModal) addModal.classList.add('hidden');
+                        addForm.reset();
+                        alert('Question added successfully!');
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Failed to add question.');
+                    }
+                })
+                .catch(error => {
+                    saveAddBtn.disabled = false;
+                    saveAddBtn.textContent = 'Add Question';
+                    alert('An error occurred while adding the question.');
+                    console.error(error);
+                });
+            });
+        }
+});
+</script>
 @extends('layout.appMain')
 
 @section('content')
@@ -123,8 +350,8 @@
                 <!-- Export to Excel Button -->
                 <button id="export-excel-btn" type="button"
                     class="px-4 py-1.5 text-white bg-green-500 rounded hover:bg-green-600 text-sm">
-                    <i class="fas fa-file-excel"></i>
-                    Export to Excel
+                    <i class="fas fa-file-csv"></i>
+                    Export to CSV
                 </button>
 
                 <!-- Delete button (hidden by default) -->
@@ -135,7 +362,7 @@
 
                 <!-- Add button -->
                 <button type="button" id="add-question-btn"
-                    class="px-6 py-1.5 text-white btn bg-violet-500 border-violet-500 hover:bg-violet-600 hover:border-violet-600 focus:bg-violet-600 focus:border-violet-600 focus:ring focus:ring-violet-500/30 active:bg-violet-600 active:border-violet-600 text-sm">
+                    class="px-6 py-1.5 bg-violet-500 text-white text-sm rounded hover:bg-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1 flex items-center gap-2">
                     Add
                 </button>
             </div>
@@ -143,7 +370,7 @@
 
         <div class="card-body">
             <div class="isolate">
-                <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                <div class="relative rounded-lg" style="max-height: 500px; min-height: 350px; overflow-y: auto; overflow-x: auto; display: flex; flex-direction: column; justify-content: flex-start;">
                     <table class="w-full min-w-[1100px] text-xs text-center text-gray-500 leading-tight">
                         <thead
                             class="text-[11px] text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">
@@ -176,7 +403,7 @@
                                 </td>
                                 <td class="px-2 py-1.5 text-left">
                                     <button type="button" 
-                                        class="text-blue-600 hover:text-blue-800 hover:underline text-left question-btn"
+                                        class="text-violet-600 hover:text-violet-800 hover:underline text-left question-btn"
                                         data-question-id="{{ $row->QuestionID }}"
                                         data-question-text="{{ $row->QuestionText }}">
                                         {{ $row->QuestionText }}
@@ -239,22 +466,23 @@
     <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden" style="max-height: 90vh;">
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-gray-200 dark:border-zinc-600 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Question Answers</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Question Answer</h3>
             <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <i class="mdi mdi-close text-xl"></i>
+                <i class="mdi mdi-close text-2xl"></i>
             </button>
         </div>
         
         <!-- Modal Body -->
         <div class="px-6 py-4 overflow-y-auto" style="max-height: 70vh;">
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question:</label>
-                <p id="modal-question-text" class="text-gray-900 dark:text-white bg-gray-50 dark:bg-zinc-700 p-3 rounded"></p>
+            <div class="mb-2">
+                <label class="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Question:</label>
+                <div class="bg-white dark:bg-zinc-700 rounded-lg shadow-sm p-2 border border-gray-200 dark:border-zinc-600">
+                    <p id="modal-question-text" class="text-gray-900 dark:text-white text-base"></p>
+                </div>
             </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Answer Choices:</label>
-                <div id="answers-container" class="space-y-3">
+            <div class="mb-2">
+                <label class="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Answer Choices:</label>
+                <div id="answers-container" class="grid grid-cols-1 gap-2">
                     <!-- Answers will be loaded here -->
                 </div>
             </div>
@@ -262,11 +490,8 @@
         
         <!-- Modal Footer -->
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700 border-t border-gray-200 dark:border-zinc-600">
-            <button type="button" id="save-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
-                Save Changes
-            </button>
-            <button type="button" id="cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
-                Cancel
+            <button type="button" id="cancel-btn" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                Close
             </button>
         </div>
     </div>
@@ -286,20 +511,39 @@
         <!-- Modal Body -->
         <div class="px-6 py-4 flex-1 overflow-y-auto">
             <form id="edit-question-form" class="space-y-6">
+                <!-- Question Text (always visible and required) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Text</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Text <span class="text-red-500">*</span></label>
                     <textarea id="edit-question-text" name="QuestionText" rows="4" 
-                        class="w-full p-3 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
+                        class="w-full p-3 border border-violet-400 dark:border-violet-600 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-violet-500" 
                         placeholder="Enter question text" required></textarea>
                 </div>
-                
+                <!-- Question Image (always visible) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Image</label>
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-violet-400 rounded-lg p-6 bg-violet-50 hover:bg-violet-100 transition cursor-pointer">
+                        <label for="edit-question-image-upload" class="text-violet-600 font-semibold cursor-pointer mb-1">
+                            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M4 12l4-4a2 2 0 012.828 0l2.344 2.344a2 2 0 002.828 0L20 8M4 12v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path>
+                            </svg>
+                            Upload an image
+                        </label>
+                        <input id="edit-question-image-upload" name="edit_question_image" type="file" accept="image/png, image/jpeg, image/gif" class="hidden" />
+                        <span class="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB</span>
+                    </div>
+                    <div id="edit-question-image-preview" class="mt-2 hidden">
+                        <img id="edit-question-image-preview-img" class="max-h-40 mx-auto rounded shadow" src="" alt="Question image preview">
+                        <button type="button" id="edit-remove-question-image" class="mt-2 text-sm text-red-600">Remove Image</button>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Default Topic</label>
                     <div class="relative">
                         <input type="text" id="topic-search" 
                             class="w-full p-3 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
                             placeholder="Type topic name or ID to search and select topics..." autocomplete="off">
-                        
+
                         <!-- Dropdown for topic selection -->
                         <div id="topic-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                             @foreach($allTopics as $topic)
@@ -312,12 +556,64 @@
                                 </div>
                             @endforeach
                         </div>
-                        
+
                         <!-- Selected topics display -->
                         <div id="selected-topics" class="mt-3 flex flex-wrap gap-2 min-h-[2rem]"></div>
-                        
+
                         <!-- Hidden inputs for selected topics -->
                         <div id="selected-topics-inputs"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Answer Choices</label>
+                    <div id="edit-answers-container" class="space-y-3">
+                        @foreach(['A','B','C','D'] as $i => $label)
+                        <div class="answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700">
+                            <div class="flex items-start gap-3">
+                                <div class="flex items-center">
+                                    <input type="radio" name="edit_correct_answer" value="{{$i}}" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="font-medium text-sm">{{$label}}.</span>
+                                        <span class="text-xs text-gray-500">Mark as correct answer</span>
+                                        <span class="text-xs {{ $i < 2 ? 'text-red-500' : 'text-violet-500' }} font-medium">{{ $i < 2 ? 'Required' : 'Optional' }}</span>
+                                    </div>
+                                    <div class="mb-2 flex gap-4 items-center">
+                                        <label class="flex items-center gap-1 text-xs font-medium">
+                                            <input type="radio" name="edit_answer_type_{{$i}}" value="text" class="edit-answer-type-radio text-violet-600 focus:ring-violet-500" checked>
+                                            Text
+                                        </label>
+                                        <label class="flex items-center gap-1 text-xs font-medium">
+                                            <input type="radio" name="edit_answer_type_{{$i}}" value="image" class="edit-answer-type-radio text-violet-600 focus:ring-violet-500">
+                                            Image
+                                        </label>
+                                    </div>
+                                    <div class="edit-answer-text-container">
+                                        <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
+                                                  rows="2" placeholder="Enter answer choice {{$label}}" {{ $i < 2 ? 'required' : '' }}></textarea>
+                                    </div>
+                                    <div class="edit-answer-image-container hidden">
+                                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-violet-400 rounded-lg p-3 bg-violet-50 hover:bg-violet-100 transition cursor-pointer">
+                                            <label for="edit-answer-image-upload-{{$i}}" class="text-violet-600 font-semibold cursor-pointer mb-1">
+                                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M4 12l4-4a2 2 0 012.828 0l2.344 2.344a2 2 0 002.828 0L20 8M4 12v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path>
+                                                </svg>
+                                                Upload an image
+                                            </label>
+                                            <input id="edit-answer-image-upload-{{$i}}" name="edit_answer_image_{{$i}}" type="file" accept="image/png, image/jpeg, image/gif" class="hidden" />
+                                            <span class="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB</span>
+                                        </div>
+                                        <div id="edit-answer-image-preview-{{$i}}" class="mt-2 hidden">
+                                            <img class="max-h-32 mx-auto" src="" alt="Answer image preview">
+                                            <button type="button" class="mt-2 text-xs text-red-600 edit-remove-answer-image">Remove Image</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
                 </div>
             </form>
@@ -349,11 +645,30 @@
         <!-- Modal Body -->
         <div class="px-6 py-4 overflow-y-auto" style="max-height: 70vh;">
             <form id="add-question-form" class="space-y-6">
+                <!-- Question Text (always visible and required) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Text</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Text <span class="text-red-500">*</span></label>
                     <textarea id="add-question-text" name="QuestionText" rows="4" 
                         class="w-full p-3 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
                         placeholder="Enter question text" required></textarea>
+                </div>
+                <!-- Question Image (always visible) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question Image</label>
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-violet-400 rounded-lg p-6 bg-violet-50 hover:bg-violet-100 transition cursor-pointer">
+                        <label for="question-image-upload" class="text-violet-600 font-semibold cursor-pointer mb-1">
+                            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M4 12l4-4a2 2 0 012.828 0l2.344 2.344a2 2 0 002.828 0L20 8M4 12v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path>
+                            </svg>
+                            Upload an image
+                        </label>
+                        <input id="question-image-upload" name="question_image" type="file" accept="image/png, image/jpeg, image/gif" class="hidden" />
+                        <span class="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB</span>
+                    </div>
+                    <div id="question-image-preview" class="mt-2 hidden">
+                        <img id="question-image-preview-img" class="max-h-40 mx-auto" src="" alt="Question image preview">
+                        <button type="button" id="remove-question-image" class="mt-2 text-sm text-red-600">Remove Image</button>
+                    </div>
                 </div>
                 
                 <div>
@@ -387,73 +702,52 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Answer Choices</label>
                     <div id="add-answers-container" class="space-y-3">
+                            @foreach(['A','B','C','D'] as $i => $label)
                             <div class="answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700">
-                            <div class="flex items-start gap-3">
-                                <div class="flex items-center">
-                                    <input type="radio" name="add_correct_answer" value="0" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-medium text-sm">A.</span>
-                                        <span class="text-xs text-gray-500">Mark as correct answer</span>
-                                        <span class="text-xs text-red-500 font-medium">Required</span>
+                                <div class="flex items-start gap-3">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="add_correct_answer" value="{{$i}}" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
                                     </div>
-                                    <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
-                                              rows="2" placeholder="Enter answer choice A" required></textarea>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="font-medium text-sm">{{$label}}.</span>
+                                            <span class="text-xs text-gray-500">Mark as correct answer</span>
+                                            <span class="text-xs {{ $i < 2 ? 'text-red-500' : 'text-violet-500' }} font-medium">{{ $i < 2 ? 'Required' : 'Optional' }}</span>
+                                        </div>
+                                        <div class="mb-2 flex gap-4 items-center">
+                                            <label class="flex items-center gap-1 text-xs font-medium">
+                                                <input type="radio" name="answer_type_{{$i}}" value="text" class="answer-type-radio text-violet-600 focus:ring-violet-500" checked>
+                                                Text
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs font-medium">
+                                                <input type="radio" name="answer_type_{{$i}}" value="image" class="answer-type-radio text-violet-600 focus:ring-violet-500">
+                                                Image
+                                            </label>
+                                        </div>
+                                        <div class="answer-text-container">
+                                            <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
+                                                      rows="2" placeholder="Enter answer choice {{$label}}" {{ $i < 2 ? 'required' : '' }}></textarea>
+                                        </div>
+                                        <div class="answer-image-container hidden">
+                                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-violet-400 rounded-lg p-3 bg-violet-50 hover:bg-violet-100 transition cursor-pointer">
+                                                <label for="answer-image-upload-{{$i}}" class="text-violet-600 font-semibold cursor-pointer mb-1">
+                                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M4 12l4-4a2 2 0 012.828 0l2.344 2.344a2 2 0 002.828 0L20 8M4 12v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path>
+                                                    </svg>
+                                                    Upload an image
+                                                </label>
+                                                <input id="answer-image-upload-{{$i}}" name="answer_image_{{$i}}" type="file" accept="image/png, image/jpeg, image/gif" class="hidden" />
+                                                <span class="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB</span>
+                                            </div>
+                                            <div id="answer-image-preview-{{$i}}" class="mt-2 hidden">
+                                                <img class="max-h-32 mx-auto" src="" alt="Answer image preview">
+                                                <button type="button" class="mt-2 text-xs text-red-600 remove-answer-image">Remove Image</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700">
-                            <div class="flex items-start gap-3">
-                                <div class="flex items-center">
-                                    <input type="radio" name="add_correct_answer" value="1" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-medium text-sm">B.</span>
-                                        <span class="text-xs text-gray-500">Mark as correct answer</span>
-                                        <span class="text-xs text-red-500 font-medium">Required</span>
-                                    </div>
-                                    <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
-                                              rows="2" placeholder="Enter answer choice B" required></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700">
-                            <div class="flex items-start gap-3">
-                                <div class="flex items-center">
-                                    <input type="radio" name="add_correct_answer" value="2" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-medium text-sm">C.</span>
-                                        <span class="text-xs text-gray-500">Mark as correct answer</span>
-                                        <span class="text-xs text-blue-500 font-medium">Optional</span>
-                                    </div>
-                                    <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
-                                              rows="2" placeholder="Enter answer choice C (optional)"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700">
-                            <div class="flex items-start gap-3">
-                                <div class="flex items-center">
-                                    <input type="radio" name="add_correct_answer" value="3" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-medium text-sm">D.</span>
-                                        <span class="text-xs text-gray-500">Mark as correct answer</span>
-                                        <span class="text-xs text-blue-500 font-medium">Optional</span>
-                                    </div>
-                                    <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
-                                              rows="2" placeholder="Enter answer choice D (optional)"></textarea>
-                                </div>
-                            </div>
-                        </div>
+                            @endforeach
                     </div>
                 </div>
             </form>
@@ -824,14 +1118,60 @@
             document.querySelectorAll('.question-btn').forEach(btn => {
                 const newBtn = btn.cloneNode(true);
                 btn.parentNode.replaceChild(newBtn, btn);
-                
                 newBtn.addEventListener('click', function() {
                     currentQuestionId = this.dataset.questionId;
-                    const questionText = this.dataset.questionText;
-                    
-                    modalQuestionText.textContent = questionText;
-                    loadAnswers(currentQuestionId);
-                    modal.classList.remove('hidden');
+                    // Fetch question details and answers immediately
+                    fetch(`/question/${currentQuestionId}/details`)
+                        .then(res => res.json())
+                        .then(qData => {
+                            if (qData.success && qData.question) {
+                                // Display both question text and image if both exist
+                                let questionHtml = '';
+                                if (qData.question.QuestionText) {
+                                    questionHtml += `<div class='mb-2 text-base text-gray-900 dark:text-white'>${qData.question.QuestionText}</div>`;
+                                }
+                                if (qData.question.QuestionImage) {
+                                    questionHtml += `<img src='${qData.question.QuestionImage}' class='max-h-40 mx-auto rounded shadow' alt='Question image'>`;
+                                }
+                                modalQuestionText.innerHTML = questionHtml;
+                                answersContainer.innerHTML = '<div id="on-demand-answers"></div>';
+                                fetch(`/question/${currentQuestionId}/answers`)
+                                    .then(res => res.json())
+                                    .then(aData => {
+                                        const answerDiv = document.getElementById('on-demand-answers');
+                                        answerDiv.innerHTML = '';
+                                        if (aData.success && aData.answers) {
+                                            aData.answers.forEach((ans, idx) => {
+                                                let isCorrect = ans.ExpectedAnswer === 'Y';
+                                                let correctClass = isCorrect ? 'border-green-500 border-4 bg-green-50 dark:bg-green-900 shadow-md' : 'border-gray-200 shadow-sm';
+                                                let answerContent = '';
+                                                if (ans.AnswerType === 'I' && ans.AnswerImage) {
+                                                    let imgSrc = ans.AnswerImage;
+                                                    if (!/^https?:\/\//.test(imgSrc)) {
+                                                        imgSrc = imgSrc.replace(/^\//, '');
+                                                        imgSrc = window.location.origin + '/' + imgSrc;
+                                                    }
+                                                    answerContent = `<img src='${imgSrc}' class='max-h-24 mx-auto mb-1 rounded' alt='Answer image'>`;
+                                                } else {
+                                                    answerContent = `<div class='p-1 text-base'>${ans.AnswerText || ''}</div>`;
+                                                }
+                                                answerDiv.innerHTML += `
+                                                    <div class='answer-choice border rounded-lg p-2 ${correctClass} bg-white dark:bg-zinc-700 flex flex-col mb-2'>
+                                                        <div class='flex items-center gap-2 mb-1'>
+                                                            <span class='font-bold text-base'>${String.fromCharCode(65+idx)}.</span>
+                                                            ${isCorrect ? `<span class='inline-flex items-center px-2 py-0.5 bg-green-200 text-green-800 text-xs font-semibold rounded shadow'><svg class='w-4 h-4 mr-1 text-green-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/></svg>Correct</span>` : ''}
+                                                        </div>
+                                                        ${answerContent}
+                                                    </div>
+                                                `;
+                                            });
+                                        } else {
+                                            answerDiv.innerHTML = '<div class="text-red-500">No answers found.</div>';
+                                        }
+                                    });
+                                modal.classList.remove('hidden');
+                            }
+                        });
                 });
             });
             
@@ -839,14 +1179,39 @@
             document.querySelectorAll('.edit-question-btn').forEach(btn => {
                 const newBtn = btn.cloneNode(true);
                 btn.parentNode.replaceChild(newBtn, btn);
-                
                 newBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     currentEditQuestionId = this.dataset.questionId;
-                    loadQuestionForEdit(currentEditQuestionId);
+                    loadQuestionForEdit(currentEditQuestionId); // only edit modal logic here
                 });
             });
+        // New function: loadAnswersReadOnly
+        function loadAnswersReadOnly(questionId) {
+            // Fetch answers for the question (AJAX or from page data)
+            // For demo, assume answers are available in a JS object: window.answersByQuestionId
+            const answers = window.answersByQuestionId ? window.answersByQuestionId[questionId] : [];
+            answersContainer.innerHTML = '';
+                                            aData.answers.forEach((ans, idx) => {
+                                                let isCorrect = ans.ExpectedAnswer === 'Y';
+                                                let correctClass = isCorrect ? 'border-green-500 bg-green-50 dark:bg-green-900' : 'border-gray-200';
+                                                div.className = `answer-choice border rounded-lg p-3 ${correctClass} bg-gray-50 dark:bg-zinc-700`;
+                                                let answerContent = '';
+                                                if (ans.AnswerType === 'I') {
+                                                    answerContent = `<img src='${ans.AnswerText}' class='max-h-32 mx-auto mb-2' alt='Answer image'>`;
+                                                } else {
+                                                    answerContent = `<div class='p-2'>${ans.AnswerText}</div>`;
+                                                }
+                                                div.innerHTML = `
+                                                    <div class='flex items-center gap-2 mb-2'>
+                                                        <span class='font-medium text-sm'>${String.fromCharCode(65+idx)}.</span>
+                                                        ${isCorrect ? `<span class='inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded'><svg class='w-4 h-4 mr-1 text-green-500' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/></svg>Correct Answer</span>` : ''}
+                                                    </div>
+                                                    ${answerContent}
+                                                `;
+                                                answersContainer.appendChild(div);
+                                            });
+        }
 
             // Reinitialize delete question button handlers
             document.querySelectorAll('.delete-question-btn').forEach(btn => {
@@ -1069,22 +1434,26 @@
             });
         }
 
-        // Dropdown toggle
-        document.querySelectorAll('.dropdown').forEach(dropdown => {
-            const toggle = dropdown.querySelector('.dropdown-toggle');
-            const menu = dropdown.querySelector('.dropdown-menu');
-
-            toggle.addEventListener('click', (e) => {
+        // Dropdown toggle and menu actions using event delegation
+        document.addEventListener('click', function(e) {
+            // Toggle dropdown if dropdown-toggle is clicked
+            if (e.target.closest('.dropdown-toggle')) {
                 e.stopPropagation();
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-                menu.classList.toggle('hidden');
-            });
-        });
+                const dropdown = e.target.closest('.dropdown');
+                const menu = dropdown.querySelector('.dropdown-menu');
 
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
-            topicDropdown.classList.add('hidden');
-            addTopicDropdown.classList.add('hidden');
+                // Hide all menus first
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+
+                // Toggle the clicked one
+                menu.classList.toggle('hidden');
+            } 
+            else {
+                // Click outside - hide all dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+                if (typeof topicDropdown !== 'undefined') topicDropdown.classList.add('hidden');
+                if (typeof addTopicDropdown !== 'undefined') addTopicDropdown.classList.add('hidden');
+            }
         });
 
         // Topic search functionality
@@ -1437,48 +1806,71 @@
 
         // Render answers in the modal
         function renderAnswers(answers) {
-            answersContainer.innerHTML = '';
-            
-            // Create 4 answer boxes (A, B, C, D) similar to add modal
-            for (let index = 0; index < 4; index++) {
-                const optionLetter = String.fromCharCode(65 + index); // A, B, C, D
-                const answer = answers[index] || { AnswerID: '', AnswerText: '', ExpectedAnswer: 'N' };
-                const isCorrect = answer.ExpectedAnswer === 'Y';
-                const isRequired = index < 2; // First 2 (A and B) are required
-                
-                const answerDiv = document.createElement('div');
-                answerDiv.className = `answer-choice border rounded-lg p-3 ${isCorrect ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-zinc-700'}`;
-                
-                answerDiv.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="flex items-center">
-                            <input type="radio" name="correct_answer" value="${answer.AnswerID || index}" 
-                                   ${isCorrect ? 'checked' : ''} 
-                                   class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="font-medium text-sm">${optionLetter}.</span>
-                                <span class="text-xs text-gray-500">Mark as correct answer</span>
-                                <span class="text-xs ${isRequired ? 'text-red-500' : 'text-blue-500'} font-medium">${isRequired ? 'Required' : 'Optional'}</span>
-                            </div>
-                            <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
-                                      rows="2" data-answer-id="${answer.AnswerID}" data-answer-index="${index}" 
-                                      placeholder="Enter answer choice ${optionLetter}${isRequired ? '' : ' (optional)'}" 
-                                      ${isRequired ? 'required' : ''}>${answer.AnswerText || ''}</textarea>
-                        </div>
+    answersContainer.innerHTML = '';
+    // Create 4 answer boxes (A, B, C, D) similar to add modal
+    for (let index = 0; index < 4; index++) {
+        const optionLetter = String.fromCharCode(65 + index); // A, B, C, D
+        const answer = answers[index] || { AnswerID: '', AnswerText: '', ExpectedAnswer: 'N', AnswerImage: '' };
+        const isCorrect = answer.ExpectedAnswer === 'Y';
+        const isRequired = index < 2; // First 2 (A and B) are required
+
+        const answerDiv = document.createElement('div');
+        answerDiv.className = `answer-choice border rounded-lg p-3 ${isCorrect ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-zinc-700'}`;
+
+    let answerContent = '';
+    // Debug: log answer type and image
+    console.log(answer.AnswerType, answer.AnswerImage);
+    if (answer.AnswerImage) {
+        // If AnswerImage is a relative path, prepend the site origin
+        let imgSrc = answer.AnswerImage;
+        if (!/^https?:\/\//.test(imgSrc)) {
+            // Remove leading slash if present to avoid double slashes
+            imgSrc = imgSrc.replace(/^\//, '');
+            imgSrc = window.location.origin + '/' + imgSrc;
+        }
+        answerContent = `<div class="flex flex-col items-center mb-2"><img src="${imgSrc}" alt="Answer image" class="max-h-32 object-contain mb-1" onerror="this.style.display='none'" /><span class="text-xs text-gray-500">Answer image</span></div>`;
+    } else {
+        // Show text if no image
+        answerContent = `<textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
+            rows="2" data-answer-id="${answer.AnswerID}" data-answer-index="${index}" 
+            placeholder="Enter answer choice ${optionLetter}${isRequired ? '' : ' (optional)'}" 
+            ${isRequired ? 'required' : ''} readonly>${answer.AnswerText || ''}</textarea>`;
+    }
+
+        answerDiv.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="flex items-center">
+                    <input type="radio" name="correct_answer" value="${answer.AnswerID || index}" class="text-green-600 focus:ring-green-500" 
+                        ${isCorrect ? 'checked' : ''} 
+                        class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" disabled>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-medium text-sm">${optionLetter}.</span>
+                        <span class="text-xs text-gray-500">Mark as correct answer</span>
+                        <span class="text-xs ${isRequired ? 'text-red-500' : 'text-violet-500'} font-medium">${isRequired ? 'Required' : 'Optional'}</span>
                     </div>
-                `;
-                
-                answersContainer.appendChild(answerDiv);
-            }
+                    ${answerContent}
+                </div>
+            </div>
+        `;
+        answersContainer.appendChild(answerDiv);
+    }
         }
 
         // Save changes
         saveBtn.addEventListener('click', function() {
             const answers = [];
             const correctAnswerRadio = document.querySelector('input[name="correct_answer"]:checked');
-            
+            // Check for at least one image answer
+            let hasImageAnswer = false;
+            document.querySelectorAll('#add-answers-container .answer-choice').forEach((choice, index) => {
+                const imageRadio = choice.querySelector('input[type="radio"][value="image"]');
+                const imageInput = choice.querySelector('input[type="file"]');
+                if (imageRadio && imageRadio.checked && imageInput && imageInput.files.length > 0) {
+                    hasImageAnswer = true;
+                }
+            });
             // Check if a correct answer is selected
             if (!correctAnswerRadio) {
                 alert('Please select a correct answer');
@@ -1496,6 +1888,12 @@
                 const answerIndex = textarea.dataset.answerIndex;
                 const answerText = textarea.value.trim();
                 const isRequired = index < 2; // First 2 (A and B) are required
+
+            // Require at least one image answer
+            if (!hasImageAnswer) {
+                alert('Please provide at least one answer choice as an image.');
+                return;
+            }
                 
                 // Check if required answer (A or B) is empty
                 if (isRequired && !answerText) {
@@ -1769,14 +2167,33 @@
             const answers = [];
             let filledAnswers = 0;
             
-            answerTextareas.forEach((textarea, index) => {
-                const answerText = textarea.value.trim();
-                if (answerText) {
-                    answers.push({
-                        text: answerText,
-                        is_correct: index == correctAnswerIndex
-                    });
-                    filledAnswers++;
+
+            document.querySelectorAll('#add-answers-container .answer-choice').forEach((choice, index) => {
+                const answerTypeRadio = choice.querySelector('input[type="radio"][name="answer_type_' + index + '"]:checked');
+                if (answerTypeRadio) {
+                    if (answerTypeRadio.value === 'text') {
+                        const textarea = choice.querySelector('textarea');
+                        const answerText = textarea ? textarea.value.trim() : '';
+                        if (answerText) {
+                            answers.push({
+                                text: answerText,
+                                type: 'text',
+                                is_correct: index == correctAnswerIndex
+                            });
+                            filledAnswers++;
+                        }
+                    } else if (answerTypeRadio.value === 'image') {
+                        const imageInput = choice.querySelector('input[type="file"]');
+                        if (imageInput && imageInput.files.length > 0) {
+                            answers.push({
+                                text: '',
+                                type: 'image',
+                                is_correct: index == correctAnswerIndex,
+                                image: imageInput.files[0]
+                            });
+                            filledAnswers++;
+                        }
+                    }
                 }
             });
             
@@ -1786,29 +2203,63 @@
                 return;
             }
             
-            // Check if the selected correct answer has text
-            const correctAnswerTextarea = answerTextareas[correctAnswerIndex];
-            if (!correctAnswerTextarea.value.trim()) {
-                alert('The selected correct answer must have text.');
+
+            // Check if the selected correct answer is filled (text or image)
+            const correctChoice = document.querySelectorAll('#add-answers-container .answer-choice')[correctAnswerIndex];
+            let isCorrectFilled = false;
+            if (correctChoice) {
+                const answerTypeRadio = correctChoice.querySelector('input[type="radio"][name="answer_type_' + correctAnswerIndex + '"]:checked');
+                if (answerTypeRadio) {
+                    if (answerTypeRadio.value === 'text') {
+                        const textarea = correctChoice.querySelector('textarea');
+                        if (textarea && textarea.value.trim()) {
+                            isCorrectFilled = true;
+                        }
+                    } else if (answerTypeRadio.value === 'image') {
+                        const imageInput = correctChoice.querySelector('input[type="file"]');
+                        if (imageInput && imageInput.files.length > 0) {
+                            isCorrectFilled = true;
+                        }
+                    }
+                }
+            }
+            if (!isCorrectFilled) {
+                alert('The selected correct answer must have text or an image.');
                 return;
             }
             
             // Get selected topic ID
             const topicId = Array.from(addSelectedTopics)[0];
             
-            const data = {
-                QuestionText: questionText,
-                selected_topic_ids: [topicId],
-                answers: answers
-            };
-            
+            // Use FormData to send text and image answers
+            const formData = new FormData();
+            formData.append('QuestionText', questionText);
+            formData.append('selected_topic_ids[]', topicId);
+            answers.forEach((ans, idx) => {
+                formData.append(`answers[${idx}][is_correct]`, ans.is_correct ? '1' : '0');
+                if (ans.type === 'text') {
+                    formData.append(`answers[${idx}][text]`, ans.text);
+                    formData.append(`answers[${idx}][type]`, 'text');
+                } else if (ans.type === 'image') {
+                    formData.append(`answers[${idx}][text]`, '');
+                    formData.append(`answers[${idx}][type]`, 'image');
+                    if (ans.image) {
+                        formData.append(`answers[${idx}][answer_image]`, ans.image);
+                    }
+                }
+            });
+            // Add question image if present
+            const questionImageInput = document.getElementById('question-image-upload');
+            if (questionImageInput && questionImageInput.files.length > 0) {
+                formData.append('question_image', questionImageInput.files[0]);
+            }
+
             fetch('/question', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
                 },
-                body: JSON.stringify(data)
+                body: formData
             })
             .then(response => response.json())
             .then(data => {

@@ -61,7 +61,7 @@ class EventsController extends Controller
             if ($records->total() > 0) {
                 foreach ($records as $row) {
                     $html .= '<tr data-event-id="' . $row->EventID . '"
-                                data-event-name="' . htmlspecialchars($row->EventName) . '"
+                                data-category-id="' . ($row->CategoryID ?? '') . '"
                                 data-category-name="' . htmlspecialchars($row->CategoryName) . '"
                                 class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
                                 <td class="w-4 p-3">
@@ -71,7 +71,9 @@ class EventsController extends Controller
                                         <label class="sr-only">checkbox</label>
                                     </div>
                                 </td>
-                                <td class="px-2 py-1.5">' . htmlspecialchars($row->EventName) . '</td>
+                                <td class="px-2 py-1.5">
+                                    <a href="#" class="assessment-info-link text-violet-600 hover:underline" data-event-id="' . $row->EventID . '">' . htmlspecialchars($row->EventName) . '</a>
+                                </td>
                                 <td class="px-2 py-1.5">
                                     <a href="' . url('participantRegister/' . urlencode($row->EventCode)) . '"
                                         class="text-blue-600 hover:underline" target="_blank">
@@ -88,7 +90,7 @@ class EventsController extends Controller
                                             class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
                                             <div class="p-1 flex flex-col gap-1">
                                                 <button type="button"
-                                                    onclick="editEvent(' . $row->EventID . ', \'' . addslashes($row->EventName) . '\', \'' . addslashes($row->EventCode) . '\', ' . $row->QuestionLimit . ', ' . $row->DurationEachQuestion . ', \'' . $row->StartDate . '\', \'' . $row->EndDate . '\')"
+                                                    onclick="editEvent(' . $row->EventID . ', &#39;' . addslashes($row->EventName) . '&#39;, &#39;' . addslashes($row->EventCode) . '&#39;, ' . $row->QuestionLimit . ', ' . $row->DurationEachQuestion . ', &#39;' . $row->StartDate . '&#39;, &#39;' . $row->EndDate . '&#39;)"
                                                     class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
                                                     <i class="mdi mdi-pencil text-base"></i>
                                                     <span>Edit</span>
@@ -110,16 +112,22 @@ class EventsController extends Controller
                             </tr>';
                 }
             } else {
-                $html = '<tr><td colspan="8" class="px-2 py-1.5 text-center">No events found</td></tr>';
+                $html = '<tr><td colspan="8" class="px-2 py-1.5 text-center">No assessments found</td></tr>';
             }
             
+            // Render pagination links using default view (works with query builder paginator)
+            $paginationLinks = $records->links()->toHtml();
+
             return response()->json([
                 'success' => true,
                 'html' => $html,
                 'total' => $records->total(),
                 'current_page' => $records->currentPage(),
                 'last_page' => $records->lastPage(),
-                'per_page' => $records->perPage()
+                'per_page' => $records->perPage(),
+                'pagination' => [
+                    'links' => $paginationLinks
+                ]
             ]);
         }
             
@@ -163,7 +171,7 @@ class EventsController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Event created successfully!',
+                'message' => 'Assessment created successfully!',
                 'data' => $event
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -175,7 +183,7 @@ class EventsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error creating event: ' . $e->getMessage()
+                'message' => 'Error creating assessment: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -188,7 +196,7 @@ class EventsController extends Controller
             if (empty($eventIds) || !is_array($eventIds)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No events selected for deletion'
+                    'message' => 'No assessments selected for deletion'
                 ], 400);
             }
 
@@ -201,7 +209,7 @@ class EventsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting events: ' . $e->getMessage()
+                'message' => 'Error deleting assessments: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -214,12 +222,12 @@ class EventsController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Event deleted successfully!'
+                'message' => 'Assessment deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting event: ' . $e->getMessage()
+                'message' => 'Error deleting assessment: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -252,13 +260,13 @@ class EventsController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Event updated successfully!',
+                'message' => 'Assessment updated successfully!',
                 'data' => $event
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating event: ' . $e->getMessage()
+                'message' => 'Error updating assessment: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -312,7 +320,7 @@ class EventsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching event details: ' . $e->getMessage()
+                'message' => 'Error fetching assessment details: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -410,8 +418,8 @@ class EventsController extends Controller
         // CSV Headers
         $csvData[] = [
             'No',
-            'Event Name',
-            'Event Code',
+            'Assessment Name',
+            'Assessment Code',
             'Category',
             'Topics',
             'Question Limit',

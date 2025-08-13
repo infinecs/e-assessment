@@ -117,7 +117,7 @@
 
         <div class="card-body">
             <div class="isolate">
-                <div class="relative rounded-lg" style="max-height: 500px; overflow-y: auto; overflow-x: auto;">
+                <div class="relative rounded-lg" style="max-height: 500px; min-height: 350px; overflow-y: auto; overflow-x: auto; display: flex; flex-direction: column; justify-content: flex-start;">
                     <table class="w-full min-w-[900px] text-xs text-center text-gray-500 leading-tight">
                         <thead
                             class="text-[11px] text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">

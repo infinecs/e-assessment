@@ -36,7 +36,6 @@ class AssessmentQuestionController extends Controller
         // Handle AJAX requests
         if ($request->ajax() || $request->has('ajax')) {
             $html = '';
-            
             if ($records->total() > 0) {
                 foreach ($records as $row) {
                     $html .= '<tr class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600"
@@ -67,14 +66,14 @@ class AssessmentQuestionController extends Controller
                                             class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
                                             <div class="p-1 flex flex-col gap-1">
                                                 <button type="button"
-                                                    onclick="editQuestion(' . $row->QuestionID . ')"
-                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    class="edit-question-btn w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700"
+                                                    data-question-id="' . $row->QuestionID . '">
                                                     <i class="mdi mdi-pencil text-base"></i>
                                                     <span>Edit</span>
                                                 </button>
                                                 <button type="button"
-                                                    onclick="deleteQuestion(' . $row->QuestionID . ')"
-                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    class="delete-question-btn w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700"
+                                                    data-question-id="' . $row->QuestionID . '">
                                                     <i class="mdi mdi-trash-can text-base"></i>
                                                     <span>Delete</span>
                                                 </button>
@@ -115,37 +114,68 @@ class AssessmentQuestionController extends Controller
             $validatedData = $request->validate([
                 'QuestionText' => 'required|string',
                 'selected_topic_ids' => 'required|array|min:1',
-                'answers' => 'required|array|min:2'
+                'answers' => 'required|array|min:2',
+                'answers.*.type' => 'required|in:text,image',
+                'answers.*.is_correct' => 'required',
+                'answers.*.text' => 'required_without:answers.*.answer_image',
+                'answers.*.answer_image' => 'required_if:answers.*.type,image|nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                'question_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240' // 10MB
             ]);
-            
-            // Create the question
+
             $question = new AssessmentQuestion();
             $question->QuestionText = $validatedData['QuestionText'];
-            
-            // Set topic information - only DefaultTopic column exists in the table
+
+            // Handle image upload
+            if ($request->hasFile('question_image')) {
+                $image = $request->file('question_image');
+                if (!$image->isValid()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error: Question image upload failed. Please check file size and type.'
+                    ], 400);
+                }
+                $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('images/QuestionImage'), $imageName);
+                $question->QuestionImage = 'images/QuestionImage/' . $imageName;
+            }
+
             if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
                 $question->DefaultTopic = $validatedData['selected_topic_ids'][0];
             }
-            
-            // Set AdminID to 0 as default (cannot be null)
+
             $question->AdminID = 0;
-            
             $question->DateCreate = now();
             $question->DateUpdate = now();
             $question->save();
-            
-            // Create the answers
-            foreach ($validatedData['answers'] as $answerData) {
+
+            foreach ($validatedData['answers'] as $idx => $answerData) {
                 $answer = new AssessmentAnswer();
                 $answer->QuestionID = $question->QuestionID;
                 $answer->AnswerText = $answerData['text'];
-                $answer->AnswerType = 'T';  // Set AnswerType to 'T'
-                $answer->ExpectedAnswer = $answerData['is_correct'] ? 'Y' : 'N';
+                $answer->AnswerType = isset($answerData['type']) && $answerData['type'] === 'image' ? 'I' : 'T';
+                // Strictly check for correct answer
+                $isCorrect = ($answerData['is_correct'] === true || $answerData['is_correct'] === 'true' || $answerData['is_correct'] === 1 || $answerData['is_correct'] === '1');
+                $answer->ExpectedAnswer = $isCorrect ? 'Y' : 'N';
+                // Handle answer image upload
+                if ($answer->AnswerType === 'I') {
+                    if ($request->hasFile('answers.' . $idx . '.answer_image')) {
+                        $image = $request->file('answers.' . $idx . '.answer_image');
+                        if (!$image->isValid()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Error: Answer image upload failed for answer #' . ($idx+1) . '. Please check file size and type.'
+                            ], 400);
+                        }
+                        $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                        $image->move(public_path('images/AnswerImage'), $imageName);
+                        $answer->AnswerImage = 'images/AnswerImage/' . $imageName;
+                    }
+                }
                 $answer->DateCreate = now();
                 $answer->DateUpdate = now();
                 $answer->save();
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Question created successfully!',
@@ -163,15 +193,28 @@ class AssessmentQuestionController extends Controller
     {
         try {
             $question = AssessmentQuestion::findOrFail($id);
-            
-            // Also delete associated answers
+
+            // Delete question image file if exists
+            if ($question->QuestionImage && file_exists(public_path($question->QuestionImage))) {
+                @unlink(public_path($question->QuestionImage));
+            }
+
+            // Get all answers for this question
+            $answers = AssessmentAnswer::where('QuestionID', $id)->get();
+            foreach ($answers as $answer) {
+                if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                    @unlink(public_path($answer->AnswerImage));
+                }
+            }
+
+            // Delete associated answers
             AssessmentAnswer::where('QuestionID', $id)->delete();
-            
+
             $question->delete();
-            
+
             return response()->json([
                 'success' => true,
-                'message' => 'Question and its answers deleted successfully!'
+                'message' => 'Question and its answers (and images) deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -185,23 +228,37 @@ class AssessmentQuestionController extends Controller
     {
         try {
             $questionIds = $request->input('question_ids');
-            
+
             if (empty($questionIds)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No questions selected for deletion.'
                 ], 400);
             }
-            
+
+            // Delete question and answer images for each question
+            $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)->get();
+            foreach ($questions as $question) {
+                if ($question->QuestionImage && file_exists(public_path($question->QuestionImage))) {
+                    @unlink(public_path($question->QuestionImage));
+                }
+                $answers = AssessmentAnswer::where('QuestionID', $question->QuestionID)->get();
+                foreach ($answers as $answer) {
+                    if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                        @unlink(public_path($answer->AnswerImage));
+                    }
+                }
+            }
+
             // Delete associated answers first
             AssessmentAnswer::whereIn('QuestionID', $questionIds)->delete();
-            
+
             // Delete questions
             $deletedCount = AssessmentQuestion::whereIn('QuestionID', $questionIds)->delete();
-            
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully deleted {$deletedCount} questions and their answers."
+                'message' => "Successfully deleted {$deletedCount} questions, their answers, and images."
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -276,7 +333,18 @@ class AssessmentQuestionController extends Controller
             $answers = AssessmentAnswer::where('QuestionID', $questionId)
                 ->orderBy('AnswerID')
                 ->get();
-            
+
+            // Update AnswerImage to be a full URL if present
+            $answers = $answers->map(function ($answer) {
+                if ($answer->AnswerImage) {
+                    // If already a full URL, leave as is
+                    if (!preg_match('/^https?:\/\//', $answer->AnswerImage)) {
+                        $answer->AnswerImage = url($answer->AnswerImage);
+                    }
+                }
+                return $answer;
+            });
+
             return response()->json([
                 'success' => true,
                 'answers' => $answers
@@ -300,6 +368,7 @@ class AssessmentQuestionController extends Controller
             
             foreach ($answers as $answerData) {
                 AssessmentAnswer::where('AnswerID', $answerData['id'])
+                    ->where('QuestionID', $questionId)
                     ->update([
                         'AnswerText' => $answerData['text'],
                         'ExpectedAnswer' => $answerData['is_correct'] ? 'Y' : 'N'
@@ -379,8 +448,8 @@ class AssessmentQuestionController extends Controller
                 }
             }
             
-            // Format wrong answers with line breaks and spacing for Excel
-            $wrongAnswersText = implode("\n\n", $wrongAnswers);
+            // Format wrong answers with the same separator as correct answers for consistency
+            $wrongAnswersText = implode(' | ', $wrongAnswers);
             
             $csvData[] = [
                 $counter++,

@@ -18,6 +18,7 @@ class AssessmentAnswer extends Model
         'QuestionID',
         'AnswerType',
         'AnswerText',
+        'AnswerImage',
         'ExpectedAnswer',
         'AdminID',
         'DateCreate',
