@@ -455,6 +455,19 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Prevent spaces in Event Code fields (add & edit)
+        function preventSpaces(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.addEventListener('keydown', function(e) {
+                if (e.key === ' ') e.preventDefault();
+            });
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\s+/g, '');
+            });
+        }
+        preventSpaces('add_event_code');
+        preventSpaces('edit_event_code');
         const selectAll = document.getElementById('checkbox-all');
         const rowCheckboxes = document.querySelectorAll('.row-checkbox');
         const bulkDeleteBtn = document.getElementById('bulk-delete-btn');

@@ -51,6 +51,23 @@
     </style>
    <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Fix: Clear quiz data if participant email has changed ---
+        const currentEmail = "{{ session('participant_email', 'guest') }}";
+        const emailKey = 'quiz_last_email_{{ $eventCode }}';
+        const lastEmail = localStorage.getItem(emailKey);
+        if (lastEmail && lastEmail !== currentEmail) {
+            // Remove all quiz-related keys for this event
+            const keysToRemove = [
+                'quiz_timer_{{ $eventCode }}_' + lastEmail,
+                'quiz_active_tab_{{ $eventCode }}_' + lastEmail,
+                'quiz_active_tab_{{ $eventCode }}_' + lastEmail + '_timestamp',
+                'quiz_answers_{{ $eventCode }}_' + lastEmail,
+                'quiz_session_{{ $eventCode }}_' + lastEmail
+            ];
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        }
+        // Always update to current email
+        localStorage.setItem(emailKey, currentEmail);
         const form = document.getElementById('quiz-form');
         
         // Timer functionality - calculate total time
@@ -488,6 +505,13 @@
             @forelse($questions as $index => $q)
                 <div class="question-block border rounded-lg p-6 bg-white shadow"
                     data-question-id="{{ $q->QuestionID }}">
+
+                    @if (!empty($q->QuestionImage))
+                        <div class="mb-2">
+                            <img src="{{ asset($q->QuestionImage) }}" alt="Question Image" class="max-h-48 rounded shadow mx-auto mb-2">
+                            <div class="text-xs text-gray-400 break-all">Path: {{ $q->QuestionImage }}</div>
+                        </div>
+                    @endif
                     <div class="mb-4 flex items-center">
                         <h3 class="font-semibold text-lg text-gray-800">
                             Q{{ $index + 1 }}. {{ $q->QuestionText }}
@@ -501,10 +525,13 @@
 
                     @foreach ($answers as $key => $ans)
                         @php $optionLetter = chr(65+$key); @endphp
-                        <label class="block mb-2">
+                        <label class="block mb-2 flex items-center gap-2">
                             <input type="radio" name="answers[{{ $q->QuestionID }}]" value="{{ $optionLetter }}"
                                 @if (isset($savedAnswers[$q->QuestionID]) && $savedAnswers[$q->QuestionID] == $optionLetter) checked @endif>
-                            {{ $optionLetter }}. {{ $ans->AnswerText }}
+                            @if (!empty($ans->AnswerImage))
+                                <img src="{{ asset($ans->AnswerImage) }}" alt="Answer Image" class="max-h-20 ml-2 rounded border">
+                            @endif
+                            <span>{{ $optionLetter }}. {{ $ans->AnswerText }}</span>
                         </label>
                     @endforeach
                 </div>

@@ -199,14 +199,13 @@ class AssessmentQuestionController extends Controller
                 @unlink(public_path($question->QuestionImage));
             }
 
-            // Get all answers for this question
+            // Get all answers for this question and delete their images
             $answers = AssessmentAnswer::where('QuestionID', $id)->get();
             foreach ($answers as $answer) {
                 if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
                     @unlink(public_path($answer->AnswerImage));
                 }
             }
-
             // Delete associated answers
             AssessmentAnswer::where('QuestionID', $id)->delete();
 
@@ -242,6 +241,7 @@ class AssessmentQuestionController extends Controller
                 if ($question->QuestionImage && file_exists(public_path($question->QuestionImage))) {
                     @unlink(public_path($question->QuestionImage));
                 }
+                // Delete all answer images for this question
                 $answers = AssessmentAnswer::where('QuestionID', $question->QuestionID)->get();
                 foreach ($answers as $answer) {
                     if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
@@ -249,7 +249,6 @@ class AssessmentQuestionController extends Controller
                     }
                 }
             }
-
             // Delete associated answers first
             AssessmentAnswer::whereIn('QuestionID', $questionIds)->delete();
 
@@ -272,23 +271,81 @@ class AssessmentQuestionController extends Controller
     {
         try {
             $question = AssessmentQuestion::findOrFail($id);
-            
+
             $validatedData = $request->validate([
                 'QuestionText' => 'required|string',
-                'selected_topic_ids' => 'array' // For selected topics
+                'selected_topic_ids' => 'array',
+                'question_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                'answers' => 'array',
+                'answers.*.id' => 'nullable|integer',
+                'answers.*.type' => 'required|in:text,image',
+                'answers.*.is_correct' => 'required|boolean',
             ]);
-            
-            // If specific topics are selected, use the first one as DefaultTopic (only column that exists)
+
+            // Custom validation: only require text or image for A and B (index 0,1)
+            $answers = $request->input('answers', []);
+            foreach ([0,1] as $idx) {
+                if (!isset($answers[$idx])) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "answers.$idx" => "Answer ".chr(65+$idx)." is required."
+                    ]);
+                }
+                $ans = $answers[$idx];
+                $hasText = isset($ans['text']) && trim($ans['text']) !== '';
+                $hasNewImage = $request->hasFile("answers.$idx.answer_image");
+                $hasExistingImage = isset($ans['answer_image']) && is_string($ans['answer_image']) && trim($ans['answer_image']) !== '';
+                if (!$hasText && !$hasNewImage && !$hasExistingImage) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "answers.$idx.text" => "The answers.$idx.text field is required when answers.$idx.answer_image is not present."
+                    ]);
+                }
+            }
+
+            // Only remove question image if explicitly requested (remove_image flag) or if a new image is uploaded
+            $imageRemoved = false;
+            if ($request->has('remove_image')) {
+                if ($question->QuestionImage && file_exists(public_path($question->QuestionImage))) {
+                    @unlink(public_path($question->QuestionImage));
+                }
+                $question->QuestionImage = null;
+                $imageRemoved = true;
+            }
+
+            // Handle question image upload/replacement
+            if ($request->hasFile('question_image')) {
+                // Delete old image if exists
+                if ($question->QuestionImage && file_exists(public_path($question->QuestionImage))) {
+                    @unlink(public_path($question->QuestionImage));
+                }
+                $image = $request->file('question_image');
+                $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                // Always save question images to QuestionImage folder
+                $image->move(public_path('images/QuestionImage'), $imageName);
+                $validatedData['QuestionImage'] = 'images/QuestionImage/' . $imageName;
+            } else if ($imageRemoved) {
+                // If image was removed and no new image uploaded, set to null
+                $validatedData['QuestionImage'] = null;
+            }
+
+            // If specific topics are selected, use the first one as DefaultTopic
             if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
-                // Use the first selected topic as the default topic (only column that exists in DB)
                 $validatedData['DefaultTopic'] = $validatedData['selected_topic_ids'][0];
             }
-            
-            // Remove selected_topic_ids from validated data as it's not a database field
+
+            // Remove non-database fields
             unset($validatedData['selected_topic_ids']);
-            
-            $question->update($validatedData);
-            
+            unset($validatedData['answers']);
+
+            // Update question
+            $validatedData['DateUpdate'] = now();
+            $question->fill($validatedData);
+            $question->save();
+
+            // Handle answers update if provided
+            if ($request->has('answers')) {
+                $this->updateAnswersWithImages($request, $question->QuestionID);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Question updated successfully!',
@@ -299,6 +356,108 @@ class AssessmentQuestionController extends Controller
                 'success' => false,
                 'message' => 'Error updating question: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    private function updateAnswersWithImages($request, $questionId)
+    {
+        $answers = $request->input('answers');
+        
+        $existingAnswers = AssessmentAnswer::where('QuestionID', $questionId)->orderBy('AnswerID')->get();
+        $sentAnswerIds = collect($answers)->pluck('id')->filter()->map(function($id) { return (int)$id; })->toArray();
+
+        $submittedIds = [];
+        foreach ($answers as $index => $answerData) {
+            $answerId = $answerData['id'] ?? null;
+            $isImage = $answerData['type'] === 'image';
+            $hasText = isset($answerData['text']) && trim($answerData['text']) !== '';
+
+            $hasImageUpload = false;
+            if ($isImage && $request->hasFile("answers.$index.answer_image")) {
+                $hasImageUpload = true;
+            }
+            $hasImagePath = false;
+            if ($isImage && isset($answerData['answer_image']) && is_string($answerData['answer_image']) && !empty($answerData['answer_image']) && !$hasImageUpload) {
+                $hasImagePath = true;
+            }
+
+            if (!$hasText && !$hasImageUpload && !$hasImagePath) {
+                // If blank, delete if exists
+                if ($answerId) {
+                    $answer = AssessmentAnswer::find($answerId);
+                    if ($answer) {
+                        if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                            @unlink(public_path($answer->AnswerImage));
+                        }
+                        $answer->delete();
+                    }
+                }
+                continue;
+            }
+            $submittedIds[] = $answerId;
+            if ($answerId) {
+                // Update existing answer
+                $answer = AssessmentAnswer::find($answerId);
+                if (!$answer) continue;
+                $answerDataToUpdate = [
+                    'AnswerText' => $answerData['text'] ?? '',
+                    'ExpectedAnswer' => $answerData['is_correct'] ? 'Y' : 'N',
+                    'DateUpdate' => now()
+                ];
+                // Handle image replacement
+                if ($isImage && $hasImageUpload) {
+                    // Always delete old image if present
+                    if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                        @unlink(public_path($answer->AnswerImage));
+                    }
+                    $image = $request->file("answers.$index.answer_image");
+                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('images/AnswerImage'), $imageName);
+                    $answerDataToUpdate['AnswerImage'] = 'images/AnswerImage/' . $imageName;
+                    $answerDataToUpdate['AnswerType'] = 'I';
+                } else if ($isImage && $hasImagePath) {
+                    // Keep the existing image path
+                    $answerDataToUpdate['AnswerImage'] = $answerData['answer_image'];
+                    $answerDataToUpdate['AnswerType'] = 'I';
+                } else if (isset($answerData['remove_image']) && $answerData['remove_image']) {
+                    // Only remove image if explicitly requested
+                    if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                        @unlink(public_path($answer->AnswerImage));
+                    }
+                    $answerDataToUpdate['AnswerImage'] = null;
+                    $answerDataToUpdate['AnswerType'] = 'T';
+                } else if (!$isImage) {
+                    // If switched to text, remove image
+                    if ($answer->AnswerImage && file_exists(public_path($answer->AnswerImage))) {
+                        @unlink(public_path($answer->AnswerImage));
+                    }
+                    $answerDataToUpdate['AnswerImage'] = null;
+                    $answerDataToUpdate['AnswerType'] = 'T';
+                }
+                $answer->update($answerDataToUpdate);
+            } else {
+                // Create new answer
+                $newAnswer = new AssessmentAnswer();
+                $newAnswer->QuestionID = $questionId;
+                $newAnswer->AnswerText = $answerData['text'] ?? '';
+                $newAnswer->AnswerType = $isImage ? 'I' : 'T';
+                $newAnswer->ExpectedAnswer = $answerData['is_correct'] ? 'Y' : 'N';
+                if ($isImage && $hasImageUpload) {
+                    // Defensive: if an old image exists for this answer slot (shouldn't for new), delete it
+                    if (isset($answerData['answer_image']) && is_string($answerData['answer_image']) && !empty($answerData['answer_image']) && file_exists(public_path($answerData['answer_image']))) {
+                        @unlink(public_path($answerData['answer_image']));
+                    }
+                    $image = $request->file("answers.$index.answer_image");
+                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('images/AnswerImage'), $imageName);
+                    $newAnswer->AnswerImage = 'images/AnswerImage/' . $imageName;
+                } else if ($isImage && $hasImagePath) {
+                    $newAnswer->AnswerImage = $answerData['answer_image'];
+                }
+                $newAnswer->DateCreate = now();
+                $newAnswer->DateUpdate = now();
+                $newAnswer->save();
+            }
         }
     }
 

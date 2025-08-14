@@ -1,6 +1,37 @@
            
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Edit modal: update preview when a new question image is uploaded
+    const editQuestionImageUpload = document.getElementById('edit-question-image-upload');
+    const editQuestionImagePreview = document.getElementById('edit-question-image-preview');
+    const editQuestionImagePreviewImg = document.getElementById('edit-question-image-preview-img');
+    const editRemoveQuestionImageBtn = document.getElementById('edit-remove-question-image');
+    let editRemoveQuestionImageFlag = false;
+    if (editQuestionImageUpload && editQuestionImagePreview && editQuestionImagePreviewImg) {
+        editQuestionImageUpload.addEventListener('change', function(e) {
+            const file = this.files && this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    editQuestionImagePreviewImg.src = ev.target.result;
+                    editQuestionImagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+                editRemoveQuestionImageFlag = false;
+            } else {
+                editQuestionImagePreviewImg.src = '';
+                editQuestionImagePreview.classList.add('hidden');
+            }
+        });
+    }
+    if (editRemoveQuestionImageBtn) {
+        editRemoveQuestionImageBtn.addEventListener('click', function() {
+            if (editQuestionImageUpload) editQuestionImageUpload.value = '';
+            if (editQuestionImagePreview) editQuestionImagePreview.classList.add('hidden');
+            if (editQuestionImagePreviewImg) editQuestionImagePreviewImg.src = '';
+            editRemoveQuestionImageFlag = true;
+        });
+    }
     // Edit modal: answer type switching and image preview for answers
     document.querySelectorAll('#edit-answers-container .answer-choice').forEach(function(choice) {
         const radios = choice.querySelectorAll('.edit-answer-type-radio');
@@ -1780,6 +1811,10 @@ document.addEventListener('DOMContentLoaded', function() {
             clearSelectedTopics();
             topicSearch.value = '';
             topicDropdown.classList.add('hidden');
+            // Reset remove image flag when modal closes
+            if (typeof editRemoveQuestionImageFlag !== 'undefined') {
+                editRemoveQuestionImageFlag = false;
+            }
         }
 
         // Note: Edit and delete question button handlers are now in initializeQuestionButtons()
@@ -1971,84 +2006,566 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Load question details for editing
-        function loadQuestionForEdit(questionId) {
-            console.log('Loading question details for ID:', questionId); // Debug log
-            
-            fetch(`/question/${questionId}/details`)
-                .then(response => {
-                    console.log('Response status:', response.status); // Debug log
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Received data:', data); // Debug log
-                    
-                    if (data.success) {
-                        const question = data.question;
-                        const selectedTopicIds = data.selected_topic_ids || [];
-                        
-                        console.log('Question data:', question); // Debug log
-                        console.log('Selected topic IDs:', selectedTopicIds); // Debug log
-                        
-                        // Populate form fields
-                        document.getElementById('edit-question-text').value = question.QuestionText || '';
-                        
-                        // Clear existing selections
-                        clearSelectedTopics();
-                        
-                        // Set selected topics (only one topic allowed)
-                        if (selectedTopicIds.length > 0) {
-                            const topicId = selectedTopicIds[0]; // Take only the first topic
-                            const option = topicDropdown.querySelector(`[data-topic-id="${topicId}"]`);
-                            if (option) {
-                                const topicName = option.dataset.topicName;
-                                
-                                console.log('Loading preselected topic:', topicId, topicName); // Debug log
-                                
-                                // Add to selected topics set
-                                selectedTopicsForEdit.add(topicId);
-                                
-                                // Create the purple tag - ensure it's visible
-                                addSelectedTopic(topicId, topicName);
-                                
-                                // Mark option as selected in dropdown
-                                option.classList.add('selected');
-                                
-                                // Show the current topic in the input box
-                                topicSearch.value = topicName;
-                                
-                                // Force visibility of the selected topics container
-                                selectedTopicsContainer.style.display = 'flex';
-                                
-                                console.log('Selected topics container:', selectedTopicsContainer.innerHTML); // Debug log
-                            } else {
-                                console.log('Option not found for topic ID:', topicId); // Debug log
-                            }
-                        }
-                        
-                        // Ensure all topics are visible in dropdown for easy selection
-                        const allOptions = topicDropdown.querySelectorAll('.topic-option');
-                        allOptions.forEach(option => {
-                            option.style.display = 'block';
-                        });
-                        
-                        // Show modal after a brief delay to ensure DOM is ready
-                        setTimeout(() => {
-                            console.log('About to show modal, selected topics container content:', selectedTopicsContainer.innerHTML);
-                            editModal.classList.remove('hidden');
-                        }, 100);
-                    } else {
-                        console.error('Server returned success: false', data); // Debug log
-                        alert('Error loading question details: ' + (data.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error); // Debug log
-                    alert('Error loading question details: ' + error.message);
-                });
+       // Enhanced edit modal functionality with proper data population
+
+// Load question details for editing with answers
+function loadQuestionForEdit(questionId) {
+    console.log('Loading question details for ID:', questionId);
+    
+    // Show loading state in modal
+    const editQuestionText = document.getElementById('edit-question-text');
+    const editAnswersContainer = document.getElementById('edit-answers-container');
+    
+    if (editQuestionText) {
+        editQuestionText.value = 'Loading...';
+    }
+    if (editAnswersContainer) {
+        editAnswersContainer.innerHTML = '<div class="text-center py-4">Loading answers...</div>';
+    }
+    
+    // Show modal first
+    const editModal = document.getElementById('edit-question-modal');
+    editModal.classList.remove('hidden');
+    
+    // Load question details
+    Promise.all([
+        fetch(`/question/${questionId}/details`),
+        fetch(`/question/${questionId}/answers`)
+    ])
+    .then(responses => {
+        if (!responses[0].ok || !responses[1].ok) {
+            throw new Error('Failed to load question data');
         }
+        return Promise.all([responses[0].json(), responses[1].json()]);
+    })
+    .then(([questionData, answersData]) => {
+        console.log('Question data:', questionData);
+        console.log('Answers data:', answersData);
+        
+        if (questionData.success && answersData.success) {
+            populateEditModal(questionData.question, questionData.selected_topic_ids || [], answersData.answers || []);
+        } else {
+            throw new Error(questionData.message || answersData.message || 'Failed to load data');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading question:', error);
+        alert('Error loading question details: ' + error.message);
+        closeEditModalHandler();
+    });
+}
+
+// Populate the edit modal with question data
+function populateEditModal(question, selectedTopicIds, answers) {
+    console.log('Populating modal with:', question, selectedTopicIds, answers);
+    
+    // Clear previous data
+    clearSelectedTopics();
+    
+    // Set question text
+    const editQuestionText = document.getElementById('edit-question-text');
+    if (editQuestionText) {
+        editQuestionText.value = question.QuestionText || '';
+    }
+    
+    // Handle question image
+    const editQuestionImagePreview = document.getElementById('edit-question-image-preview');
+    const editQuestionImagePreviewImg = document.getElementById('edit-question-image-preview-img');
+    
+    if (question.QuestionImage && editQuestionImagePreview && editQuestionImagePreviewImg) {
+        let imageSrc = question.QuestionImage;
+        if (!/^https?:\/\//.test(imageSrc)) {
+            imageSrc = imageSrc.replace(/^\//, '');
+            imageSrc = window.location.origin + '/' + imageSrc;
+        }
+        editQuestionImagePreviewImg.src = imageSrc;
+        editQuestionImagePreview.classList.remove('hidden');
+    } else if (editQuestionImagePreview) {
+        editQuestionImagePreview.classList.add('hidden');
+    }
+    
+    // Set selected topic (only one topic allowed)
+    if (selectedTopicIds.length > 0) {
+        const topicId = selectedTopicIds[0];
+        const topicDropdown = document.getElementById('topic-dropdown');
+        const option = topicDropdown.querySelector(`[data-topic-id="${topicId}"]`);
+        
+        if (option) {
+            const topicName = option.dataset.topicName;
+            console.log('Setting topic:', topicId, topicName);
+            
+            selectedTopicsForEdit.add(topicId);
+            addSelectedTopic(topicId, topicName);
+            option.classList.add('selected');
+            
+            const topicSearch = document.getElementById('topic-search');
+            if (topicSearch) {
+                topicSearch.value = topicName;
+            }
+        }
+    }
+    
+    // Populate answers
+    populateAnswersInEditModal(answers);
+    // Remove any previous click event listeners and attach the main save logic directly
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    if (saveEditBtn) {
+        // Remove all previous click listeners by replacing the button with itself (preserves attributes, removes listeners)
+        const newBtn = saveEditBtn.cloneNode(true);
+        saveEditBtn.parentNode.replaceChild(newBtn, saveEditBtn);
+        newBtn.addEventListener('click', function() {
+            // --- Begin main save logic with answer validation ---
+            const questionText = document.getElementById('edit-question-text').value.trim();
+            if (!questionText) {
+                alert('Please fill in your question.');
+                return;
+            }
+            if (selectedTopicsForEdit.size === 0) {
+                alert('Please select a default topic before saving.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('QuestionText', questionText);
+            selectedTopicsForEdit.forEach(topicId => {
+                formData.append('selected_topic_ids[]', topicId);
+            });
+
+
+            // Validate answers: A and B required, C and D optional
+            let hasError = false;
+            let errorMsg = '';
+            document.querySelectorAll('#edit-answers-container .answer-choice').forEach((choice, idx) => {
+                const answerTypeRadio = choice.querySelector('input[type="radio"][name="edit_answer_type_' + idx + '"]:checked');
+                const isImage = answerTypeRadio && answerTypeRadio.value === 'image';
+                let answerText = '';
+                let answerImage = null;
+                let hasExistingImage = false;
+                let existingImageUrl = '';
+                // Always get the text value
+                answerText = choice.querySelector('.edit-answer-text-container textarea').value.trim();
+                // Always check for existing image in preview
+                const previewImg = choice.querySelector(`#edit-answer-image-preview-${idx} img`);
+                if (previewImg && previewImg.src && !previewImg.classList.contains('hidden') && previewImg.src !== window.location.href && previewImg.src !== '') {
+                    hasExistingImage = true;
+                    existingImageUrl = previewImg.src;
+                }
+                // Always check for new file
+                answerImage = choice.querySelector('input[type="file"][name="edit_answer_image_' + idx + '"]').files[0] || null;
+
+                // A and B required, C and D optional but if filled must be valid
+                if (idx < 2) {
+                    if (!answerText && !answerImage && !hasExistingImage) {
+                        hasError = true;
+                        errorMsg = `Answer ${String.fromCharCode(65 + idx)} must have either text or an image.`;
+                        return;
+                    }
+                } else {
+                    // For C and D, skip if all fields are empty
+                    if (!answerText && !answerImage && !hasExistingImage) {
+                        return; // skip appending this answer
+                    }
+                }
+                // Only append if required or has content
+                // Always append a value for answer_image if there is an existing image and no new file
+                if (isImage) {
+                    if (answerImage) {
+                        // If a new file is selected, use it
+                        formData.append(`answers[${idx}][answer_image]`, answerImage);
+                    } else if (hasExistingImage && existingImageUrl) {
+                        // If no new file, but there is an existing image, send the path
+                        formData.append(`answers[${idx}][answer_image]`, existingImageUrl);
+                    }
+                }
+                // Append the rest of the answer fields as before
+                const answerIdInput = choice.querySelector('input[type="hidden"][name="edit_answer_id_' + idx + '"]');
+                if (answerIdInput) {
+                    formData.append(`answers[${idx}][id]`, answerIdInput.value);
+                }
+                formData.append(`answers[${idx}][type]`, isImage ? 'image' : 'text');
+                formData.append(`answers[${idx}][is_correct]`, document.querySelector('input[type="radio"][name="edit_correct_answer"]:checked') && document.querySelector('input[type="radio"][name="edit_correct_answer"]:checked').value == idx ? '1' : '0');
+                formData.append(`answers[${idx}][text]`, answerText);
+            });
+            if (hasError) {
+                alert(errorMsg);
+                return;
+            }
+
+            // If validation passes, append answers to formData
+            document.querySelectorAll('#edit-answers-container .answer-choice').forEach((choice, idx) => {
+                const answerTypeRadio = choice.querySelector('input[type="radio"][name="edit_answer_type_' + idx + '"]:checked');
+                const isImage = answerTypeRadio && answerTypeRadio.value === 'image';
+                let answerText = '';
+                let answerImage = null;
+                if (isImage) {
+                    answerImage = choice.querySelector('input[type="file"][name="edit_answer_image_' + idx + '"]').files[0] || null;
+                } else {
+                    answerText = choice.querySelector('.edit-answer-text-container textarea').value.trim();
+                }
+                const answerIdInput = choice.querySelector('input[type="hidden"][name="edit_answer_id_' + idx + '"]');
+                if (answerIdInput) {
+                    formData.append(`answers[${idx}][id]`, answerIdInput.value);
+                }
+                formData.append(`answers[${idx}][type]`, isImage ? 'image' : 'text');
+                formData.append(`answers[${idx}][is_correct]`, document.querySelector('input[type="radio"][name="edit_correct_answer"]:checked') && document.querySelector('input[type="radio"][name="edit_correct_answer"]:checked').value == idx ? '1' : '0');
+                formData.append(`answers[${idx}][text]`, answerText);
+                if (isImage && answerImage) {
+                    formData.append(`answers[${idx}][answer_image]`, answerImage);
+                }
+            });
+            const questionImageInput = document.getElementById('edit-question-image-upload');
+            if (questionImageInput && questionImageInput.files.length > 0) {
+                formData.append('question_image', questionImageInput.files[0]);
+            }
+            // Add remove_image flag if user clicked remove
+            if (typeof editRemoveQuestionImageFlag !== 'undefined' && editRemoveQuestionImageFlag) {
+                formData.append('remove_image', '1');
+            }
+            fetch(`/question/${currentEditQuestionId}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                },
+                body: (() => { formData.append('_method', 'PUT'); return formData; })()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Question updated successfully!');
+                    // Reset remove image flag after successful save
+                    if (typeof editRemoveQuestionImageFlag !== 'undefined') {
+                        editRemoveQuestionImageFlag = false;
+                    }
+                    closeEditModalHandler();
+                    location.reload();
+                } else {
+                    let errorMessage = data.message || 'Unknown error';
+                    if (errorMessage.includes('question text field is required') || 
+                        errorMessage.includes('QuestionText') ||
+                        errorMessage.includes('question text')) {
+                        errorMessage = 'Please fill in your question.';
+                    }
+                    alert('Error updating question: ' + errorMessage);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating question');
+            });
+            // --- End main save logic ---
+        });
+    }
+}
+
+// Populate answers in the edit modal
+function populateAnswersInEditModal(answers) {
+    const editAnswersContainer = document.getElementById('edit-answers-container');
+    if (!editAnswersContainer) return;
+    
+    // Clear existing answers
+    editAnswersContainer.innerHTML = '';
+    
+    // Create 4 answer slots (A, B, C, D)
+    const answerLabels = ['A', 'B', 'C', 'D'];
+    
+    for (let i = 0; i < 4; i++) {
+        const label = answerLabels[i];
+        const answer = answers[i] || { AnswerID: '', AnswerText: '', ExpectedAnswer: 'N', AnswerImage: '', AnswerType: 'T' };
+        const isCorrect = answer.ExpectedAnswer === 'Y';
+        const isRequired = i < 2; // First 2 are required
+        const isImage = answer.AnswerType === 'I' || answer.AnswerImage;
+        
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'answer-choice border rounded-lg p-3 bg-gray-50 dark:bg-zinc-700';
+        
+        answerDiv.innerHTML = `
+            <input type="hidden" name="edit_answer_id_${i}" value="${answer.AnswerID || ''}">
+            <div class="flex items-start gap-3">
+                <div class="flex items-center">
+                    <input type="radio" name="edit_correct_answer" value="${i}" 
+                           class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                           ${isCorrect ? 'checked' : ''}>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-medium text-sm">${label}.</span>
+                        <span class="text-xs text-gray-500">Mark as correct answer</span>
+                        <span class="text-xs ${isRequired ? 'text-red-500' : 'text-violet-500'} font-medium">
+                            ${isRequired ? 'Required' : 'Optional'}
+                        </span>
+                    </div>
+                    <div class="mb-2 flex gap-4 items-center">
+                        <label class="flex items-center gap-1 text-xs font-medium">
+                            <input type="radio" name="edit_answer_type_${i}" value="text" 
+                                   class="edit-answer-type-radio text-violet-600 focus:ring-violet-500"
+                                   ${!isImage ? 'checked' : ''}>
+                            Text
+                        </label>
+                        <label class="flex items-center gap-1 text-xs font-medium">
+                            <input type="radio" name="edit_answer_type_${i}" value="image" 
+                                   class="edit-answer-type-radio text-violet-600 focus:ring-violet-500"
+                                   ${isImage ? 'checked' : ''}>
+                            Image
+                        </label>
+                    </div>
+                    
+                    <!-- Text Container -->
+                    <div class="edit-answer-text-container ${isImage ? 'hidden' : ''}">
+                        <textarea class="w-full p-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-white" 
+                                  rows="2" 
+                                  placeholder="Enter answer choice ${label}${isRequired ? '' : ' (optional)'}" 
+                                  data-answer-id="${answer.AnswerID}"
+                                  ${isRequired ? 'required' : ''}>${answer.AnswerText || ''}</textarea>
+                    </div>
+                    
+                    <!-- Image Container -->
+                    <div class="edit-answer-image-container ${!isImage ? 'hidden' : ''}">
+                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-violet-400 rounded-lg p-3 bg-violet-50 hover:bg-violet-100 transition cursor-pointer">
+                            <input type="hidden" name="edit_answer_id_${i}" value="${answer.AnswerID || ''}">
+                            <label for="edit-answer-image-upload-${i}" class="text-violet-600 font-semibold cursor-pointer mb-1">
+                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M4 12l4-4a2 2 0 012.828 0l2.344 2.344a2 2 0 002.828 0L20 8M4 12v4a2 2 0 002 2h12a2 2 0 002-2v-4"></path>
+                                </svg>
+                                Upload an image
+                            </label>
+                            <input id="edit-answer-image-upload-${i}" 
+                                   name="edit_answer_image_${i}" 
+                                   type="file" 
+                                   accept="image/png, image/jpeg, image/gif" 
+                                   class="hidden" />
+                            <span class="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB</span>
+                        </div>
+                        <div id="edit-answer-image-preview-${i}" class="mt-2 ${answer.AnswerImage ? '' : 'hidden'}">
+                            <img class="max-h-32 mx-auto rounded shadow" 
+                                 src="${answer.AnswerImage ? (answer.AnswerImage.startsWith('http') ? answer.AnswerImage : window.location.origin + '/' + answer.AnswerImage.replace(/^\//, '')) : ''}" 
+                                 alt="Answer image preview">
+                            <button type="button" class="mt-2 text-xs text-red-600 edit-remove-answer-image">Remove Image</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        editAnswersContainer.appendChild(answerDiv);
+    }
+    
+    // Reinitialize answer type switching and image preview handlers
+    initializeEditAnswerHandlers();
+}
+
+// Initialize edit answer handlers (type switching, image preview)
+function initializeEditAnswerHandlers() {
+    // Prevent selecting correct answer for empty inputs
+    document.querySelectorAll('#edit-answers-container .answer-choice').forEach(function(choice, idx) {
+        const correctRadio = choice.querySelector('input[type="radio"][name="edit_correct_answer"]');
+        if (!correctRadio) return;
+        correctRadio.addEventListener('click', function(e) {
+            // Check if this answer has text or image
+            const textArea = choice.querySelector('.edit-answer-text-container textarea');
+            const imageInput = choice.querySelector('input[type="file"]');
+            const imagePreview = choice.querySelector('img');
+            let hasContent = false;
+            if (!choice.classList.contains('hidden')) {
+                if (!choice.querySelector('.edit-answer-text-container').classList.contains('hidden')) {
+                    hasContent = textArea && textArea.value.trim().length > 0;
+                } else if (!choice.querySelector('.edit-answer-image-container').classList.contains('hidden')) {
+                    hasContent = (imageInput && imageInput.files.length > 0) || (imagePreview && imagePreview.src && !imagePreview.classList.contains('hidden'));
+                }
+            }
+            if (!hasContent) {
+                e.preventDefault();
+                alert('You can only mark a filled answer as correct. Please enter text or upload an image first.');
+                correctRadio.checked = false;
+            }
+        });
+    });
+    // Answer type switching
+    document.querySelectorAll('#edit-answers-container .answer-choice').forEach(function(choice) {
+        const radios = choice.querySelectorAll('.edit-answer-type-radio');
+        radios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const textContainer = radio.closest('.answer-choice').querySelector('.edit-answer-text-container');
+                const imageContainer = radio.closest('.answer-choice').querySelector('.edit-answer-image-container');
+                if (this.value === 'text') {
+                    textContainer.classList.remove('hidden');
+                    imageContainer.classList.add('hidden');
+                } else {
+                    textContainer.classList.add('hidden');
+                    imageContainer.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Image upload and preview
+        const imageInput = choice.querySelector('input[type="file"]');
+        const previewDiv = choice.querySelector('[id^="edit-answer-image-preview-"]');
+        const previewImg = previewDiv ? previewDiv.querySelector('img') : null;
+        const removeBtn = previewDiv ? previewDiv.querySelector('.edit-remove-answer-image') : null;
+
+        if (imageInput && previewDiv && previewImg && removeBtn) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewImg.src = event.target.result;
+                        previewDiv.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Track image removal for backend
+            removeBtn.addEventListener('click', function() {
+                imageInput.value = '';
+                previewDiv.classList.add('hidden');
+                previewImg.src = '';
+                // Set a flag on the answer div to indicate removal
+                choice.setAttribute('data-remove-image', '1');
+            });
+        }
+    });
+}
+
+// Enhanced save edit function to handle both text and images
+function saveQuestionEdit() {
+    const questionText = document.getElementById('edit-question-text').value.trim();
+    if (!questionText) {
+        alert('Please fill in your question.');
+        return;
+    }
+    
+    if (selectedTopicsForEdit.size === 0) {
+        alert('Please select a default topic before saving.');
+        return;
+    }
+    
+    // Collect answer data
+    const answers = [];
+    const correctAnswerRadio = document.querySelector('input[name="edit_correct_answer"]:checked');
+    
+    if (!correctAnswerRadio) {
+        alert('Please select a correct answer.');
+        return;
+    }
+    
+    const correctAnswerIndex = parseInt(correctAnswerRadio.value);
+    
+    // Collect all answers
+    document.querySelectorAll('#edit-answers-container .answer-choice').forEach((choice, index) => {
+        const answerIdInput = choice.querySelector('textarea[data-answer-id]');
+        const answerId = answerIdInput ? answerIdInput.dataset.answerId : null;
+        
+        const typeRadio = choice.querySelector(`input[name="edit_answer_type_${index}"]:checked`);
+        const isImage = typeRadio && typeRadio.value === 'image';
+        
+        let answerText = '';
+        let hasContent = false;
+        
+        if (isImage) {
+            const imageInput = choice.querySelector('input[type="file"]');
+            const existingImage = choice.querySelector('img');
+            
+            if (imageInput && imageInput.files.length > 0) {
+                hasContent = true;
+                answerText = ''; // Will be handled separately for file upload
+            } else if (existingImage && existingImage.src) {
+                hasContent = true;
+                answerText = ''; // Keep existing image
+            }
+        } else {
+            const textarea = choice.querySelector('textarea');
+            answerText = textarea ? textarea.value.trim() : '';
+            hasContent = answerText.length > 0;
+        }
+        
+        // Include answer if it has content or if it's required (first 2)
+        if (hasContent || index < 2) {
+            answers.push({
+                id: answerId,
+                text: answerText,
+                is_correct: index === correctAnswerIndex,
+                type: isImage ? 'image' : 'text',
+                index: index
+            });
+        }
+    });
+    
+    // Validate at least 2 answers
+    const filledAnswers = answers.filter(a => a.text || a.type === 'image');
+    if (filledAnswers.length < 2) {
+        alert('Please provide at least 2 answer choices.');
+        return;
+    }
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('QuestionText', questionText);
+    formData.append('selected_topic_ids', Array.from(selectedTopicsForEdit));
+    
+    // Add question image if updated
+    const questionImageInput = document.getElementById('edit-question-image-upload');
+    if (questionImageInput && questionImageInput.files.length > 0) {
+        formData.append('question_image', questionImageInput.files[0]);
+    }
+    
+    // Save question first
+    fetch(`/question/${currentEditQuestionId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        },
+        body: JSON.stringify({
+            QuestionText: questionText,
+            selected_topic_ids: Array.from(selectedTopicsForEdit)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Now update answers
+            return fetch(`/question/${currentEditQuestionId}/answers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({ answers })
+            });
+        } else {
+            throw new Error(data.message || 'Failed to update question');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Question updated successfully!');
+            closeEditModalHandler();
+            location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to update answers');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating question: ' + error.message);
+    });
+}
+
+// Add this to your existing DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // The saveEditBtn click handler is now defined with enhanced logic below. Do not re-add here.
+    
+    // Make sure the edit modal handlers are properly initialized
+    document.querySelectorAll('.edit-question-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            currentEditQuestionId = this.dataset.questionId;
+            loadQuestionForEdit(currentEditQuestionId);
+        });
+    });
+});
 
         // Delete question
         function deleteQuestion(questionId) {
@@ -2077,7 +2594,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Save question edits
+        // Enhanced save function with image upload support
         saveEditBtn.addEventListener('click', function() {
             // Check if question text is filled
             const questionText = document.getElementById('edit-question-text').value.trim();
@@ -2092,28 +2609,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const formData = new FormData(editQuestionForm);
-            const data = {};
-            
-            // Get form data
-            for (let [key, value] of formData.entries()) {
-                if (key === 'selected_topic_ids[]') {
-                    if (!data.selected_topic_ids) {
-                        data.selected_topic_ids = [];
-                    }
-                    data.selected_topic_ids.push(value);
+            // Build FormData for edit (including answers array)
+            const formData = new FormData();
+            // Question text
+            formData.append('QuestionText', document.getElementById('edit-question-text').value.trim());
+            // Selected topics
+            selectedTopicsForEdit.forEach(topicId => {
+                formData.append('selected_topic_ids[]', topicId);
+            });
+
+            // Build answers array from modal
+            document.querySelectorAll('#edit-answers-container .answer-choice').forEach((choice, idx) => {
+                const answerTypeRadio = choice.querySelector('input[type="radio"][name="edit_answer_type_' + idx + '"]:checked');
+                const isImage = answerTypeRadio && answerTypeRadio.value === 'image';
+                let answerText = '';
+                let answerImage = null;
+                let hasContent = false;
+                if (isImage) {
+                    answerImage = choice.querySelector('input[type="file"][name="edit_answer_image_' + idx + '"]').files[0] || null;
+                    // Check for existing image preview (for already saved answers)
+                    const existingImage = choice.querySelector('.edit-answer-image-preview-img')?.getAttribute('src');
+                    hasContent = !!answerImage || (existingImage && !existingImage.includes('placeholder'));
                 } else {
-                    data[key] = value;
+                    answerText = choice.querySelector('.edit-answer-text-container textarea').value.trim();
+                    hasContent = answerText.length > 0;
                 }
+                // Always include A and B (idx 0,1), only include C/D (idx 2,3) if they have content
+                if (idx < 2 || hasContent) {
+                    // Only append answer ID if there is content or it's A/B
+                    if (idx < 2 || hasContent) {
+                        const answerIdInput = choice.querySelector('input[type="hidden"][name="edit_answer_id_' + idx + '"]');
+                        if (answerIdInput && answerIdInput.value) {
+                            formData.append(`answers[${idx}][id]`, answerIdInput.value);
+                        }
+                    }
+                    formData.append(`answers[${idx}][type]`, isImage ? 'image' : 'text');
+                    formData.append(`answers[${idx}][is_correct]`, choice.querySelector('input[type="radio"][name="edit_correct_answer"]:checked') && choice.querySelector('input[type="radio"][name="edit_correct_answer"]:checked').value == idx ? '1' : '0');
+                    formData.append(`answers[${idx}][text]`, answerText);
+                    if (isImage && answerImage) {
+                        formData.append(`answers[${idx}][answer_image]`, answerImage);
+                    }
+                    // If image was removed, send a flag for backend
+                    if (choice.getAttribute('data-remove-image') === '1') {
+                        formData.append(`answers[${idx}][remove_image]`, '1');
+                    }
+                }
+            });
+
+            // Add question image if present
+            const questionImageInput = document.getElementById('edit-question-image-upload');
+            if (questionImageInput && questionImageInput.files.length > 0) {
+                formData.append('question_image', questionImageInput.files[0]);
             }
-            
+
             fetch(`/question/${currentEditQuestionId}`, {
-                method: 'PUT',
+                method: 'POST', // Use POST with _method=PUT for Laravel compatibility with FormData
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
                 },
-                body: JSON.stringify(data)
+                body: (() => { formData.append('_method', 'PUT'); return formData; })()
             })
             .then(response => response.json())
             .then(data => {
@@ -2122,15 +2676,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeEditModalHandler();
                     location.reload();
                 } else {
-                    // Handle specific validation errors with user-friendly messages
                     let errorMessage = data.message || 'Unknown error';
-                    
                     if (errorMessage.includes('question text field is required') || 
                         errorMessage.includes('QuestionText') ||
                         errorMessage.includes('question text')) {
                         errorMessage = 'Please fill in your question.';
                     }
-                    
                     alert('Error updating question: ' + errorMessage);
                 }
             })
