@@ -111,10 +111,9 @@
                         <div class="flex h-[90vh] flex-col">
                             <div class="mx-auto mb-12">
                                 <a href="#">
-                                    <img src="{{ asset('images/logo-sm.svg') }}" alt="" class="inline h-7">
-                                    <span
-                                        class="text-xl font-medium align-middle ltr:ml-1.5 rtl:mr-1.5 dark:text-white">
-                                        Minia
+                                    
+                                    <span class="text-4xl font-black align-middle ltr:ml-1.5 rtl:mr-1.5 text-gray-900 dark:text-white">
+                                        E-Assessment
                                     </span>
                                 </a>
                             </div>
@@ -183,7 +182,8 @@
                                 <p class="relative text-gray-500 dark:text-gray-100">©
                                     <script>
                                         document.write(new Date().getFullYear())
-                                    </script> Minia
+                                    </script> Infinecs Systemsv | Design & Develop by <a href="https://infinecs.com/" class="text-blue-600 underline hover:text-blue-800 transition-colors">Infinecs</a>
+           
                                 </p>
                             </div>
                         </div>

@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\AuthController;
@@ -10,7 +11,7 @@ use App\Http\Controllers\AssessmentCategoryController;
 use App\Http\Controllers\AssessmentTopicController;
 use App\Http\Controllers\AssessmentQuestionController;
 use App\Http\Controllers\QuizController;
-
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use App\Models\Participant;
 
@@ -142,3 +143,14 @@ Route::post('/quiz/{eventCode}/heartbeat', [QuizController::class, 'heartbeat'])
 
     Route::get('/quiz/{eventCode}/results', [QuizController::class, 'showResults'])
     ->name('quiz.results');
+
+Route::get('/users', [UserController::class, 'index'])->name('users.index');
+
+
+Route::get('/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/users/search', [UserController::class, 'search'])->name('users.search'); // Move this up
+Route::post('/users', [UserController::class, 'store'])->name('users.store');
+Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::post('/users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');

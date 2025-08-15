@@ -5,9 +5,8 @@
         <!-- Left: Logo & Menu Toggle -->
         <div class="flex items-center topbar-brand">
             <div class="hidden lg:flex navbar-brand items-center justify-between shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none">
-                <a href="#" class="flex items-center text-lg flex-shrink-0 font-bold dark:text-white leading-[69px]">
-                    <img src="images/Infinecs-with-slogan.png" alt="Logo" class="inline-block w-50   h-10    align-middle ltr:xl:mr-2 rtl:xl:ml-2">
-
+                <a href="#" class="flex items-center text-3xl font-black tracking-tight flex-shrink-0 dark:text-white leading-[69px] px-2 py-1 rounded">
+                    E-Assessment
                 </a>
             </div>
         </div>

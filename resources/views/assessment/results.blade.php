@@ -1,3 +1,20 @@
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<!-- jQuery and DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('table').DataTable({
+        searching: false,
+        lengthChange: false,
+        paging: false,
+        columnDefs: [
+            { orderable: false, targets: 0 } // Disable sorting for the first column (checkbox)
+        ]
+    });
+});
+</script>
 @extends('layout.appMain')
 
 @section('content')
@@ -223,21 +240,20 @@
                             <thead
                                 class="text-xs text-gray-700 uppercase dark:text-gray-100 bg-gray-50 dark:bg-zinc-700 sticky top-0 z-40 shadow-sm">
                                 <tr>
-                                <th class="p-3">
-                                    <div class="flex items-center justify-center">
-                                        <input id="checkbox-all" type="checkbox"
-                                            class="w-4 h-4 border-gray-300 rounded bg-white">
-                                        <label for="checkbox-all" class="sr-only">checkbox</label>
-                                    </div>
-                                </th>
-                                <th class="px-3 py-2">Name</th>
-                                <th class="px-3 py-2">Phone Number</th>
-                                <th class="px-3 py-2">Email</th>
-                                <th class="px-3 py-2">Event Name</th>
-                                <th class="px-3 py-2">Score</th>
-                                <th class="px-3 py-2">Date Answered</th>
-                                <th class="px-3 py-2">Actions</th> 
-                            </tr>
+                                    <th class="w-4 p-3 text-center">
+                                        <div class="flex items-center justify-center">
+                                            <input id="checkbox-all" type="checkbox" class="w-4 h-4 border-gray-300 rounded bg-white">
+                                            <label for="checkbox-all" class="sr-only">checkbox</label>
+                                        </div>
+                                    </th>
+                                    <th class="px-3 py-2 text-center">Name</th>
+                                    <th class="px-3 py-2 text-center">Phone Number</th>
+                                    <th class="px-3 py-2 text-center">Email</th>
+                                    <th class="px-3 py-2 text-center">Event Name</th>
+                                    <th class="px-3 py-2 text-center">Score</th>
+                                    <th class="px-3 py-2 text-center">Date Answered</th>
+                                    <th class="px-3 py-2 text-center">Actions</th>
+                                </tr>
                         </thead>
                         <tbody>
                             @forelse($records as $row)

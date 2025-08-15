@@ -43,6 +43,13 @@
                         </li>
                     </ul>
                 </li>
+                 <li>
+                    <a href="{{ url('/users') }}"
+                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white">
+                        <i data-feather="user" fill="#545a6d33"></i>
+                        <span data-key="t-dashboard"> Users</span>
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
