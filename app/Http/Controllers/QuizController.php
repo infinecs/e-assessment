@@ -61,8 +61,8 @@ class QuizController extends Controller
                 $allQuestions = $allQuestions->merge($extraQuestions);
             }
 
-            // Store questions in session
-            $allQuestions = $allQuestions->unique('QuestionID')->values();
+            // Store questions in session, trimmed to the question limit
+            $allQuestions = $allQuestions->unique('QuestionID')->values()->take($questionLimit);
             session(["quiz_questions_$eventCode" => $allQuestions->pluck('QuestionID')->toArray()]);
             $questions = $allQuestions;
         }

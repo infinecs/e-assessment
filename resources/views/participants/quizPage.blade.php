@@ -71,10 +71,10 @@
         const form = document.getElementById('quiz-form');
         
         // Timer functionality - calculate total time
-        let totalSeconds = 0;
-        @foreach($questions as $q)
-            totalSeconds += {{ $q->durationeachquestion ?? 60 }};
-        @endforeach
+    // Use event's duration and question limit for timer
+    let questionLimit = {{ $assessment->QuestionLimit ?? $questions->count() }};
+    let durationEach = {{ $assessment->DurationEachQuestion ?? 60 }};
+    let totalSeconds = durationEach * questionLimit;
         
         // Create unique storage keys for this event and participant
         const storageKey = 'quiz_timer_{{ $eventCode }}_{{ session("participant_email", "guest") }}';
