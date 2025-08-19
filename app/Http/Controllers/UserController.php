@@ -23,10 +23,13 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        // Allow JSON AJAX requests to be parsed as form data
+        if ($request->isJson()) {
+            $request->merge(json_decode($request->getContent(), true) ?? []);
+        }
+        // Debug: log incoming request data
+        \Log::info('User creation request:', $request->all());
         try {
-            // Debug: log incoming request data
-            \Log::info('Store request data:', $request->all());
-
             $validated = $request->validate([
                 'email' => 'required|email|unique:users,email',
                 'roles' => 'required|string|max:255',
@@ -41,40 +44,24 @@ class UserController extends Controller
                 ],
                 'password_confirmation' => 'required|same:password',
             ]);
-
-            \Log::info('Validated data:', $validated);
-
             $user = User::create([
                 'email' => $validated['email'],
                 'roles' => $validated['roles'],
-                'password' => \Hash::make($validated['password']),
-                'name' => explode('@', $validated['email'])[0],
+                'password' => \Hash::make($validated['password'])
             ]);
-
-            \Log::info('User created:', $user->toArray());
-
-
-            \Log::info('User creation response:', [
-                'success' => true,
-                'message' => 'User created successfully!',
-                'user' => $user
-            ]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'User created successfully!',
                 'user' => $user
             ]);
-
-        } catch (ValidationException $e) {
-            \Log::error('Validation error:', $e->errors());
+    } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => 'Validation failed: ' . implode(', ', $e->errors()),
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Store error:', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            \Log::error('User creation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while creating the user: ' . $e->getMessage()
@@ -113,6 +100,10 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Allow JSON AJAX requests to be parsed as form data
+        if ($request->isJson()) {
+            $request->merge(json_decode($request->getContent(), true) ?? []);
+        }
         try {
             $user = User::find($id);
             if (!$user) {
@@ -213,11 +204,9 @@ class UserController extends Controller
             $ids = $validated['ids'];
             $deletedCount = User::whereIn('id', $ids)->delete();
 
-            $userText = $deletedCount === 1 ? 'user' : 'users';
-
             return response()->json([
                 'success' => true,
-                'message' => "Successfully deleted {$deletedCount} {$userText}!"
+                'message' => 'Users deleted successfully!'
             ]);
 
         } catch (ValidationException $e) {

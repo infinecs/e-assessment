@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>{{ "Login"}} | Minia - Admin & Dashboard Template</title>
+    <title>{{ "Login"}} | Infinecs Assessment Page</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Tailwind Admin & Dashboard Template" name="description">
     <meta content="Themesbrand" name="author">
@@ -90,16 +90,15 @@
                     <div class="w-full p-10 bg-white xl:p-12 dark:bg-zinc-800">
                         <div class="flex h-[90vh] flex-col">
                             <div class="mx-auto mb-12">
-                                <a href="index.html">
-                                    <img src="images/logo-sm.svg" alt="" class="inline h-7">
-                                    <span class="text-xl font-medium align-middle ltr:ml-1.5 rtl:mr-1.5 dark:text-white">Minia</span>
-                                </a>
+                                <div class="text-center">
+                                    <span class="text-4xl font-extrabold align-middle dark:text-white" style="letter-spacing: 1px;">E-Assessment</span>
+                                </div>
                             </div>
 
                             <div class="my-auto">
                                 <div class="text-center">
                                     <h5 class="font-medium text-gray-700 dark:text-gray-100">Welcome Back !</h5>
-                                    <p class="mt-2 mb-4 text-gray-500 dark:text-gray-100/60">Sign in to continue to Minia.</p>
+                                    <p class="mt-2 mb-4 text-gray-500 dark:text-gray-100/60">Sign in to continue to E-Assessment.</p>
                                 </div>
 
                                 <form class="pt-2" method="POST" action="{{ route('login') }}">
@@ -154,20 +153,13 @@
             type="submit">Log In</button>
     </div>
 </form>
-                                <div class="pt-2 mt-5 text-center">
-                                    <h6 class="mb-3 font-medium text-gray-500 text-14 dark:text-gray-100">- Sign in with -</h6>
-                                    <div class="flex justify-center gap-3">
-                                        <a href="#" class="w-8 h-8 leading-8 rounded-full bg-violet-500 text-center"><i class="text-sm text-white mdi mdi-facebook"></i></a>
-                                        <a href="#" class="w-8 h-8 leading-8 rounded-full bg-sky-500 text-center"><i class="text-sm text-white mdi mdi-twitter"></i></a>
-                                        <a href="#" class="w-8 h-8 leading-8 rounded-full bg-red-400 text-center"><i class="text-sm text-white mdi mdi-google"></i></a>
-                                    </div>
-                                </div>
+
 
 
                             </div>
 
                             <div class="text-center">
-                                <p class="relative text-gray-500 dark:text-gray-100">© <script>document.write(new Date().getFullYear())</script> Minia. Crafted with <i class="text-red-400 mdi mdi-heart"></i> by Themesbrand</p>
+                                <p class="relative text-gray-500 dark:text-gray-100">© <script>document.write(new Date().getFullYear())</script>Infinecs Systems |</script> Design & Developed by <a href="https://infinecs.com/" class="text-blue-600 underline hover:text-blue-800 transition-colors">Infinecs</a>
                             </div>
                         </div>
                     </div>

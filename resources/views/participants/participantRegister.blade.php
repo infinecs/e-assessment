@@ -182,7 +182,7 @@
                                 <p class="relative text-gray-500 dark:text-gray-100">©
                                     <script>
                                         document.write(new Date().getFullYear())
-                                    </script> Infinecs Systemsv | Design & Develop by <a href="https://infinecs.com/" class="text-blue-600 underline hover:text-blue-800 transition-colors">Infinecs</a>
+                                    </script> Infinecs Systems | Design & Developed by <a href="https://infinecs.com/" class="text-blue-600 underline hover:text-blue-800 transition-colors">Infinecs</a>
            
                                 </p>
                             </div>

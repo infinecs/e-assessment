@@ -97,31 +97,38 @@ class AssessmentResultController extends Controller
                          data-event-id="' . ($row->EventID ?? '') . '"
                          data-date-answered="' . $row->DateCreate . '"
                          class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:border-zinc-600">';
-            
+
             $html .= '<td class="w-4 p-3">
                         <div class="flex items-center justify-center">
                             <input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                         </div>
                       </td>';
-            
+
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->name ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->phone_number ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->email ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->event->EventName ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . $row->TotalScore . ' / ' . $row->TotalQuestion . '</td>';
+            // Percentage column
+            if ($row->TotalQuestion > 0) {
+                $percentage = number_format(($row->TotalScore / $row->TotalQuestion) * 100, 2) . '%';
+            } else {
+                $percentage = '-';
+            }
+            $html .= '<td class="px-3 py-2">' . $percentage . '</td>';
             $html .= '<td class="px-3 py-2">' . \Carbon\Carbon::parse($row->DateCreate)->format('d M Y') . '</td>';
             $html .= '<td class="px-3 py-2">
                         <button type="button" class="view-details px-4 py-1 text-sm bg-blue-500 text-blue-600 rounded hover:underline" data-id="' . $row->AssessmentID . '">
                             View
                         </button>
                       </td>';
-            
+
             $html .= '</tr>';
         }
 
         // If no records found
         if ($records->isEmpty()) {
-            $html = '<tr><td colspan="8" class="px-3 py-2 text-center">No records found</td></tr>';
+            $html = '<tr><td colspan="9" class="px-3 py-2 text-center">No records found</td></tr>';
         }
 
         return response()->json([

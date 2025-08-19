@@ -46,13 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateBulkDeleteVisibility() {
         const checkedCount = getRowCheckboxes().filter(cb => cb.checked).length;
-        console.log('Checked count:', checkedCount);
         if (bulkDeleteBtn) {
-            bulkDeleteBtn.style.display = checkedCount > 0 ? 'inline-flex' : 'none';
+            if (checkedCount > 0) {
+                bulkDeleteBtn.style.removeProperty('display');
+            } else {
+                bulkDeleteBtn.style.display = 'none';
+            }
             bulkDeleteBtn.innerHTML = 'Delete';
-            console.log('Bulk delete button display:', bulkDeleteBtn.style.display);
-        } else {
-            console.log('Bulk delete button not found');
         }
     }
 
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			</div>
             <div class="ml-auto flex items-center gap-3">
                 <!-- Bulk Delete button -->
-                <button id="bulk-delete-btn" type="button" class="px-6 py-1.5 text-white btn bg-red-600 border-red-600 hover:bg-red-700 hover:border-red-700 focus:bg-red-700 focus:border-red-700 focus:ring focus:ring-red-500/30 active:bg-red-700 active:border-red-700 text-sm">
+                <button id="bulk-delete-btn" type="button" onclick="performBulkDelete()" style="display:none;" class="px-6 py-1.5 text-white btn bg-red-600 border-red-600 hover:bg-red-700 hover:border-red-700 focus:bg-red-700 focus:border-red-700 focus:ring focus:ring-red-500/30 active:bg-red-700 active:border-red-700 text-sm">
                     Delete
                 </button>
                 <!-- Add button -->
@@ -398,34 +398,8 @@ function togglePasswordVisibility(inputId, btn) {
 </div>
 
 <!-- Delete User Modal -->
-<div id="deleteUserModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-   <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-	   <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
-	   <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-	   <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
-		   <form id="deleteUserForm" class="flex flex-col h-full">
-			   <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800 flex-1 overflow-y-auto">
-				   <div class="sm:flex sm:items-start">
-					   <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-						   <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">Delete User</h3>
-						   <div class="mt-4">
-							   <p class="text-sm text-gray-700 dark:text-gray-300">Are you sure you want to delete user <span id="deleteUserEmail" class="font-semibold"></span>?</p>
-						   </div>
-					   </div>
-				   </div>
-			   </div>
-			   <div class="bg-gray-50 px-4 py-2 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
-				   <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
-					   Delete
-				   </button>
-				   <button type="button" onclick="closeDeleteUserModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
-					   Cancel
-				   </button>
-			   </div>
-		   </form>
-	   </div>
-   </div>
-</div>
+
+<!-- No custom delete confirmation bar: using standard JS confirm() -->
 
 @endsection
 
@@ -435,17 +409,8 @@ function togglePasswordVisibility(inputId, btn) {
 let currentEditUserId = null;
 
 // Utility functions
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
+function showMessageBar(message, type = 'success') {
+    alert(message);
 }
 
 // Modal functions
@@ -485,7 +450,7 @@ function editUser(id) {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Failed to load user details', 'error');
+            showMessageBar('Failed to load user details', 'error');
         });
 }
 
@@ -495,19 +460,36 @@ function closeEditUserModal() {
 }
 
 function deleteUser(id, email) {
-    document.getElementById('deleteUserEmail').textContent = email;
-    document.getElementById('deleteUserModal').classList.remove('hidden');
-    document.getElementById('deleteUserForm').setAttribute('data-user-id', id);
-}
-
-function closeDeleteUserModal() {
-    document.getElementById('deleteUserModal').classList.add('hidden');
-    document.getElementById('deleteUserForm').removeAttribute('data-user-id');
+    if (!window.confirm(`Are you sure you want to delete user ${email}?`)) {
+        return;
+    }
+    fetch(`/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessageBar(`User ${email} deleted successfully`, 'success');
+            refreshUserTable();
+        } else {
+            showMessageBar(data.message || 'Failed to delete user', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessageBar('An error occurred while deleting user', 'error');
+    });
 }
 
 // Form submission handlers
 document.getElementById('addUserForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    console.log('Form submitted!');
+    
     const email = document.getElementById('add_user_email').value.trim();
     const roles = document.getElementById('add_user_roles').value.trim();
     const password = document.getElementById('add_user_password').value;
@@ -516,49 +498,26 @@ document.getElementById('addUserForm').addEventListener('submit', function(e) {
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
 
-    // Client-side validation
+    console.log('Form data:', { email, roles, password: password ? 'HAS_PASSWORD' : 'NO_PASSWORD' });
+
+    // Basic validation
     if (!email || !roles || !password || !passwordConfirm) {
         errorDiv.textContent = 'All fields are required.';
         errorDiv.classList.remove('hidden');
         return;
     }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-        errorDiv.textContent = 'Please enter a valid email address.';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-    // Password strength validation
-    const passwordRequirements = [];
-    if (password.length < 8) {
-        passwordRequirements.push('at least 8 characters');
-    }
-    if (!/[A-Z]/.test(password)) {
-        passwordRequirements.push('an uppercase letter');
-    }
-    if (!/[a-z]/.test(password)) {
-        passwordRequirements.push('a lowercase letter');
-    }
-    if (!/[0-9]/.test(password)) {
-        passwordRequirements.push('a number');
-    }
-    if (!/[^A-Za-z0-9]/.test(password)) {
-        passwordRequirements.push('a special character');
-    }
-    if (passwordRequirements.length > 0) {
-        errorDiv.textContent = 'Password must contain: ' + passwordRequirements.join(', ') + '.';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
+
     if (password !== passwordConfirm) {
         errorDiv.textContent = 'Passwords do not match.';
         errorDiv.classList.remove('hidden');
         return;
     }
-    errorDiv.classList.add('hidden');
 
+    errorDiv.classList.add('hidden');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Adding...';
 
+    // Use the EXACT same format that worked in our test
     fetch('/users', {
         method: 'POST',
         headers: {
@@ -572,19 +531,24 @@ document.getElementById('addUserForm').addEventListener('submit', function(e) {
             password_confirmation: passwordConfirm
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Form response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Form response data:', data);
         if (data.success) {
-            showToast(data.message);
+            showMessageBar(data.message || 'User added', 'success');
             closeAddUserModal();
             refreshUserTable();
         } else {
             errorDiv.textContent = data.message || 'Failed to add user';
             errorDiv.classList.remove('hidden');
+            showMessageBar(data.message || 'Failed to add user', 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Form error:', error);
         errorDiv.textContent = 'An error occurred while adding user';
         errorDiv.classList.remove('hidden');
     })
@@ -618,16 +582,16 @@ document.getElementById('editUserForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast(data.message);
+            showMessageBar(data.message || 'User updated', 'success');
             closeEditUserModal();
             refreshUserTable();
         } else {
-            showToast(data.message || 'Failed to update user', 'error');
+            showMessageBar(data.message || 'Failed to update user', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('An error occurred while updating user', 'error');
+    showMessageBar('An error occurred while updating user', 'error');
     })
     .finally(() => {
         submitBtn.disabled = false;
@@ -635,42 +599,8 @@ document.getElementById('editUserForm').addEventListener('submit', function(e) {
     });
 });
 
-document.getElementById('deleteUserForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const userId = this.getAttribute('data-user-id');
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Deleting...';
-    
-    fetch(`/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(data.message);
-            closeDeleteUserModal();
-            refreshUserTable();
-        } else {
-            showToast(data.message || 'Failed to delete user', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('An error occurred while deleting user', 'error');
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
+
+// No custom delete confirmation bar handlers needed
 
 // Search functionality
 let searchTimeout;
@@ -714,36 +644,35 @@ function searchUsers(query) {
 function performBulkDelete() {
     const checkedBoxes = document.querySelectorAll('tbody .row-checkbox:checked');
     const ids = Array.from(checkedBoxes).map(cb => cb.closest('tr').getAttribute('data-user-id'));
-    
     if (ids.length === 0) {
         showToast('Please select at least one user', 'error');
         return;
     }
-    
-    if (confirm(`Are you sure you want to delete ${ids.length} user(s)?`)) {
-        fetch('/users/bulk-delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ ids: ids })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast(data.message);
-                refreshUserTable();
-                document.getElementById('checkbox-all').checked = false;
-            } else {
-                showToast(data.message || 'Failed to delete users', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('An error occurred while deleting users', 'error');
-        });
+    if (!window.confirm(`Are you sure you want to delete ${ids.length} user(s)?`)) {
+        return;
     }
+    fetch('/users/bulk-delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ ids: ids })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessageBar(data.message || 'Users deleted', 'success');
+            refreshUserTable();
+            document.getElementById('checkbox-all').checked = false;
+        } else {
+            showMessageBar(data.message || 'Failed to delete users', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    showMessageBar('An error occurred while deleting users', 'error');
+    });
 }
 
 // Refresh user table
@@ -790,6 +719,11 @@ function updateUserTable(users) {
     
     // Re-initialize checkbox logic
     initUserCheckboxLogic();
+    // Ensure bulk delete button visibility is updated after table update
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.style.display = 'none';
+    }
 }
 
 // Checkbox and bulk delete logic
@@ -804,8 +738,12 @@ function initUserCheckboxLogic() {
     function updateBulkDeleteVisibility() {
         const checkedCount = getRowCheckboxes().filter(cb => cb.checked).length;
         if (bulkDeleteBtn) {
-            bulkDeleteBtn.style.display = checkedCount > 0 ? 'inline-flex' : 'none';
-            bulkDeleteBtn.innerHTML = `<i class="mdi mdi-trash-can"></i> Delete ${checkedCount} user${checkedCount !== 1 ? 's' : ''}`;
+            if (checkedCount > 0) {
+                bulkDeleteBtn.style.display = 'inline-flex';
+            } else {
+                bulkDeleteBtn.style.display = 'none';
+            }
+            bulkDeleteBtn.innerHTML = 'Delete';
         }
     }
     
@@ -857,10 +795,6 @@ function initUserCheckboxLogic() {
             }
         };
         tbody.addEventListener('change', tbody._checkboxDelegate);
-    }
-    
-    if (bulkDeleteBtn) {
-        bulkDeleteBtn.onclick = performBulkDelete;
     }
     
     // Initial state

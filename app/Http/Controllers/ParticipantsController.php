@@ -30,6 +30,9 @@ class ParticipantsController extends Controller
         'event_code' => $eventCode,
     ]);
 
+    // Clear all quiz-related session data for this event code
+    session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode", "quiz_result_$eventCode", "quiz_completed_$eventCode"]);
+
     // Store participant info in session (this is key!)
     session([
         'participant_email' => $participant->email,

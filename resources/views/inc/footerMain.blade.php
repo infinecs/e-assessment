@@ -5,10 +5,11 @@
             <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-7 inline">
         </div>
         <div class="text-end">
-           &copy;
-            <script>
-                document.write(new Date().getFullYear());
-            </script> Infinecs Systems
+            <p class="relative text-gray-500 dark:text-gray-100">©
+                <script>
+                    document.write(new Date().getFullYear())
+                </script> Infinecs Systems | Design & Developed by <a href="https://infinecs.com/" class="text-blue-600 underline hover:text-blue-800 transition-colors">Infinecs</a>
+            </p>
         </div>
     </div>
 </footer>

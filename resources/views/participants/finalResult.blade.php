@@ -18,16 +18,20 @@
         @php
             $percentage = ($result['score'] / $result['total']) * 100;
         @endphp
-        <p class="mb-6 text-gray-600">
-            @if($percentage == 100)
-                Excellent! Perfect score.
-            @elseif($percentage >= 75)
-                Great job! You did really well.
-            @elseif($percentage >= 50)
-                Good effort! Keep practicing.
-            @else
-                Don't give up! Study and try again.
-            @endif
+        <p class="mb-6">
+            @php
+                $percentClass = 'text-gray-600';
+                if ($percentage == 100) {
+                    $percentClass = 'text-green-600 font-extrabold';
+                } elseif ($percentage >= 75) {
+                    $percentClass = 'text-blue-600 font-bold';
+                } elseif ($percentage >= 50) {
+                    $percentClass = 'text-yellow-600 font-bold';
+                } else {
+                    $percentClass = 'text-red-600 font-bold';
+                }
+            @endphp
+            <span class="text-3xl {{ $percentClass }}">{{ number_format($percentage, 2) }}%</span>
         </p>
         <a href="{{ url('/') }}"
            class="inline-block px-6 py-2 bg-violet-600 text-white rounded hover:bg-violet-700">

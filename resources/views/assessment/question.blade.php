@@ -1,4 +1,21 @@
-           
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+<!-- jQuery and DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('table').DataTable({
+        searching: false,
+        lengthChange: false,
+        paging: false,
+        columnDefs: [
+            { orderable: false, targets: 0 }, // Disable sorting for the first column (checkbox)
+            { orderable: false, targets: -3 } // Disable sorting for the Actions column (third from the end)
+        ]
+    });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Edit modal: update preview when a new question image is uploaded

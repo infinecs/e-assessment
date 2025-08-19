@@ -10,7 +10,9 @@ $(document).ready(function() {
         lengthChange: false,
         paging: false,
         columnDefs: [
-            { orderable: false, targets: 0 } // Disable sorting for the first column (checkbox)
+            { orderable: false, targets: 0 }, // Disable sorting for the first column (checkbox)
+            { orderable: false, targets: -1 } // Disable sorting for the Actions column (last column)
+            // Score and Percentage columns remain sortable by default
         ]
     });
 });
@@ -247,11 +249,12 @@ $(document).ready(function() {
                                         </div>
                                     </th>
                                     <th class="px-3 py-2 text-center">Name</th>
-                                    <th class="px-3 py-2 text-center">Phone Number</th>
+                                    <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Phone Number</span></th>
                                     <th class="px-3 py-2 text-center">Email</th>
                                     <th class="px-3 py-2 text-center">Event Name</th>
-                                    <th class="px-3 py-2 text-center">Score</th>
-                                    <th class="px-3 py-2 text-center">Date Answered</th>
+                                    <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Score</span></th>
+                                    <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Percentage</span></th>
+                                    <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Date Answered</span></th>
                                     <th class="px-3 py-2 text-center">Actions</th>
                                 </tr>
                         </thead>
@@ -275,6 +278,13 @@ $(document).ready(function() {
                                     <td class="px-3 py-2">{{ $row->participant->email ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->event->EventName ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->TotalScore }} / {{ $row->TotalQuestion }}</td>
+                                    <td class="px-3 py-2">
+                                        @if($row->TotalQuestion > 0)
+                                            {{ number_format(($row->TotalScore / $row->TotalQuestion) * 100, 2) }}%
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td class="px-3 py-2">{{ \Carbon\Carbon::parse($row->DateCreate)->format('d M Y') }}
                                     </td>
                                     <td class="px-3 py-2">
@@ -287,7 +297,7 @@ $(document).ready(function() {
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-3 py-2 text-center">No records found</td>
+                                    <td colspan="9" class="px-3 py-2 text-center">No records found</td>
                                 </tr>
                             @endforelse
                         </tbody>

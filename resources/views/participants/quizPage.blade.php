@@ -49,8 +49,99 @@
             }
         }
     </style>
-   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    <script>
+    // Declare isSubmitting and isQuizActive globally so all handlers can access them
+    let isSubmitting = false;
+    let isQuizActive = false;
+     document.addEventListener('DOMContentLoaded', () => {
+        // Custom close warning and forced null submission
+        let closeConfirmed = false;
+        window.addEventListener('beforeunload', function (e) {
+            if (!isSubmitting && isQuizActive && !closeConfirmed) {
+                e.preventDefault();
+                // Show custom modal
+                showCloseWarning();
+                // Chrome requires returnValue to be set
+                e.returnValue = '';
+                return '';
+            }
+        });
+
+        // Modal HTML
+        function showCloseWarning() {
+            if (document.getElementById('close-warning-modal')) return;
+            const modal = document.createElement('div');
+            modal.id = 'close-warning-modal';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100vw';
+            modal.style.height = '100vh';
+            modal.style.background = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '9999';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:2rem 2.5rem;border-radius:1rem;max-width:90vw;box-shadow:0 2px 16px #0002;text-align:center;">
+                    <h2 style="font-size:1.5rem;font-weight:bold;color:#b91c1c;">Are you sure you want to close the assessment?</h2>
+                    <p class="mt-2 mb-4"><b>All answers will be submitted as null.</b></p>
+                    <div style="margin-top:2rem;display:flex;gap:1.5rem;justify-content:center;">
+                        <button id="close-warning-confirm" style="background:#b91c1c;color:#fff;padding:0.75rem 2rem;border:none;border-radius:0.5rem;font-size:1rem;font-weight:bold;">Confirm</button>
+                        <button id="close-warning-cancel" style="background:#64748b;color:#fff;padding:0.75rem 2rem;border:none;border-radius:0.5rem;font-size:1rem;font-weight:bold;">Cancel</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('close-warning-confirm').onclick = async function() {
+                closeConfirmed = true;
+                document.body.removeChild(modal);
+                await submitAllNullAnswers();
+                window.removeEventListener('beforeunload', beforeUnloadBypass, true);
+                window.close();
+            };
+            document.getElementById('close-warning-cancel').onclick = function() {
+                document.body.removeChild(modal);
+            };
+        }
+
+        // Helper to bypass beforeunload for programmatic close
+        function beforeUnloadBypass(e) {
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        }
+
+        // Submit all answers as null
+        async function submitAllNullAnswers() {
+            if (isSubmitting) return;
+            isSubmitting = true;
+            localStorage.setItem('quiz_finished_{{ $eventCode }}', '1');
+            clearQuizData();
+            clearIntervals();
+            // Build FormData with all questions as blank (ignore any saved answers)
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            @foreach ($questions as $q)
+                formData.append('answers[{{ $q->QuestionID }}]', '');
+            @endforeach
+            try {
+                await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (error) {
+                // ignore
+            }
+        }
+        // If quiz is already finished, redirect to results page immediately
+        if (localStorage.getItem('quiz_finished_{{ $eventCode }}') === '1') {
+            window.location.href = "{{ route('quiz.results', $eventCode) }}";
+            return;
+        }
+        // Declare isSubmitting at the very top so all handlers can access it
+        // Always clear quiz finished flag at the start of a new session
+        localStorage.removeItem('quiz_finished_{{ $eventCode }}');
         // --- Fix: Clear quiz data if participant email has changed ---
         const currentEmail = "{{ session('participant_email', 'guest') }}";
         const emailKey = 'quiz_last_email_{{ $eventCode }}';
@@ -71,10 +162,10 @@
         const form = document.getElementById('quiz-form');
         
         // Timer functionality - calculate total time
-    // Use event's duration and question limit for timer
-    let questionLimit = {{ $assessment->QuestionLimit ?? $questions->count() }};
-    let durationEach = {{ $assessment->DurationEachQuestion ?? 60 }};
-    let totalSeconds = durationEach * questionLimit;
+        // Use event's duration and question limit for timer
+        let questionLimit = {{ $assessment->QuestionLimit ?? $questions->count() }};
+        let durationEach = {{ $assessment->DurationEachQuestion ?? 60 }};
+        let totalSeconds = durationEach * questionLimit;
         
         // Create unique storage keys for this event and participant
         const storageKey = 'quiz_timer_{{ $eventCode }}_{{ session("participant_email", "guest") }}';
@@ -87,11 +178,9 @@
         const currentTabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
         // Global variables
-        let timerInterval;
-        let heartbeatInterval;
-        let tabCheckInterval;
-        let isQuizActive = false;
-        let isSubmitting = false;
+    let timerInterval;
+    let heartbeatInterval;
+    let tabCheckInterval;
 
         // Initialize quiz with proper session management
         async function initializeQuiz() {
@@ -117,14 +206,18 @@
                 // Check local storage for multiple tabs in same browser
                 const existingTabId = localStorage.getItem(activeTabKey);
                 if (existingTabId && existingTabId !== currentTabId) {
-                    // Check if the other tab is still alive by using a timestamp
-                    const tabTimestamp = localStorage.getItem(activeTabKey + '_timestamp');
-                    const now = Date.now();
-                    
-                    if (tabTimestamp && (now - parseInt(tabTimestamp)) < 10000) { // 10 seconds
-                        alert('Quiz is already open in another tab. Please use the existing tab or close it to continue.');
-                        setTimeout(() => window.close(), 2000);
-                        return;
+                    // If quiz is finished, skip multi-tab error
+                    if (localStorage.getItem('quiz_finished_{{ $eventCode }}') === '1') {
+                        // Allow to continue (quiz is over)
+                    } else {
+                        // Check if the other tab is still alive by using a timestamp
+                        const tabTimestamp = localStorage.getItem(activeTabKey + '_timestamp');
+                        const now = Date.now();
+                        if (tabTimestamp && (now - parseInt(tabTimestamp)) < 10000) { // 10 seconds
+                            alert('Quiz is already open in another tab. Please use the existing tab or close it to continue.');
+                            setTimeout(() => window.close(), 2000);
+                            return;
+                        }
                     }
                 }
                 
@@ -243,20 +336,34 @@
         async function handleTimeUp() {
             if (isSubmitting) return;
             isSubmitting = true;
-            
+            // Set a flag to indicate quiz is finished (prevents multi-tab error)
+            localStorage.setItem('quiz_finished_{{ $eventCode }}', '1');
             console.log('⏰ Time expired - auto-submitting');
-            
             clearQuizData();
             clearIntervals();
-            
             alert('Time is up! Your answers will be submitted automatically.');
-            
-            // Auto-submit the form
+            // Auto-submit the form using AJAX
             try {
-                await submitQuiz(true);
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: formData
+                });
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    // If not redirected, force redirect to results page
+                    window.location.href = "{{ route('quiz.results', $eventCode) }}";
+                }
             } catch (error) {
                 console.error('Error auto-submitting:', error);
                 form.submit(); // Fallback to regular form submission
+                setTimeout(function() {
+                    window.location.href = "{{ route('quiz.results', $eventCode) }}";
+                }, 2000);
             }
         }
         
