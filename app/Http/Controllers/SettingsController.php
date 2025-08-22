@@ -21,6 +21,13 @@ class SettingsController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'regex:/^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/', // stricter format, lowercase only
+                'unique:users,email,' . $user->id,
+            ],
             'password' => [
                 'required',
                 'confirmed',
@@ -31,16 +38,23 @@ class SettingsController extends Controller
                     ->symbols(),
             ],
         ], [
+            'email.required' => 'Email is required.',
+            'email.email' => 'Email must be a valid email address.',
+            'email.max' => 'Email must not exceed 255 characters.',
+            'email.regex' => 'Email must be lowercase and a valid format.',
+            'email.unique' => 'This email is already registered.',
             'password.confirmed' => 'Password confirmation does not match.',
             'password.min' => 'Password must be at least 8 characters.',
         ]);
 
-        // Only update password
+        // Update email if changed
+        $user->email = strtolower($validated['email']);
+        // Update password
         $user->password = $validated['password'];
         $user->save();
 
         return redirect()
-            ->route('settings') // <- make sure route name exists
-            ->with('success', 'Password updated successfully.');
+            ->route('settings')
+            ->with('success', 'Account updated successfully.');
     }
 }

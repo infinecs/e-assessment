@@ -19,7 +19,19 @@ class ParticipantsController extends Controller
     $validated = $request->validate([
         'name' => 'required|string|max:255',
         'phone_number' => 'required|regex:/^[0-9]+$/|max:20',
-        'email' => 'required|email|unique:participants,email',
+        'email' => [
+            'required',
+            'email',
+            function ($attribute, $value, $fail) {
+                $today = now()->toDateString();
+                $exists = \App\Models\Participant::where('email', $value)
+                    ->whereDate('created_at', $today)
+                    ->exists();
+                if ($exists) {
+                    $fail('This email has already been used today.');
+                }
+            },
+        ],
     ]);
 
     // Create participant

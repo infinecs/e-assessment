@@ -191,41 +191,45 @@ document.addEventListener('DOMContentLoaded', function() {
 							</tr>
 						</thead>
 						<tbody>
-							@forelse($records as $user)
-								<tr data-user-id="{{ $user->id }}" class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
-									<td class="w-4 p-3">
-										<div class="flex items-center">
-											<input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
-										</div>
-									</td>
-									<td class="px-2 py-1.5">{{ $user->email }}</td>
-									<td class="px-2 py-1.5">{{ $user->roles ?? '-' }}</td>
-									<td class="px-2 py-1.5">{{ $user->created_at ? $user->created_at->format('d M Y') : '-' }}</td>
-									<td class="px-2 py-1.5 text-center">
-										<div class="relative inline-block dropdown">
-										   <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
-											   <i class="bx bx-dots-vertical text-base"></i>
-										   </button>
-										   <div class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
-											   <div class="p-1 flex flex-col gap-1">
-												   <button type="button" onclick="editUser({{ $user->id }})" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
-													   <i class="mdi mdi-pencil text-base"></i>
-													   <span>Edit</span>
-												   </button>
-												   <button type="button" onclick="deleteUser({{ $user->id }}, '{{ $user->email }}')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
-													   <i class="mdi mdi-trash-can text-base"></i>
-													   <span>Delete</span>
-												   </button>
-											   </div>
-										   </div>
-										</div>
-									</td>
-								</tr>
-							@empty
-								<tr>
-									<td colspan="5" class="px-2 py-1.5 text-center">No users found</td>
-								</tr>
-							@endforelse
+                            @php $currentUser = auth()->user(); @endphp
+                            @forelse($records as $user)
+                                @if($currentUser && $user->id == $currentUser->id)
+                                    @continue
+                                @endif
+                                <tr data-user-id="{{ $user->id }}" class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
+                                    <td class="w-4 p-3">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                                        </div>
+                                    </td>
+                                    <td class="px-2 py-1.5">{{ $user->email }}</td>
+                                    <td class="px-2 py-1.5">{{ $user->roles ?? '-' }}</td>
+                                    <td class="px-2 py-1.5">{{ $user->created_at ? $user->created_at->format('d M Y') : '-' }}</td>
+                                    <td class="px-2 py-1.5 text-center">
+                                        <div class="relative inline-block dropdown">
+                                           <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
+                                               <i class="bx bx-dots-vertical text-base"></i>
+                                           </button>
+                                           <div class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
+                                               <div class="p-1 flex flex-col gap-1">
+                                                   <button type="button" onclick="editUser({{ $user->id }})" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                       <i class="mdi mdi-pencil text-base"></i>
+                                                       <span>Edit</span>
+                                                   </button>
+                                                   <button type="button" onclick="deleteUser({{ $user->id }}, '{{ $user->email }}')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                       <i class="mdi mdi-trash-can text-base"></i>
+                                                       <span>Delete</span>
+                                                   </button>
+                                               </div>
+                                           </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-2 py-1.5 text-center">No users found</td>
+                                </tr>
+                            @endforelse
 						</tbody>
 					</table>
 				</div>
@@ -254,13 +258,80 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div>
                                     <label for="add_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                                     <input type="email" id="add_user_email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
+                                    <ul class="mt-1 text-xs" id="addUserEmailValidation">
+                                        <li id="email-format-status" class="text-red-600">• Must be a valid email address</li>
+                                        <li id="email-unique-status" class="text-red-600" style="display:none;">• Email already being used</li>
+                                    </ul>
+                                    <div id="addUserEmailError" class="text-red-600 text-xs hidden"></div>
+<script>
+// Live email validation for Add User modal
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('add_user_email');
+    const formatStatus = document.getElementById('email-format-status');
+    const uniqueStatus = document.getElementById('email-unique-status');
+    let lastCheckedEmail = '';
+    let emailCheckTimeout = null;
+    if (emailInput && formatStatus && uniqueStatus) {
+        // Prevent space input at the keydown level
+        emailInput.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+            }
+        });
+        emailInput.addEventListener('input', function() {
+            // Convert any uppercase to lowercase and restrict to allowed characters
+            let filtered = emailInput.value
+                .replace(/[^a-zA-Z0-9@._-]/g, '') // allow a-z, A-Z, 0-9, @ . _ -
+                .replace(/\s+/g, '') // remove spaces (redundant, but keep for paste)
+                .toLowerCase();
+            if (emailInput.value !== filtered) {
+                emailInput.value = filtered;
+            }
+            const email = emailInput.value.trim();
+            // Stricter format: only lowercase, no spaces, valid email structure
+            const validEmailRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            if (validEmailRegex.test(email)) {
+                formatStatus.classList.remove('text-red-600');
+                formatStatus.classList.add('text-green-600');
+            } else {
+                formatStatus.classList.remove('text-green-600');
+                formatStatus.classList.add('text-red-600');
+            }
+            // Uniqueness validation (debounced)
+            uniqueStatus.style.display = 'none';
+            uniqueStatus.classList.remove('text-green-600');
+            uniqueStatus.classList.add('text-red-600');
+            if (email && validEmailRegex.test(email)) {
+                if (email === lastCheckedEmail) return;
+                lastCheckedEmail = email;
+                clearTimeout(emailCheckTimeout);
+                emailCheckTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
+                        const data = await res.json();
+                        if (data.success && data.users && data.users.data && !data.users.data.some(u => u.email === email)) {
+                            uniqueStatus.style.display = 'none';
+                        } else if (data.success && data.users && data.users.data && data.users.data.some(u => u.email === email)) {
+                            uniqueStatus.style.display = '';
+                            uniqueStatus.classList.remove('text-green-600');
+                            uniqueStatus.classList.add('text-red-600');
+                        } else {
+                            uniqueStatus.style.display = 'none';
+                        }
+                    } catch (err) {
+                        uniqueStatus.style.display = 'none';
+                    }
+                }, 400);
+            }
+        });
+    }
+});
+</script>
                                 </div>
                                 <div>
                                     <label for="add_user_roles" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Roles</label>
                                     <select id="add_user_roles" name="roles" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
-                                        <option value="" disabled selected>Select a role</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="user">User</option>
+                                        <option value="admin" selected>Admin</option>
                                     </select>
                                 </div>
                                 <div>
@@ -369,15 +440,17 @@ function togglePasswordVisibility(inputId, btn) {
 							<h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">Edit User</h3>
 							<div class="mt-4 space-y-4">
 								<div>
-									<label for="edit_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-									<input type="email" id="edit_user_email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
+                                    <label for="edit_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                    <input type="email" id="edit_user_email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
+                                    <ul class="mt-1 text-xs" id="editUserEmailValidation">
+                                        <li id="edit-email-format-status" class="text-red-600">• Must be a valid email address</li>
+                                        <li id="edit-email-unique-status" class="text-red-600" style="display:none;">• Email already being used</li>
+                                    </ul>
 								</div>
 								<div>
                                     <label for="edit_user_roles" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Roles</label>
                                     <select id="edit_user_roles" name="roles" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
-                                        <option value="" disabled selected>Select a role</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="user">User</option>
+                                        <option value="admin" selected>Admin</option>
                                     </select>
 								</div>
 							</div>
@@ -405,448 +478,838 @@ function togglePasswordVisibility(inputId, btn) {
 
 @section('scripts')
 <script>
+// Live email validation for Edit User modal
+// (This script enables live format and uniqueness validation for the edit modal email field)
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('edit_user_email');
+    const formatStatus = document.getElementById('edit-email-format-status');
+    const uniqueStatus = document.getElementById('edit-email-unique-status');
+    let lastCheckedEmail = '';
+    let emailCheckTimeout = null;
+    let originalEmail = '';
+    // Set originalEmail when opening modal
+    window.setEditUserOriginalEmail = function(email) { originalEmail = email; };
+    if (emailInput && formatStatus && uniqueStatus) {
+        // Prevent space input at the keydown level
+        emailInput.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+            }
+        });
+        emailInput.addEventListener('input', function() {
+            // Convert any uppercase to lowercase and restrict to allowed characters
+            let filtered = emailInput.value
+                .replace(/[^a-zA-Z0-9@._-]/g, '') // allow a-z, A-Z, 0-9, @ . _ -
+                .replace(/\s+/g, '') // remove spaces (redundant, but keep for paste)
+                .toLowerCase();
+            if (emailInput.value !== filtered) {
+                emailInput.value = filtered;
+            }
+            const email = emailInput.value.trim();
+            // Stricter format: only lowercase, no spaces, valid email structure
+            const validEmailRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            if (validEmailRegex.test(email)) {
+                formatStatus.classList.remove('text-red-600');
+                formatStatus.classList.add('text-green-600');
+            } else {
+                formatStatus.classList.remove('text-green-600');
+                formatStatus.classList.add('text-red-600');
+            }
+            // Uniqueness validation (debounced)
+            // If email matches original, always hide uniqueness error
+            if (email === originalEmail) {
+                uniqueStatus.style.display = 'none';
+                uniqueStatus.classList.remove('text-red-600');
+                uniqueStatus.classList.remove('text-green-600');
+                return;
+            }
+            uniqueStatus.style.display = 'none';
+            uniqueStatus.classList.remove('text-green-600');
+            uniqueStatus.classList.add('text-red-600');
+            if (email && validEmailRegex.test(email)) {
+                if (email === lastCheckedEmail) return;
+                lastCheckedEmail = email;
+                clearTimeout(emailCheckTimeout);
+                emailCheckTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
+                        const data = await res.json();
+                        if (data.success && data.users && data.users.data && data.users.data.some(u => u.email === email)) {
+                            uniqueStatus.style.display = '';
+                            uniqueStatus.classList.remove('text-green-600');
+                            uniqueStatus.classList.add('text-red-600');
+                        } else {
+                            uniqueStatus.style.display = 'none';
+                        }
+                    } catch (err) {
+                        uniqueStatus.style.display = 'none';
+                    }
+                }, 400);
+            }
+        });
+    }
+});
+</script>
+<script>
+// Global variables
+// User Management JavaScript - Improved Version
+
 // Global variables
 let currentEditUserId = null;
+let searchTimeout = null;
+
+// CSRF token utility
+function getCsrfToken() {
+    const token = document.querySelector('meta[name="csrf-token"]');
+    return token ? token.getAttribute('content') : '';
+}
 
 // Utility functions
-function showMessageBar(message, type = 'success') {
-    alert(message);
+// ...existing code...
+
+// Enhanced fetch wrapper with error handling
+async function fetchWithErrorHandling(url, options = {}) {
+    try {
+        // Add CSRF token to headers if not present
+        const headers = {
+            'X-CSRF-TOKEN': getCsrfToken(),
+            ...options.headers
+        };
+        
+        const response = await fetch(url, { ...options, headers });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return { data, error: null };
+        
+    } catch (error) {
+        console.error('Fetch error:', error);
+        return { data: null, error: error.message };
+    }
 }
 
-// Modal functions
-function openAddUserModal() {
-    document.getElementById('addUserModal').classList.remove('hidden');
-    document.getElementById('addUserForm').reset();
-}
-
-function closeAddUserModal() {
-    document.getElementById('addUserModal').classList.add('hidden');
-    document.getElementById('addUserForm').reset();
-}
-
-function editUser(id) {
-    currentEditUserId = id;
+// Modal Management
+const ModalManager = {
+    open(modalId, resetForm = true) {
+        const modal = document.getElementById(modalId);
+        const form = modal?.querySelector('form');
+        
+        if (!modal) {
+            console.error(`Modal with ID '${modalId}' not found`);
+            return;
+        }
+        
+        modal.classList.remove('hidden');
+        
+        if (resetForm && form) {
+            form.reset();
+            this.clearFormErrors(form);
+        }
+        
+        // Focus first input
+        const firstInput = modal.querySelector('input, select, textarea');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    },
     
-    // Fetch user details
-    fetch(`/users/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('edit_user_email').value = data.user.email;
-                // Set the dropdown value for roles
-                const rolesSelect = document.getElementById('edit_user_roles');
-                if (rolesSelect) {
-                    // Try to match value case-insensitively
-                    const roleValue = (data.user.roles || '').toLowerCase();
-                    for (let i = 0; i < rolesSelect.options.length; i++) {
-                        if (rolesSelect.options[i].value.toLowerCase() === roleValue) {
-                            rolesSelect.selectedIndex = i;
-                            break;
-                        }
+    close(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            const form = modal.querySelector('form');
+            if (form) {
+                this.clearFormErrors(form);
+            }
+        }
+    },
+    
+    clearFormErrors(form) {
+        const errorElements = form.querySelectorAll('.text-red-600:not([id*="pw-"]):not([id*="confirmPasswordStatus"])');
+        errorElements.forEach(el => el.classList.add('hidden'));
+    }
+};
+
+// Password validation utilities
+const PasswordValidator = {
+    validate(password, confirmPassword = null) {
+        const rules = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+        
+        const isValid = Object.values(rules).every(rule => rule);
+        const passwordsMatch = confirmPassword === null || password === confirmPassword;
+        
+        return {
+            rules,
+            isValid,
+            passwordsMatch,
+            overallValid: isValid && passwordsMatch
+        };
+    },
+    
+    updateUI(password, confirmPassword = '') {
+        const validation = this.validate(password, confirmPassword);
+        
+        // Update requirement indicators
+        Object.entries(validation.rules).forEach(([rule, isValid]) => {
+            const element = document.getElementById(`pw-${rule}`);
+            if (element) {
+                element.className = isValid ? 'text-green-600' : 'text-red-600';
+            }
+        });
+        
+        // Update confirm password status
+        const confirmStatus = document.getElementById('confirmPasswordStatus');
+        if (confirmStatus && confirmPassword.length > 0) {
+            if (validation.passwordsMatch) {
+                confirmStatus.textContent = '• Passwords match';
+                confirmStatus.className = 'mt-2 text-xs text-green-600';
+            } else {
+                confirmStatus.textContent = '• Passwords must match';
+                confirmStatus.className = 'mt-2 text-xs text-red-600';
+            }
+        }
+        
+        return validation.overallValid;
+    }
+};
+
+// User operations
+const UserOperations = {
+    async create(userData) {
+        const { data, error } = await fetchWithErrorHandling('/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    },
+    
+    async update(id, userData) {
+        const { data, error } = await fetchWithErrorHandling(`/users/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    },
+    
+    async delete(id) {
+        const { data, error } = await fetchWithErrorHandling(`/users/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    },
+    
+    async bulkDelete(ids) {
+        const { data, error } = await fetchWithErrorHandling('/users/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ids })
+        });
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    },
+    
+    async search(query) {
+        const { data, error } = await fetchWithErrorHandling(`/users/search?query=${encodeURIComponent(query)}`);
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    },
+    
+    async getById(id) {
+        const { data, error } = await fetchWithErrorHandling(`/users/${id}`);
+        
+        if (error) {
+            throw new Error(error);
+        }
+        
+        return data;
+    }
+};
+
+// Checkbox management
+const CheckboxManager = {
+    init() {
+        this.selectAllCheckbox = document.getElementById('checkbox-all');
+        this.bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+        
+        if (this.selectAllCheckbox) {
+            this.selectAllCheckbox.addEventListener('change', () => this.handleSelectAll());
+        }
+        
+        // Event delegation for row checkboxes
+        const tbody = document.querySelector('tbody');
+        if (tbody) {
+            tbody.addEventListener('change', (e) => {
+                if (e.target && e.target.classList.contains('row-checkbox')) {
+                    this.handleRowCheckboxChange();
+                }
+            });
+        }
+        
+        this.updateState();
+    },
+    
+    getRowCheckboxes() {
+        return Array.from(document.querySelectorAll('tbody .row-checkbox'));
+    },
+    
+    getCheckedIds() {
+        return this.getRowCheckboxes()
+            .filter(cb => cb.checked)
+            .map(cb => cb.closest('tr').getAttribute('data-user-id'))
+            .filter(id => id); // Remove any null/undefined ids
+    },
+    
+    handleSelectAll() {
+        const checked = this.selectAllCheckbox.checked;
+        this.getRowCheckboxes().forEach(cb => {
+            cb.checked = checked;
+        });
+        this.updateState();
+    },
+    
+    handleRowCheckboxChange() {
+        const checkboxes = this.getRowCheckboxes();
+        const checkedCount = checkboxes.filter(cb => cb.checked).length;
+        
+        if (checkboxes.length === 0) {
+            this.selectAllCheckbox.checked = false;
+            this.selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === checkboxes.length) {
+            this.selectAllCheckbox.checked = true;
+            this.selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === 0) {
+            this.selectAllCheckbox.checked = false;
+            this.selectAllCheckbox.indeterminate = false;
+        } else {
+            this.selectAllCheckbox.checked = false;
+            this.selectAllCheckbox.indeterminate = true;
+        }
+        
+        this.updateState();
+    },
+    
+    updateState() {
+        const checkedCount = this.getRowCheckboxes().filter(cb => cb.checked).length;
+        
+        if (this.bulkDeleteBtn) {
+            if (checkedCount > 0) {
+                this.bulkDeleteBtn.style.display = 'inline-flex';
+                this.bulkDeleteBtn.textContent = `Delete (${checkedCount})`;
+            } else {
+                this.bulkDeleteBtn.style.display = 'none';
+            }
+        }
+    },
+    
+    reset() {
+        this.getRowCheckboxes().forEach(cb => cb.checked = false);
+        if (this.selectAllCheckbox) {
+            this.selectAllCheckbox.checked = false;
+            this.selectAllCheckbox.indeterminate = false;
+        }
+        this.updateState();
+    }
+};
+
+
+// Table management
+const TableManager = {
+    update(users) {
+        const tbody = document.querySelector('tbody');
+        if (!tbody) return;
+        
+        if (!users.data || users.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-2 py-1.5 text-center">No users found</td></tr>';
+            CheckboxManager.reset();
+            return;
+        }
+        
+        tbody.innerHTML = users.data.map(user => this.createUserRow(user)).join('');
+        CheckboxManager.updateState();
+    },
+    
+    createUserRow(user) {
+        const formattedDate = user.created_at 
+            ? new Date(user.created_at).toLocaleDateString('en-US', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric' 
+              })
+            : '-';
+            
+        return `
+            <tr data-user-id="${user.id}" class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
+                <td class="w-4 p-3">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
+                    </div>
+                </td>
+                <td class="px-2 py-1.5">${this.escapeHtml(user.email)}</td>
+                <td class="px-2 py-1.5">${this.escapeHtml(user.roles || '-')}</td>
+                <td class="px-2 py-1.5">${formattedDate}</td>
+                <td class="px-2 py-1.5 text-center">
+                    ${this.createActionDropdown(user.id, user.email)}
+                </td>
+            </tr>
+        `;
+    },
+    
+    createActionDropdown(userId, userEmail) {
+        return `
+            <div class="relative inline-block dropdown">
+                <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
+                    <i class="bx bx-dots-vertical text-base"></i>
+                </button>
+                <div class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
+                    <div class="p-1 flex flex-col gap-1">
+                        <button type="button" onclick="editUser(${userId})" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                            <i class="mdi mdi-pencil text-base"></i>
+                            <span>Edit</span>
+                        </button>
+                        <button type="button" onclick="deleteUser(${userId}, '${this.escapeHtml(userEmail)}')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                            <i class="mdi mdi-trash-can text-base"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+};
+
+// Form handlers
+function setupFormHandlers() {
+    // Add User Form
+    const addUserForm = document.getElementById('addUserForm');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const errorDiv = document.getElementById('addUserError');
+            const emailErrorDiv = document.getElementById('addUserEmailError');
+            const formatStatus = document.getElementById('email-format-status');
+            const uniqueStatus = document.getElementById('email-unique-status');
+            const originalText = submitBtn.textContent;
+            // Prepare data
+            let userData = {
+                email: formData.get('email')?.trim(),
+                roles: formData.get('roles')?.trim(),
+                password: formData.get('password') || '',
+                password_confirmation: formData.get('password_confirmation') || ''
+            };
+            // Client-side validation
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+            emailErrorDiv.classList.add('hidden');
+            emailErrorDiv.textContent = '';
+            let hasError = false;
+            // Email format validation
+            if (!userData.email || !/^\S+@\S+\.\S+$/.test(userData.email)) {
+                formatStatus.classList.remove('text-green-600');
+                formatStatus.classList.add('text-red-600');
+                hasError = true;
+            } else {
+                formatStatus.classList.remove('text-red-600');
+                formatStatus.classList.add('text-green-600');
+            }
+            // Required fields
+            if (!userData.roles || !userData.password || !userData.password_confirmation) {
+                errorDiv.textContent = 'All fields are required.';
+                errorDiv.classList.remove('hidden');
+                hasError = true;
+            }
+            // Password match
+            if (userData.password !== userData.password_confirmation) {
+                errorDiv.textContent = 'Passwords do not match.';
+                errorDiv.classList.remove('hidden');
+                hasError = true;
+            }
+            // Validate password strength
+            const passwordValid = PasswordValidator.validate(userData.password, userData.password_confirmation);
+            if (!passwordValid.overallValid) {
+                errorDiv.textContent = 'Password does not meet requirements.';
+                errorDiv.classList.remove('hidden');
+                hasError = true;
+            }
+            if (hasError) {
+                return;
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Adding...';
+            // Check if email is already used (AJAX call)
+            try {
+                const checkResponse = await fetch(`/users/search?query=${encodeURIComponent(userData.email)}`);
+                const checkData = await checkResponse.json();
+                if (checkData.success && checkData.users && checkData.users.data && checkData.users.data.some(u => u.email === userData.email)) {
+                    uniqueStatus.classList.remove('text-green-600');
+                    uniqueStatus.classList.add('text-red-600');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                    return;
+                } else {
+                    uniqueStatus.classList.remove('text-red-600');
+                    uniqueStatus.classList.add('text-green-600');
+                }
+            } catch (err) {
+                uniqueStatus.classList.remove('text-green-600');
+                uniqueStatus.classList.add('text-red-600');
+                // If search fails, allow backend to handle duplicate error
+            }
+            try {
+                const response = await UserOperations.create(userData);
+                if (response.success) {
+                    ModalManager.close('addUserModal');
+                    refreshUserTable();
+                } else {
+                    // If backend says email is already used, show that message
+                    if (response.errors && response.errors.email && response.errors.email[0].includes('already registered')) {
+                        emailErrorDiv.textContent = 'This email address is already registered.';
+                        emailErrorDiv.classList.remove('hidden');
+                    } else {
+                        errorDiv.textContent = response.message || 'Failed to add user';
+                        errorDiv.classList.remove('hidden');
                     }
                 }
-                document.getElementById('editUserModal').classList.remove('hidden');
+            } catch (error) {
+                // If backend says email is already used, show that message
+                if (error && error.message && error.message.includes('already registered')) {
+                    emailErrorDiv.textContent = 'This email address is already registered.';
+                    emailErrorDiv.classList.remove('hidden');
+                } else {
+                    errorDiv.textContent = error.message || 'An error occurred while adding user';
+                    errorDiv.classList.remove('hidden');
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessageBar('Failed to load user details', 'error');
         });
+    }
+    
+    // Edit User Form
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!currentEditUserId) {
+                return;
+            }
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            const emailInput = document.getElementById('edit_user_email');
+            const rolesInput = document.getElementById('edit_user_roles');
+            const email = emailInput.value.trim();
+            const roles = rolesInput.value.trim();
+            // Validation UI elements
+            const formatStatus = document.getElementById('edit-email-format-status');
+            const uniqueStatus = document.getElementById('edit-email-unique-status');
+            // Get the original email from the live validation script
+            let originalEmail = '';
+            if (window.setEditUserOriginalEmail) {
+                originalEmail = window.originalEmailForEditUser || '';
+                if (!originalEmail && emailInput.dataset.originalEmail) {
+                    originalEmail = emailInput.dataset.originalEmail;
+                }
+            }
+            // Remove previous error styles
+            emailInput.classList.remove('border-red-500');
+            rolesInput.classList.remove('border-red-500');
+            let hasError = false;
+            // Email format validation
+            if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+                if (formatStatus) {
+                    formatStatus.classList.remove('text-green-600');
+                    formatStatus.classList.add('text-red-600');
+                }
+                emailInput.classList.add('border-red-500');
+                hasError = true;
+            } else {
+                if (formatStatus) {
+                    formatStatus.classList.remove('text-red-600');
+                    formatStatus.classList.add('text-green-600');
+                }
+            }
+            // Roles validation
+            if (!roles || (roles !== 'admin' && roles !== 'user')) {
+                rolesInput.classList.add('border-red-500');
+                hasError = true;
+            }
+            if (hasError) {
+                return;
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+            // Check if email is already used (AJAX call, only if changed)
+            let emailIsUnique = true;
+            if (email !== originalEmail) {
+                try {
+                    const checkResponse = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
+                    const checkData = await checkResponse.json();
+                    if (checkData.success && checkData.users && checkData.users.data && checkData.users.data.some(u => u.email === email)) {
+                        if (uniqueStatus) {
+                            uniqueStatus.style.display = '';
+                            uniqueStatus.classList.remove('text-green-600');
+                            uniqueStatus.classList.add('text-red-600');
+                        }
+                        emailInput.classList.add('border-red-500');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        return;
+                    } else {
+                        if (uniqueStatus) {
+                            uniqueStatus.style.display = 'none';
+                        }
+                    }
+                } catch (err) {
+                    if (uniqueStatus) {
+                        uniqueStatus.style.display = 'none';
+                    }
+                }
+            }
+            // If all validation passes, submit
+            const userData = { email, roles };
+            try {
+                const response = await UserOperations.update(currentEditUserId, userData);
+                if (response.success) {
+                    ModalManager.close('editUserModal');
+                    currentEditUserId = null;
+                    refreshUserTable();
+                } else {
+                    // ...error notification removed...
+                }
+            } catch (error) {
+                // ...error notification removed...
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
 }
 
-function closeEditUserModal() {
-    document.getElementById('editUserModal').classList.add('hidden');
-    currentEditUserId = null;
+// Main functions (called from HTML)
+async function editUser(id) {
+    try {
+        currentEditUserId = id;
+        const response = await UserOperations.getById(id);
+        
+        if (response.success) {
+            const user = response.user;
+            document.getElementById('edit_user_email').value = user.email || '';
+            
+            // Set roles dropdown
+            const rolesSelect = document.getElementById('edit_user_roles');
+            if (rolesSelect && user.roles) {
+                const roleValue = user.roles.toLowerCase();
+                for (let option of rolesSelect.options) {
+                    if (option.value.toLowerCase() === roleValue) {
+                        option.selected = true;
+                        break;
+                    }
+                }
+            }
+            
+            ModalManager.open('editUserModal', false);
+        } else {
+            // ...error notification removed...
+        }
+    } catch (error) {
+    // ...error notification removed...
+    }
 }
 
-function deleteUser(id, email) {
+async function deleteUser(id, email) {
     if (!window.confirm(`Are you sure you want to delete user ${email}?`)) {
         return;
     }
-    fetch(`/users/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessageBar(`User ${email} deleted successfully`, 'success');
+    
+    try {
+        const response = await UserOperations.delete(id);
+        
+        if (response.success) {
+            // ...success notification removed...
             refreshUserTable();
         } else {
-            showMessageBar(data.message || 'Failed to delete user', 'error');
+            // ...error notification removed...
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessageBar('An error occurred while deleting user', 'error');
-    });
+    } catch (error) {
+    // ...error notification removed...
+    }
 }
 
-// Form submission handlers
-document.getElementById('addUserForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    console.log('Form submitted!');
+async function performBulkDelete() {
+    const ids = CheckboxManager.getCheckedIds();
     
-    const email = document.getElementById('add_user_email').value.trim();
-    const roles = document.getElementById('add_user_roles').value.trim();
-    const password = document.getElementById('add_user_password').value;
-    const passwordConfirm = document.getElementById('add_user_password_confirmation').value;
-    const errorDiv = document.getElementById('addUserError');
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-
-    console.log('Form data:', { email, roles, password: password ? 'HAS_PASSWORD' : 'NO_PASSWORD' });
-
-    // Basic validation
-    if (!email || !roles || !password || !passwordConfirm) {
-        errorDiv.textContent = 'All fields are required.';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-
-    if (password !== passwordConfirm) {
-        errorDiv.textContent = 'Passwords do not match.';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-
-    errorDiv.classList.add('hidden');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Adding...';
-
-    // Use the EXACT same format that worked in our test
-    fetch('/users', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            email: email,
-            roles: roles,
-            password: password,
-            password_confirmation: passwordConfirm
-        })
-    })
-    .then(response => {
-        console.log('Form response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Form response data:', data);
-        if (data.success) {
-            showMessageBar(data.message || 'User added', 'success');
-            closeAddUserModal();
-            refreshUserTable();
-        } else {
-            errorDiv.textContent = data.message || 'Failed to add user';
-            errorDiv.classList.remove('hidden');
-            showMessageBar(data.message || 'Failed to add user', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Form error:', error);
-        errorDiv.textContent = 'An error occurred while adding user';
-        errorDiv.classList.remove('hidden');
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
-
-document.getElementById('editUserForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Updating...';
-    
-    fetch(`/users/${currentEditUserId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            email: document.getElementById('edit_user_email').value,
-            roles: document.getElementById('edit_user_roles').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessageBar(data.message || 'User updated', 'success');
-            closeEditUserModal();
-            refreshUserTable();
-        } else {
-            showMessageBar(data.message || 'Failed to update user', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    showMessageBar('An error occurred while updating user', 'error');
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
-
-
-// No custom delete confirmation bar handlers needed
-
-// Search functionality
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    clearTimeout(searchTimeout);
-    const query = e.target.value;
-    
-    searchTimeout = setTimeout(() => {
-        if (query.length > 0) {
-            searchUsers(query);
-        } else {
-            refreshUserTable();
-        }
-    }, 300);
-});
-
-document.getElementById('performSearchBtn').addEventListener('click', function() {
-    const query = document.getElementById('searchInput').value;
-    if (query.length > 0) {
-        searchUsers(query);
-    } else {
-        refreshUserTable();
-    }
-});
-
-function searchUsers(query) {
-    fetch(`/users/search?query=${encodeURIComponent(query)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateUserTable(data.users);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Search failed', 'error');
-        });
-}
-
-// Bulk delete functionality
-function performBulkDelete() {
-    const checkedBoxes = document.querySelectorAll('tbody .row-checkbox:checked');
-    const ids = Array.from(checkedBoxes).map(cb => cb.closest('tr').getAttribute('data-user-id'));
     if (ids.length === 0) {
-        showToast('Please select at least one user', 'error');
+    // ...error notification removed...
         return;
     }
+    
     if (!window.confirm(`Are you sure you want to delete ${ids.length} user(s)?`)) {
         return;
     }
-    fetch('/users/bulk-delete', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ ids: ids })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessageBar(data.message || 'Users deleted', 'success');
+    
+    try {
+        const response = await UserOperations.bulkDelete(ids);
+        
+        if (response.success) {
+            // ...success notification removed...
+            CheckboxManager.reset();
             refreshUserTable();
-            document.getElementById('checkbox-all').checked = false;
         } else {
-            showMessageBar(data.message || 'Failed to delete users', 'error');
+            // ...error notification removed...
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    showMessageBar('An error occurred while deleting users', 'error');
-    });
+    } catch (error) {
+    // ...error notification removed...
+    }
 }
 
-// Refresh user table
+// Search functionality
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('performSearchBtn');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            searchTimeout = setTimeout(async () => {
+                if (query.length > 0) {
+                    await searchUsers(query);
+                } else {
+                    refreshUserTable();
+                }
+            }, 300);
+        });
+    }
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', async function() {
+            const query = searchInput?.value?.trim() || '';
+            if (query.length > 0) {
+                await searchUsers(query);
+            } else {
+                refreshUserTable();
+            }
+        });
+    }
+}
+
+async function searchUsers(query) {
+    try {
+        const response = await UserOperations.search(query);
+        
+        if (response.success) {
+            TableManager.update(response.users);
+        } else {
+            // ...error notification removed...
+        }
+    } catch (error) {
+    // ...error notification removed...
+    }
+}
+
+// Utility functions
 function refreshUserTable() {
     window.location.reload();
 }
 
-function updateUserTable(users) {
-    const tbody = document.querySelector('tbody');
-    if (!users.data || users.data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-2 py-1.5 text-center">No users found</td></tr>';
-        return;
-    }
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input || !btn) return;
     
-    tbody.innerHTML = users.data.map(user => `
-        <tr data-user-id="${user.id}" class="bg-white border-b hover:bg-gray-50/50 dark:bg-zinc-700 dark:hover:bg-zinc-700/50 dark:border-zinc-600">
-            <td class="w-4 p-3">
-                <div class="flex items-center">
-                    <input type="checkbox" class="row-checkbox w-4 h-4 border-gray-300 rounded bg-white">
-                </div>
-            </td>
-            <td class="px-2 py-1.5">${user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-            <td class="px-2 py-1.5 text-center">
-                <div class="relative inline-block dropdown">
-                   <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
-                       <i class="bx bx-dots-vertical text-base"></i>
-                   </button>
-                   <div class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
-                       <div class="p-1 flex flex-col gap-1">
-                           <button type="button" onclick="editUser(${user.id})" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
-                               <i class="mdi mdi-pencil text-base"></i>
-                               <span>Edit</span>
-                           </button>
-                           <button type="button" onclick="deleteUser(${user.id}, '${user.email}')" class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
-                               <i class="mdi mdi-trash-can text-base"></i>
-                               <span>Delete</span>
-                           </button>
-                       </div>
-                   </div>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+    const icon = btn.querySelector('i');
+    if (!icon) return;
     
-    // Re-initialize checkbox logic
-    initUserCheckboxLogic();
-    // Ensure bulk delete button visibility is updated after table update
-    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
-    if (bulkDeleteBtn) {
-        bulkDeleteBtn.style.display = 'none';
-    }
-}
-
-// Checkbox and bulk delete logic
-function initUserCheckboxLogic() {
-    const selectAll = document.getElementById('checkbox-all');
-    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
-    
-    function getRowCheckboxes() {
-        return Array.from(document.querySelectorAll('tbody .row-checkbox'));
-    }
-    
-    function updateBulkDeleteVisibility() {
-        const checkedCount = getRowCheckboxes().filter(cb => cb.checked).length;
-        if (bulkDeleteBtn) {
-            if (checkedCount > 0) {
-                bulkDeleteBtn.style.display = 'inline-flex';
-            } else {
-                bulkDeleteBtn.style.display = 'none';
-            }
-            bulkDeleteBtn.innerHTML = 'Delete';
-        }
-    }
-    
-    if (selectAll) {
-        // Remove previous event listener if any
-        selectAll.onchange = null;
-        selectAll.addEventListener('change', function() {
-            getRowCheckboxes().forEach(cb => {
-                cb.checked = selectAll.checked;
-            });
-            handleRowCheckboxChange();
-        });
-    }
-    
-    function handleRowCheckboxChange() {
-        const rowCheckboxes = getRowCheckboxes();
-        if (rowCheckboxes.length === 0) {
-            selectAll.checked = false;
-            selectAll.indeterminate = false;
-            return;
-        }
-        const checkedCount = rowCheckboxes.filter(cb => cb.checked).length;
-        if (checkedCount === rowCheckboxes.length) {
-            selectAll.checked = true;
-            selectAll.indeterminate = false;
-        } else if (checkedCount === 0) {
-            selectAll.checked = false;
-            selectAll.indeterminate = false;
-        } else {
-            selectAll.checked = false;
-            selectAll.indeterminate = true;
-        }
-        updateBulkDeleteVisibility();
-    }
-    
-    // Remove previous listeners to avoid duplicates
-    getRowCheckboxes().forEach(cb => {
-        cb.onchange = null;
-        cb.addEventListener('change', handleRowCheckboxChange);
-    });
-
-    // Event delegation for dynamic content (if table is updated via AJAX)
-    const tbody = document.querySelector('tbody');
-    if (tbody) {
-        tbody.removeEventListener('change', tbody._checkboxDelegate);
-        tbody._checkboxDelegate = function(e) {
-            if (e.target && e.target.classList.contains('row-checkbox')) {
-                handleRowCheckboxChange();
-            }
-        };
-        tbody.addEventListener('change', tbody._checkboxDelegate);
-    }
-    
-    // Initial state
-    handleRowCheckboxChange();
-}
-
-// Initialize on DOM load
-document.addEventListener('DOMContentLoaded', function() {
-    initUserCheckboxLogic();
-    
-    // Event listeners
-    const addBtn = document.getElementById('add-user-btn');
-    if (addBtn) {
-        addBtn.addEventListener('click', function() {
-            console.log('Add button clicked');
-            openAddUserModal();
-        });
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     } else {
-        console.log('Add button NOT FOUND in DOM');
+        input.type = 'password';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
     }
-    
-    // Close modals when clicking outside
+}
+
+function updatePasswordValidation() {
+    const password = document.getElementById('add_user_password')?.value || '';
+    const confirmPassword = document.getElementById('add_user_password_confirmation')?.value || '';
+    return PasswordValidator.updateUI(password, confirmPassword);
+}
+
+// Dropdown functionality
+function setupDropdowns() {
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('fixed') && e.target.classList.contains('inset-0')) {
-            if (!e.target.closest('#addUserModal')) {
-                closeAddUserModal();
-            }
-            if (!e.target.closest('#editUserModal')) {
-                closeEditUserModal();
-            }
-            if (!e.target.closest('#deleteUserModal')) {
-                closeDeleteUserModal();
-            }
-        }
-    });
-    
-    // Dropdown functionality
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.dropdown-toggle')) {
+        // Handle dropdown toggle
+        const dropdownToggle = e.target.closest('.dropdown-toggle');
+        if (dropdownToggle) {
             e.preventDefault();
-            const dropdown = e.target.closest('.dropdown');
-            const menu = dropdown.querySelector('.dropdown-menu');
+            const dropdown = dropdownToggle.closest('.dropdown');
+            const menu = dropdown?.querySelector('.dropdown-menu');
             
-            // Close all other dropdowns
-            document.querySelectorAll('.dropdown-menu').forEach(otherMenu => {
-                if (otherMenu !== menu) {
-                    otherMenu.classList.add('hidden');
-                }
-            });
-            
-            // Toggle current dropdown
-            menu.classList.toggle('hidden');
+            if (menu) {
+                // Close all other dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(otherMenu => {
+                    if (otherMenu !== menu) {
+                        otherMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Toggle current dropdown
+                menu.classList.toggle('hidden');
+            }
         } else {
             // Close all dropdowns when clicking outside
             document.querySelectorAll('.dropdown-menu').forEach(menu => {
@@ -854,5 +1317,60 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+}
+
+// Modal close handlers
+function setupModalHandlers() {
+    // Close modals when clicking backdrop
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.fixed.inset-0')) {
+            const modalId = e.target.closest('[id$="Modal"]')?.id;
+            if (modalId) {
+                ModalManager.close(modalId);
+                if (modalId === 'editUserModal') {
+                    currentEditUserId = null;
+                }
+            }
+        }
+    });
+    
+    // ESC key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const visibleModal = document.querySelector('[id$="Modal"]:not(.hidden)');
+            if (visibleModal) {
+                ModalManager.close(visibleModal.id);
+                if (visibleModal.id === 'editUserModal') {
+                    currentEditUserId = null;
+                }
+            }
+        }
+    });
+}
+
+// Global modal functions (called from HTML)
+function openAddUserModal() {
+    ModalManager.open('addUserModal');
+}
+
+function closeAddUserModal() {
+    ModalManager.close('addUserModal');
+}
+
+function closeEditUserModal() {
+    ModalManager.close('editUserModal');
+    currentEditUserId = null;
+}
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all components
+    CheckboxManager.init();
+    setupFormHandlers();
+    setupSearch();
+    setupDropdowns();
+    setupModalHandlers();
+    
+    console.log('User Management System initialized successfully');
 });
 </script>

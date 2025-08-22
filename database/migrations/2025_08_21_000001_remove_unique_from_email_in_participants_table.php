@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('assessment_category', function (Blueprint $table) {
-            $table->bigIncrements('CategoryID'); // Primary Key
-            $table->string('CategoryName');
-            $table->unsignedBigInteger('AdminID');
-            $table->timestamps(); // created_at and updated_at
+        Schema::table('participants', function (Blueprint $table) {
+            $table->dropUnique(['email']);
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('assessment_category');
+        Schema::table('participants', function (Blueprint $table) {
+            $table->unique('email');
+        });
     }
 };

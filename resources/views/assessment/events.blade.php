@@ -244,6 +244,12 @@
                                                     <i class="mdi mdi-trash-can text-base"></i>
                                                     <span>Delete</span>
                                                 </button>
+                                                <button type="button"
+                                                    onclick="openWeightageModal({{ $row->EventID }})"
+                                                    class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
+                                                    <i class="mdi mdi-scale-balance text-base"></i>
+                                                    <span>Weightage</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -332,11 +338,17 @@
                             <div class="w-2/3">
                                 <div id="topics-section" class="hidden">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Assessment</label>
-                                    <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="eventTopicsContainer">
+                                    
+                                    <!-- Container for selected topic tags -->
+                                    <div id="edit-selected-topics-tags-container" class="mb-3 p-2 border border-gray-200 dark:border-zinc-600 rounded-md min-h-[40px] bg-gray-50 dark:bg-zinc-700/50 flex flex-wrap gap-2">
+                                        <!-- Tags will be rendered here -->
+                                    </div>
+
+                                    <div class="max-h-[420px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="eventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Select specific topics from the category for this assessment.
+                                        Select at least one topic from any category for this assessment.
                                     </div>
                                 </div>
                             </div>
@@ -423,11 +435,17 @@
                             <div class="w-2/3">
                                 <div id="add-topics-section" class="hidden">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Topics for Assessment</label>
-                                    <div class="max-h-[500px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addEventTopicsContainer">
+                                    
+                                    <!-- Container for selected topic tags -->
+                                    <div id="selected-topics-tags-container" class="mb-3 p-2 border border-gray-200 dark:border-zinc-600 rounded-md min-h-[40px] bg-gray-50 dark:bg-zinc-700/50 flex flex-wrap gap-2">
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">No topics selected</span>
+                                    </div>
+
+                                    <div class="max-h-[420px] overflow-y-auto border border-gray-300 rounded-md p-3 dark:border-zinc-600 dark:bg-zinc-700" id="addEventTopicsContainer">
                                         <!-- Topics will be loaded here dynamically -->
                                     </div>
                                     <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Select at least one topic from the category for this assessment.
+                                        Select at least one topic from any category for this assessment.
                                     </div>
                                 </div>
                             </div>
@@ -450,6 +468,47 @@
 
 <div class="mt-4">
     {{ $records->links('pagination::tailwind') }}
+</div>
+
+<!-- Weightage Modal -->
+<div id="weightageModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
+            <form id="weightageForm">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        Topic Weightage
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Assign a weightage to each topic. If set, the total must be exactly 100%.
+                    </p>
+                    <div id="weightageTopicsContainer" class="max-h-80 overflow-y-auto space-y-4 pr-2">
+                        <!-- Topics and weightage inputs will be loaded here -->
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total Weightage:</span>
+                            <span id="totalWeightage" class="text-lg font-bold text-gray-900 dark:text-gray-100">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-zinc-700 mt-2">
+                            <div id="weightageProgressBar" class="bg-violet-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div id="weightageValidationMessage" class="text-red-500 text-xs mt-2 h-4"></div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
+                    <button type="submit" id="saveWeightageBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm transition-opacity">
+                        Save Weightages
+                    </button>
+                    <button type="button" onclick="closeWeightageModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -1336,10 +1395,13 @@
     });
 
     let currentEventId = null;
+    let addModalSelectedTopics = new Map(); // For the Add Event Modal
+    let editModalSelectedTopics = new Map(); // For the Edit Event Modal
 
     function editEvent(eventId, eventName, eventCode, questionLimit, duration, startDate, endDate) {
         currentEventId = eventId;
-        
+        editModalSelectedTopics.clear(); // Clear previous state
+
         // Fetch event details including category and topics
         fetch(`/events/${eventId}/details`)
             .then(response => response.json())
@@ -1356,10 +1418,18 @@
                     // Set category
                     const categorySelect = document.getElementById('edit_category');
                     categorySelect.value = data.event.CategoryID || '';
+
+                    // Populate the editModalSelectedTopics map
+                    if (data.selected_topic_ids && data.topic_names) {
+                        data.selected_topic_ids.forEach((id, index) => {
+                            editModalSelectedTopics.set(String(id), data.topic_names[index]);
+                        });
+                    }
+                    renderEditSelectedTopicTags();
                     
                     // Load category topics if category is selected
                     if (data.event.CategoryID) {
-                        loadCategoryTopics(data.event.CategoryID, data.selected_topic_ids);
+                        loadCategoryTopics(data.event.CategoryID);
                     }
                     
                     // Show modal
@@ -1374,7 +1444,7 @@
             });
     }
 
-    function loadCategoryTopics(categoryId, selectedTopicIds = []) {
+    function loadCategoryTopics(categoryId) {
         if (!categoryId) {
             document.getElementById('topics-section').classList.add('hidden');
             return;
@@ -1389,7 +1459,7 @@
                     
                     if (data.topics && data.topics.length > 0) {
                         data.topics.forEach(topic => {
-                            const isSelected = selectedTopicIds.includes(String(topic.TopicID));
+                            const isSelected = editModalSelectedTopics.has(String(topic.TopicID));
                             const div = document.createElement('div');
                             div.className = 'flex items-center mb-2';
                             div.innerHTML = `
@@ -1397,6 +1467,7 @@
                                        id="event_topic_${topic.TopicID}" 
                                        name="edit_selected_topic_ids[]" 
                                        value="${topic.TopicID}"
+                                       data-topic-name="${topic.TopicName}"
                                        ${isSelected ? 'checked' : ''}
                                        class="event-topic-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                                 <label for="event_topic_${topic.TopicID}" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
@@ -1405,6 +1476,13 @@
                             `;
                             container.appendChild(div);
                         });
+
+                        // Add event listeners
+                        document.querySelectorAll('.event-topic-checkbox').forEach(checkbox => {
+                            checkbox.removeEventListener('change', handleEditTopicCheckboxChange);
+                            checkbox.addEventListener('change', handleEditTopicCheckboxChange);
+                        });
+
                         document.getElementById('topics-section').classList.remove('hidden');
                     } else {
                         container.innerHTML = '<div class="text-center py-2 text-gray-500 dark:text-gray-400">No topics available for this category</div>';
@@ -1425,6 +1503,8 @@
         document.getElementById('topics-section').classList.add('hidden');
         document.getElementById('eventTopicsContainer').innerHTML = '';
         currentEventId = null;
+        editModalSelectedTopics.clear();
+        renderEditSelectedTopicTags();
     }
 
     function openAddModal() {
@@ -1433,14 +1513,18 @@
         document.getElementById('addEventForm').reset();
         document.getElementById('add-topics-section').classList.add('hidden');
         document.getElementById('addEventTopicsContainer').innerHTML = '';
+        addModalSelectedTopics.clear(); // Reset selected topics
+        renderSelectedTopicTags(); // Clear the tags display
     }
 
     function closeAddModal() {
         document.getElementById('addEventModal').classList.add('hidden');
         document.getElementById('add-topics-section').classList.add('hidden');
         document.getElementById('addEventTopicsContainer').innerHTML = '';
-        // Reset form
+        // Reset form and state
         document.getElementById('addEventForm').reset();
+        addModalSelectedTopics.clear();
+        renderSelectedTopicTags();
     }
 
     function loadAddCategoryTopics(categoryId) {
@@ -1458,6 +1542,7 @@
                     
                     if (data.topics && data.topics.length > 0) {
                         data.topics.forEach(topic => {
+                            const isSelected = addModalSelectedTopics.has(String(topic.TopicID));
                             const div = document.createElement('div');
                             div.className = 'flex items-center mb-2';
                             div.innerHTML = `
@@ -1465,6 +1550,8 @@
                                        id="add_event_topic_${topic.TopicID}" 
                                        name="add_selected_topic_ids[]" 
                                        value="${topic.TopicID}"
+                                       data-topic-name="${topic.TopicName}"
+                                       ${isSelected ? 'checked' : ''}
                                        class="add-event-topic-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                                 <label for="add_event_topic_${topic.TopicID}" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
                                     ${topic.TopicName} (ID: ${topic.TopicID})
@@ -1472,6 +1559,13 @@
                             `;
                             container.appendChild(div);
                         });
+
+                        // Add event listeners to the new checkboxes
+                        document.querySelectorAll('.add-event-topic-checkbox').forEach(checkbox => {
+                            checkbox.removeEventListener('change', handleAddTopicCheckboxChange); // Prevent duplicates
+                            checkbox.addEventListener('change', handleAddTopicCheckboxChange);
+                        });
+
                         document.getElementById('add-topics-section').classList.remove('hidden');
                     } else {
                         container.innerHTML = '<div class="text-center py-2 text-gray-500 dark:text-gray-400">No topics available for this category</div>';
@@ -1487,6 +1581,48 @@
             });
     }
 
+    function handleAddTopicCheckboxChange(event) {
+        const checkbox = event.target;
+        const topicId = checkbox.value;
+        const topicName = checkbox.dataset.topicName;
+
+        if (checkbox.checked) {
+            addModalSelectedTopics.set(topicId, topicName);
+        } else {
+            addModalSelectedTopics.delete(topicId);
+        }
+        renderSelectedTopicTags();
+    }
+
+    function renderSelectedTopicTags() {
+        const container = document.getElementById('selected-topics-tags-container');
+        container.innerHTML = ''; // Clear existing tags
+        if (addModalSelectedTopics.size === 0) {
+            container.innerHTML = '<span class="text-xs text-gray-500 dark:text-gray-400">No topics selected</span>';
+        } else {
+            addModalSelectedTopics.forEach((name, id) => {
+                const tag = document.createElement('div');
+                tag.className = 'bg-violet-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-2';
+                tag.innerHTML = `
+                    <span>${name}</span>
+                    <button type="button" class="text-violet-200 hover:text-white" onclick="removeSelectedTopic('${id}')">&times;</button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+    }
+
+    function removeSelectedTopic(topicId) {
+        addModalSelectedTopics.delete(String(topicId));
+        renderSelectedTopicTags();
+        
+        // Uncheck the corresponding checkbox if it's visible in the DOM
+        const checkbox = document.getElementById(`add_event_topic_${topicId}`);
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+    }
+
     function addEvent() {
         const formData = new FormData(document.getElementById('addEventForm'));
         const data = Object.fromEntries(formData);
@@ -1500,11 +1636,8 @@
             return;
         }
         
-        // Get selected topic IDs
-        const selectedTopics = [];
-        document.querySelectorAll('.add-event-topic-checkbox:checked').forEach(checkbox => {
-            selectedTopics.push(checkbox.value);
-        });
+        // Get selected topic IDs from our map
+        const selectedTopics = Array.from(addModalSelectedTopics.keys());
         
         // Validate that at least one topic is selected
         if (selectedTopics.length === 0) {
@@ -1582,17 +1715,56 @@
         });
     }
 
+    function handleEditTopicCheckboxChange(event) {
+        const checkbox = event.target;
+        const topicId = checkbox.value;
+        const topicName = checkbox.dataset.topicName;
+
+        if (checkbox.checked) {
+            editModalSelectedTopics.set(topicId, topicName);
+        } else {
+            editModalSelectedTopics.delete(topicId);
+        }
+        renderEditSelectedTopicTags();
+    }
+
+    function renderEditSelectedTopicTags() {
+        const container = document.getElementById('edit-selected-topics-tags-container');
+        container.innerHTML = ''; // Clear existing tags
+        if (editModalSelectedTopics.size === 0) {
+            container.innerHTML = '<span class="text-xs text-gray-500 dark:text-gray-400">No topics selected</span>';
+        } else {
+            editModalSelectedTopics.forEach((name, id) => {
+                const tag = document.createElement('div');
+                tag.className = 'bg-violet-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-2';
+                tag.innerHTML = `
+                    <span>${name}</span>
+                    <button type="button" class="text-violet-200 hover:text-white" onclick="removeEditSelectedTopic('${id}')">&times;</button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+    }
+
+    function removeEditSelectedTopic(topicId) {
+        editModalSelectedTopics.delete(String(topicId));
+        renderEditSelectedTopicTags();
+        
+        // Uncheck the corresponding checkbox if it's visible in the DOM
+        const checkbox = document.getElementById(`event_topic_${topicId}`);
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+    }
+
     function updateEvent() {
         if (!currentEventId) return;
 
         const formData = new FormData(document.getElementById('editEventForm'));
         const data = Object.fromEntries(formData);
         
-        // Get selected topic IDs
-        const selectedTopics = [];
-        document.querySelectorAll('.event-topic-checkbox:checked').forEach(checkbox => {
-            selectedTopics.push(checkbox.value);
-        });
+        // Get selected topic IDs from our map
+        const selectedTopics = Array.from(editModalSelectedTopics.keys());
         
         // Validate that at least one topic is selected
         if (selectedTopics.length === 0) {
@@ -1664,6 +1836,7 @@
     document.addEventListener('click', function(event) {
         const editModal = document.getElementById('editEventModal');
         const addModal = document.getElementById('addEventModal');
+        const weightageModal = document.getElementById('weightageModal');
         
         if (event.target === editModal) {
             closeEditModal();
@@ -1672,5 +1845,233 @@
         if (event.target === addModal) {
             closeAddModal();
         }
+
+        if (event.target === weightageModal) {
+            closeWeightageModal();
+        }
     });
+
+    let currentWeightageEventId = null;
+
+    function openWeightageModal(eventId) {
+    currentWeightageEventId = eventId;
+    const modal = document.getElementById('weightageModal');
+    const container = document.getElementById('weightageTopicsContainer');
+    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading topics...</div>';
+    modal.classList.remove('hidden');
+
+    fetch(`/events/${eventId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                container.innerHTML = '';
+                let weightages = {};
+                
+                // Better handling of weightages data
+                if (data.event.TopicWeightages) {
+                    try {
+                        if (typeof data.event.TopicWeightages === 'string') {
+                            weightages = JSON.parse(data.event.TopicWeightages);
+                        } else if (typeof data.event.TopicWeightages === 'object') {
+                            weightages = data.event.TopicWeightages;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse TopicWeightages:", e);
+                        weightages = {};
+                    }
+                }
+
+                if (data.topic_names && data.topic_names.length > 0) {
+                    data.selected_topic_ids.forEach((topicId, index) => {
+                        const topicName = data.topic_names[index];
+                        const weightage = weightages[topicId] || 0;
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center justify-between py-2';
+                        div.innerHTML = `
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1">
+                                ${topicName}
+                                <span class="text-xs text-gray-500 ml-1">(ID: ${topicId})</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" 
+                                       name="weightages[${topicId}]" 
+                                       value="${weightage}" 
+                                       min="0" 
+                                       max="100" 
+                                       step="1"
+                                       class="w-20 px-2 py-1 border border-gray-300 rounded-md text-center dark:bg-zinc-700 dark:border-zinc-600 dark:text-white" 
+                                       oninput="updateTotalWeightage()">
+                                <span class="text-sm text-gray-500">%</span>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                    container.innerHTML = '<div class="text-center py-4 text-gray-500 dark:text-gray-400">No topics found for this event.</div>';
+                }
+                updateTotalWeightage();
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-red-500">Error loading topics</div>';
+                console.error('Error loading event details:', data.message);
+            }
+        })
+        .catch(error => {
+            container.innerHTML = '<div class="text-center py-4 text-red-500">Error loading topics</div>';
+            console.error('Error:', error);
+        });
+}
+
+    function closeWeightageModal() {
+        document.getElementById('weightageModal').classList.add('hidden');
+        currentWeightageEventId = null;
+    }
+
+    function updateTotalWeightage() {
+    const inputs = document.querySelectorAll('#weightageTopicsContainer input[type="number"]');
+    let total = 0;
+    let hasWeightages = false;
+    let hasZero = false;
+
+    inputs.forEach(input => {
+        const val = parseInt(input.value) || 0;
+        if (val > 0) {
+            hasWeightages = true;
+        } else if (hasWeightages) { // Only consider zero a problem if other weightages are set
+            hasZero = true;
+        }
+        total += val;
+    });
+
+    const totalEl = document.getElementById('totalWeightage');
+    const progressBar = document.getElementById('weightageProgressBar');
+    const validationMsg = document.getElementById('weightageValidationMessage');
+    const saveBtn = document.getElementById('saveWeightageBtn');
+
+    totalEl.textContent = total + '%';
+
+    const progress = Math.min(total, 100);
+    progressBar.style.width = progress + '%';
+
+    // Reset styles
+    totalEl.classList.remove('text-red-500');
+    progressBar.classList.remove('bg-red-500');
+    progressBar.classList.add('bg-violet-600');
+    validationMsg.textContent = '';
+    saveBtn.disabled = false;
+    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+    let error = false;
+
+    if (total > 100) {
+        totalEl.classList.add('text-red-500');
+        progressBar.classList.add('bg-red-500');
+        progressBar.classList.remove('bg-violet-600');
+        validationMsg.textContent = 'Total weightage cannot exceed 100%.';
+        error = true;
+    } else if (hasWeightages && total !== 100) {
+        validationMsg.textContent = 'Total weightage must be exactly 100% if you set any weightages.';
+        error = true;
+    } else if (hasWeightages && hasZero) {
+        validationMsg.textContent = 'If you set any weightages, all topics must have at least 1% weightage.';
+        error = true;
+    } else if (hasWeightages && total === 100) {
+        validationMsg.textContent = 'Perfect! All weightages are set correctly.';
+        validationMsg.className = 'text-green-500 text-xs mt-2 h-4';
+    }
+
+    if (error) {
+        saveBtn.disabled = true;
+        saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        validationMsg.className = 'text-red-500 text-xs mt-2 h-4';
+    }
+}
+   document.getElementById('weightageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!currentWeightageEventId) {
+        alert('No event selected for weightage update.');
+        return;
+    }
+
+    const saveBtn = document.getElementById('saveWeightageBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+    saveBtn.disabled = true;
+
+    const formData = new FormData(this);
+    const weightages = {};
+    let totalWeightage = 0;
+    let hasWeightages = false;
+    let hasZero = false;
+
+    // Process form data
+    for (let [key, value] of formData.entries()) {
+        const matches = key.match(/weightages\[(\d+)\]/);
+        if (matches) {
+            const topicId = matches[1];
+            const weight = parseInt(value) || 0;
+            weightages[topicId] = weight;
+            totalWeightage += weight;
+            
+            if (weight > 0) {
+                hasWeightages = true;
+            } else if (hasWeightages) {
+                hasZero = true;
+            }
+        }
+    }
+
+    // Client-side validation
+    if (hasWeightages) {
+        if (hasZero) {
+            alert('If you set any weightages, all topics must have at least 1% weightage.');
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+            return;
+        }
+        if (totalWeightage !== 100) {
+            alert('Total weightage must be exactly 100% if you set any weightages.');
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+            return;
+        }
+    }
+
+    console.log('Sending weightages:', weightages); // Debug log
+
+    fetch(`/events/${currentWeightageEventId}/weightages`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ weightages })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response:', data); // Debug log
+        if (data.success) {
+            alert(data.message || 'Weightages saved successfully!');
+            closeWeightageModal();
+        } else {
+            alert(data.message || 'Error saving weightages');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving weightages:', error);
+        alert('An error occurred while saving weightages: ' + error.message);
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+});
 </script>

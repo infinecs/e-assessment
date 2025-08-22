@@ -1,6 +1,18 @@
 @extends('layout.appMain')
 
 @section('content')
+@if(session('success'))
+<div id="settings-success-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded shadow-lg flex items-center gap-2 animate-fade-in" style="min-width:260px;max-width:90vw;">
+    <i class="mdi mdi-check-circle-outline text-2xl"></i>
+    <span class="font-medium">{{ session('success') }}</span>
+</div>
+<script>
+    setTimeout(function() {
+        var toast = document.getElementById('settings-success-toast');
+        if (toast) toast.style.display = 'none';
+    }, 3000);
+</script>
+@endif
 <div class="card dark:bg-zinc-800 dark:border-zinc-600">
     <div class="border-b card-body border-gray-50 dark:border-zinc-600">
         <h5 class="text-gray-700 text-15 dark:text-gray-100">Settings</h5>
@@ -35,11 +47,14 @@
             <div class="col-span-12 md:col-span-10">
                 <input type="email" name="email"
        value="{{ auth()->user()->email }}"
-        class="w-full p-2 border rounded 
-              bg-gray-50 dark:bg-zinc-600 
-              text-gray-600 dark:text-gray-300 
-              cursor-not-allowed"
-       readonly>
+        class="w-full p-2 border rounded dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100 pr-10"
+       autocomplete="email"
+       id="settings_email">
+   <ul class="mt-1 text-sm hidden" id="settingsEmailValidation">
+       <li id="settings-email-format-status" class="text-red-500">• Must be a valid email address</li>
+       <li id="settings-email-unique-status" class="text-red-500" style="display:none;">• Email already being used</li>
+   </ul>
+   <div id="settingsEmailError" class="text-red-500 text-sm hidden"></div>
 
             </div>
         </div>
@@ -103,6 +118,82 @@
 </div>
 
 <script>
+// Live email validation for Settings page (matches add/edit user modals)
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('settings_email');
+    const formatStatus = document.getElementById('settings-email-format-status');
+    const uniqueStatus = document.getElementById('settings-email-unique-status');
+    const emailErrorDiv = document.getElementById('settingsEmailError');
+    let lastCheckedEmail = '';
+    let emailCheckTimeout = null;
+    const originalEmail = emailInput ? emailInput.value.trim() : '';
+    if (emailInput && formatStatus && uniqueStatus) {
+        const validationList = document.getElementById('settingsEmailValidation');
+        // Prevent space input at the keydown level
+        emailInput.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+            }
+        });
+        emailInput.addEventListener('input', function() {
+            // Show validation bullets when typing
+            if (validationList && emailInput.value.length > 0) {
+                validationList.classList.remove('hidden');
+            } else if (validationList) {
+                validationList.classList.add('hidden');
+            }
+            // Convert any uppercase to lowercase and restrict to allowed characters
+            let filtered = emailInput.value
+                .replace(/[^a-zA-Z0-9@._-]/g, '') // allow a-z, A-Z, 0-9, @ . _ -
+                .replace(/\s+/g, '') // remove spaces (redundant, but keep for paste)
+                .toLowerCase();
+            if (emailInput.value !== filtered) {
+                emailInput.value = filtered;
+            }
+            const email = emailInput.value.trim();
+            // Stricter format: only lowercase, no spaces, valid email structure
+            const validEmailRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            if (validEmailRegex.test(email)) {
+                formatStatus.classList.remove('text-red-500');
+                formatStatus.classList.add('text-green-500');
+            } else {
+                formatStatus.classList.remove('text-green-500');
+                formatStatus.classList.add('text-red-500');
+            }
+            // Uniqueness validation (debounced)
+            // If email matches original, always hide uniqueness error
+            if (email === originalEmail) {
+                uniqueStatus.style.display = 'none';
+                uniqueStatus.classList.remove('text-red-500');
+                uniqueStatus.classList.remove('text-green-500');
+                return;
+            }
+            uniqueStatus.style.display = 'none';
+            uniqueStatus.classList.remove('text-green-500');
+            uniqueStatus.classList.add('text-red-500');
+            if (email && validEmailRegex.test(email)) {
+                if (email === lastCheckedEmail) return;
+                lastCheckedEmail = email;
+                clearTimeout(emailCheckTimeout);
+                emailCheckTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
+                        const data = await res.json();
+                        if (data.success && data.users && data.users.data && data.users.data.some(u => u.email === email)) {
+                            uniqueStatus.style.display = '';
+                            uniqueStatus.classList.remove('text-green-500');
+                            uniqueStatus.classList.add('text-red-500');
+                        } else {
+                            uniqueStatus.style.display = 'none';
+                        }
+                    } catch (err) {
+                        uniqueStatus.style.display = 'none';
+                    }
+                }, 400);
+            }
+        });
+    }
+});
     // Simple tab switcher (if no framework JS)
     document.querySelectorAll('[data-tw-toggle="tab"]').forEach(tab => {
         tab.addEventListener('click', () => {

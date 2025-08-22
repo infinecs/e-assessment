@@ -2,36 +2,71 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AssessmentEvent extends Model
 {
-    use HasFactory;
-
-    // If table name is not plural (assessmentevent), specify it:
     protected $table = 'assessmentevent';
-
-    // Primary key
     protected $primaryKey = 'EventID';
-
-    // Laravel timestamps not used (because you have DateCreate/DateUpdate)
     public $timestamps = false;
 
-    // Fillable columns
     protected $fillable = [
-        'CategoryID',
         'EventName',
-        'EventCode',
+        'EventCode', 
+        'CategoryID',
+        'TopicID',
+        'TopicWeightages',
         'QuestionLimit',
         'DurationEachQuestion',
-        'TopicID',
         'StartDate',
         'EndDate',
-        'AdminID',
         'DateCreate',
         'DateUpdate',
+        'AdminID'
     ];
 
-    
+    protected $casts = [
+        'TopicWeightages' => 'json', // This will handle JSON encoding/decoding
+        'StartDate' => 'datetime',
+        'EndDate' => 'datetime',
+        'DateCreate' => 'datetime',
+        'DateUpdate' => 'datetime',
+        'QuestionLimit' => 'integer',
+        'DurationEachQuestion' => 'integer',
+        'CategoryID' => 'integer',
+        'AdminID' => 'integer'
+    ];
+
+    // Accessor for TopicWeightages to handle legacy string format
+    public function getTopicWeightagesAttribute($value)
+    {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // If it's already an array (from JSON cast), return it
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        // If it's a JSON string, decode it
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return $decoded !== null ? $decoded : [];
+        }
+        
+        return [];
+    }
+
+    // Mutator for TopicWeightages to ensure proper JSON storage
+    public function setTopicWeightagesAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['TopicWeightages'] = json_encode($value);
+        } elseif (is_string($value)) {
+            $this->attributes['TopicWeightages'] = $value;
+        } else {
+            $this->attributes['TopicWeightages'] = json_encode([]);
+        }
+    }
 }

@@ -784,7 +784,9 @@
         const selectedDisplay = document.getElementById('addSelectedTopicsDisplay');
         const selectedList = document.getElementById('addSelectedTopicsList');
 
-        let selectedTopics = new Set();
+        const form = document.getElementById('addCategoryForm');
+        form._selectedTopics = new Set();
+        let selectedTopics = form._selectedTopics;
         let selectedTopicData = new Map(); // Store topic data for display
 
         // Load topics into dropdown
@@ -948,7 +950,9 @@
         const selectedDisplay = document.getElementById('editSelectedTopicsDisplay');
         const selectedList = document.getElementById('editSelectedTopicsList');
 
-        let selectedTopics = new Set();
+        const form = document.getElementById('editCategoryForm');
+        form._selectedTopics = new Set();
+        let selectedTopics = form._selectedTopics;
         let selectedTopicData = new Map(); // Store topic data for display
 
         // Load topics into dropdown
@@ -1182,11 +1186,8 @@
             return;
         }
         
-        // Get selected topic IDs
-        const selectedTopics = [];
-        document.querySelectorAll('.add-topic-checkbox:checked').forEach(checkbox => {
-            selectedTopics.push(checkbox.value);
-        });
+        // Get selected topic IDs from the persistent set
+        const selectedTopics = Array.from(document.getElementById('addCategoryForm')._selectedTopics || []);
         
         // Validate at least 1 topic is selected
         if (selectedTopics.length === 0) {
@@ -1245,11 +1246,8 @@
             return;
         }
         
-        // Get selected topic IDs from dropdown
-        const selectedTopics = [];
-        document.querySelectorAll('.edit-topic-checkbox:checked').forEach(checkbox => {
-            selectedTopics.push(checkbox.value);
-        });
+        // Get selected topic IDs from the persistent set
+        const selectedTopics = Array.from(document.getElementById('editCategoryForm')._selectedTopics || []);
         
         // Validate at least 1 topic is selected
         if (selectedTopics.length === 0) {

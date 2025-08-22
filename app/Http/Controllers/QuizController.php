@@ -150,8 +150,8 @@ class QuizController extends Controller
                 'TotalQuestion' => $total,
                 'EventID'       => $eventId,
                 'AdminID'       => 0,
-                'DateCreate'    => now(),
-                'DateUpdate'    => now(),
+                'DateCreate'    => now(), // Set current timestamp
+                'DateUpdate'    => now(), // Set current timestamp
             ]);
             foreach (array_unique($questionIds) as $qid) {
                 $answerLetter = $answers[$qid] ?? null;
@@ -169,7 +169,8 @@ class QuizController extends Controller
                     'AssessmentID' => $assessment->AssessmentID,
                     'QuestionID'   => $qid,
                     'AnswerID'     => $answerId,
-                    'DateCreate'   => now(),
+                    'DateCreate'    => now(), // Set current timestamp
+                    // 'created_at' will be set automatically
                 ]);
             }
         });
@@ -297,8 +298,3 @@ public function heartbeat(Request $request, $eventCode)
     return response()->json(['active' => false]);
 }
 }
-
-
-
-
-

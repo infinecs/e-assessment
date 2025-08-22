@@ -1,6 +1,5 @@
 
 <?php
-
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\AdminController;
@@ -56,6 +55,7 @@ Route::post('/events/bulk-delete', [EventsController::class, 'bulkDestroy'])->na
 Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
 Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
 Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
+Route::post('/events/{id}/weightages', [EventsController::class, 'updateWeightages'])->name('events.weightages');
 Route::get('/events/export-excel', [EventsController::class, 'exportExcel'])->name('events.exportExcel');
 Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 

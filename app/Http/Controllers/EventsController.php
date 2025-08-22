@@ -362,6 +362,84 @@ class EventsController extends Controller
         }
     }
 
+     public function updateWeightages(Request $request, $id)
+    {
+        try {
+            $event = AssessmentEvent::findOrFail($id);
+            
+            $validatedData = $request->validate([
+                'weightages' => 'required|array'
+            ]);
+
+            $weightages = $validatedData['weightages'];
+            $totalWeightage = array_sum($weightages);
+
+            // Check for zero values - only if any weightage is set
+            $hasNonZeroWeightages = false;
+            foreach ($weightages as $w) {
+                if ((int)$w > 0) {
+                    $hasNonZeroWeightages = true;
+                    break;
+                }
+            }
+
+            // If any weightage is set, all must be non-zero
+            if ($hasNonZeroWeightages) {
+                foreach ($weightages as $w) {
+                    if ((int)$w === 0) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'If you set any weightages, all topics must have at least 1% weightage.'
+                        ], 422);
+                    }
+                }
+                
+                // Total must be exactly 100%
+                if ($totalWeightage != 100) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Total weightage must be exactly 100% if you set any weightages.'
+                    ], 422);
+                }
+            }
+
+            // Convert to JSON string for storage
+            $weightagesJson = json_encode($weightages);
+            
+            // Update using direct DB query to ensure it saves properly
+            DB::table('assessmentevent')
+                ->where('EventID', $id)
+                ->update([
+                    'TopicWeightages' => $weightagesJson,
+                    'DateUpdate' => now()
+                ]);
+            
+            // Verify the update
+            $updatedEvent = AssessmentEvent::findOrFail($id);
+            \Log::info('Weightages saved:', [
+                'EventID' => $id,
+                'TopicWeightages' => $updatedEvent->TopicWeightages,
+                'Input' => $weightages
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Weightages updated successfully!'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating weightages:', [
+                'EventID' => $id,
+                'Error' => $e->getMessage(),
+                'Weightages' => $request->input('weightages')
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating weightages: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function exportExcel(Request $request)
     {
         // Get filter parameters
