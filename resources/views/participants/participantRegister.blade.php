@@ -161,7 +161,9 @@
                                             class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Email</label>
                                         <input type="email" name="email" value="{{ old('email') }}" required
                                             class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
-                                            placeholder="Enter email">
+                                            placeholder="Enter email"
+                                            style="text-transform:lowercase;"
+                                            oninput="this.value = this.value.toLowerCase()">
                                         @error('email')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror

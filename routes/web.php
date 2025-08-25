@@ -55,7 +55,9 @@ Route::post('/events/bulk-delete', [EventsController::class, 'bulkDestroy'])->na
 Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
 Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
 Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
-Route::post('/events/{id}/weightages', [EventsController::class, 'updateWeightages'])->name('events.weightages');
+
+Route::post('/events/{id}/weightages', [EventsController::class, 'updateWeightages'])->name('events.updateWeightages');
+
 Route::get('/events/export-excel', [EventsController::class, 'exportExcel'])->name('events.exportExcel');
 Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 
@@ -120,29 +122,25 @@ Route::post('/participants', [ParticipantsController::class, 'store'])
 
 
 
-Route::get('/quiz/{eventCode}', [QuizController::class, 'showQuiz'])->name('quiz.show');
+// Add these routes to your web.php or routes file
 
+// Quiz session management routes
+Route::group(['prefix' => 'quiz/{eventCode}'], function() {
+    Route::post('/check-active-session', [QuizController::class, 'checkActiveSession'])->name('quiz.checkActiveSession');
+    Route::post('/takeover-session', [QuizController::class, 'takeoverSession'])->name('quiz.takeoverSession');
+    Route::post('/heartbeat', [QuizController::class, 'heartbeat'])->name('quiz.heartbeat');
+    Route::post('/clear-active-session', [QuizController::class, 'clearActiveSession'])->name('quiz.clearActiveSession');
+    Route::post('/save-answer', [QuizController::class, 'saveAnswer'])->name('quiz.saveAnswer');
+    Route::post('/clear-answers', [QuizController::class, 'clearAnswers'])->name('quiz.clearAnswers');
+    
+    Route::get('/', [QuizController::class, 'showQuiz'])->name('quiz.show');
+    Route::post('/submit', [QuizController::class, 'submitQuiz'])->name('quiz.submit');
+    Route::get('/results', [QuizController::class, 'showResults'])->name('quiz.results');
+    Route::post('/auto-submit', [QuizController::class, 'autoSubmitQuiz'])->name('quiz.autoSubmit');
 
-Route::post('/quiz/{eventCode}/submit', [QuizController::class, 'submitQuiz'])->name('quiz.submit');
-
-Route::post('/quiz/{eventCode}/save-answer', [QuizController::class, 'saveAnswer'])
-    ->name('quiz.saveAnswer');
-
-Route::post('/quiz/{eventCode}/clear-answers', [QuizController::class, 'clearAnswers'])
-    ->name('quiz.clearAnswers');
-
-// Session management routes for cross-browser prevention
-Route::post('/quiz/{eventCode}/check-active-session', [QuizController::class, 'checkActiveSession'])
-    ->name('quiz.checkActiveSession');
-
-Route::post('/quiz/{eventCode}/clear-active-session', [QuizController::class, 'clearActiveSession'])
-    ->name('quiz.clearActiveSession');
-
-Route::post('/quiz/{eventCode}/heartbeat', [QuizController::class, 'heartbeat'])
-    ->name('quiz.heartbeat');
-
-    Route::get('/quiz/{eventCode}/results', [QuizController::class, 'showResults'])
-    ->name('quiz.results');
+});
+// Force submit blank answers if user leaves quiz page
+Route::post('/quiz/{eventCode}/force-submit-blank', [QuizController::class, 'forceSubmitBlank'])->name('quiz.forceSubmitBlank');
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 

@@ -233,7 +233,7 @@
                                             class="dropdown-menu hidden absolute right-0 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-zinc-700 z-20">
                                             <div class="p-1 flex flex-col gap-1">
                                                 <button type="button"
-                                                    onclick="editEvent({{ $row->EventID }}, '{{ $row->EventName }}', '{{ $row->EventCode }}', {{ $row->QuestionLimit }}, {{ $row->DurationEachQuestion }}, '{{ $row->StartDate }}', '{{ $row->EndDate }}')"
+                                                    onclick="editEvent({{ $row->EventID }}, '{{ $row->EventName }}', '{{ $row->EventCode }}', {{ $row->QuestionLimit }}, {{ $row->DurationEachQuestion }}, '{{ $row->StartDate }}', '{{ $row->EndDate }}', '{{ $row->EventPassword ?? '' }}')"
                                                     class="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs text-white bg-gray-300 rounded hover:bg-gray-700">
                                                     <i class="mdi mdi-pencil text-base"></i>
                                                     <span>Edit</span>
@@ -356,13 +356,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Update Assessment
-                    </button>
-                    <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
-                        Cancel
-                    </button>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center dark:bg-zinc-700">
+                    <div class="flex items-center mr-auto mt-3 sm:mt-0">
+                        <input type="text" id="edit_event_password" name="EventPassword" placeholder="Password" class="block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
+                        <button type="button" onclick="generateEditEventPassword()" class="inline-flex justify-center rounded-md border border-green-300 shadow-sm px-3 py-2 bg-green-200 text-sm font-medium text-gray-700 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                            Generate
+                        </button>
+                    </div>
+                    <div class="flex items-center ml-auto mt-3 sm:mt-0">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Update Assessment
+                        </button>
+                        <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -453,14 +461,23 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-zinc-700">
-                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Add Assessment
-                    </button>
-                    <button type="button" onclick="closeAddModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
-                        Cancel
-                    </button>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center dark:bg-zinc-700">
+                    <div class="flex items-center mr-auto mt-3 sm:mt-0">
+                        <input type="text" id="add_event_password" name="EventPassword" placeholder="Password" class="block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
+                        <button type="button" onclick="generateEventPassword()" class="inline-flex justify-center rounded-md border border-green-300 shadow-sm px-3 py-2 bg-green-200 text-sm font-medium text-gray-700 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
+                            Generate
+                        </button>
+                    </div>
+                    <div class="flex items-center ml-auto mt-3 sm:mt-0">
+                        <button type="submit" id="addAssessmentBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Add Assessment
+                        </button>
+                        <button type="button" onclick="closeAddModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500 ml-4">
+                            Cancel
+                        </button>
+                    </div>
                 </div>
+                
             </form>
         </div>
     </div>
@@ -1341,6 +1358,30 @@
 
         // Edit form submission
         document.getElementById('editEventForm').addEventListener('submit', function(e) {
+            var passwordInput = document.getElementById('edit_event_password');
+            var password = passwordInput.value.trim();
+            var errorMsg = '';
+            if (!password) {
+                errorMsg = 'Password is required.';
+            } else if (password.length < 8) {
+                errorMsg = 'Password must be at least 8 characters.';
+            } else if (!/[A-Z]/.test(password)) {
+                errorMsg = 'Password must contain at least one uppercase letter.';
+            } else if (!/[a-z]/.test(password)) {
+                errorMsg = 'Password must contain at least one lowercase letter.';
+            } else if (!/[0-9]/.test(password)) {
+                errorMsg = 'Password must contain at least one number.';
+            } else if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/~`_+=;'\-]/.test(password)) {
+                errorMsg = 'Password must contain at least one special character.';
+            } else if (/\s/.test(password)) {
+                errorMsg = 'Password must not contain spaces.';
+            }
+            if (errorMsg) {
+                e.preventDefault();
+                alert(errorMsg);
+                passwordInput.focus();
+                return false;
+            }
             e.preventDefault();
             updateEvent();
         });
@@ -1414,7 +1455,10 @@
                     document.getElementById('edit_duration').value = data.event.DurationEachQuestion || '';
                     document.getElementById('edit_start_date').value = data.event.StartDate ? data.event.StartDate.split(' ')[0] : '';
                     document.getElementById('edit_end_date').value = data.event.EndDate ? data.event.EndDate.split(' ')[0] : '';
-                    
+
+                    // Set password field
+                    document.getElementById('edit_event_password').value = data.event.EventPassword || '';
+
                     // Set category
                     const categorySelect = document.getElementById('edit_category');
                     categorySelect.value = data.event.CategoryID || '';
@@ -1426,12 +1470,12 @@
                         });
                     }
                     renderEditSelectedTopicTags();
-                    
+
                     // Load category topics if category is selected
                     if (data.event.CategoryID) {
                         loadCategoryTopics(data.event.CategoryID);
                     }
-                    
+
                     // Show modal
                     document.getElementById('editEventModal').classList.remove('hidden');
                 } else {
@@ -1998,28 +2042,38 @@
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
     saveBtn.disabled = true;
 
-    const formData = new FormData(this);
+    // Get all weightage inputs directly
+    const inputs = document.querySelectorAll('#weightageTopicsContainer input[type="number"]');
     const weightages = {};
     let totalWeightage = 0;
     let hasWeightages = false;
     let hasZero = false;
 
-    // Process form data
-    for (let [key, value] of formData.entries()) {
-        const matches = key.match(/weightages\[(\d+)\]/);
-        if (matches) {
-            const topicId = matches[1];
-            const weight = parseInt(value) || 0;
-            weightages[topicId] = weight;
-            totalWeightage += weight;
-            
-            if (weight > 0) {
-                hasWeightages = true;
-            } else if (hasWeightages) {
-                hasZero = true;
+    // Process inputs directly
+    inputs.forEach(input => {
+        const name = input.getAttribute('name');
+        if (name && name.includes('weightages[')) {
+            // Extract topic ID from name like "weightages[123]"
+            const matches = name.match(/weightages\[(\d+)\]/);
+            if (matches) {
+                const topicId = matches[1];
+                const weight = parseInt(input.value) || 0;
+                weightages[topicId] = weight;
+                totalWeightage += weight;
+                
+                if (weight > 0) {
+                    hasWeightages = true;
+                } else if (hasWeightages) {
+                    hasZero = true;
+                }
             }
         }
-    }
+    });
+
+    console.log('Collected weightages:', weightages);
+    console.log('Total weightage:', totalWeightage);
+    console.log('Has weightages:', hasWeightages);
+    console.log('Has zero:', hasZero);
 
     // Client-side validation
     if (hasWeightages) {
@@ -2037,41 +2091,117 @@
         }
     }
 
-    console.log('Sending weightages:', weightages); // Debug log
+    // Check if we have any weightages to save
+    if (Object.keys(weightages).length === 0) {
+        alert('No weightages found to save.');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+        return;
+    }
+
+    console.log('Sending request to:', `/events/${currentWeightageEventId}/weightages`);
+    console.log('Sending weightages:', weightages);
 
     fetch(`/events/${currentWeightageEventId}/weightages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({ weightages })
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
         if (!response.ok) {
             return response.text().then(text => {
+                console.log('Error response text:', text);
                 throw new Error(`HTTP ${response.status}: ${text}`);
             });
         }
         return response.json();
     })
     .then(data => {
-        console.log('Response:', data); // Debug log
+        console.log('Success response:', data);
         if (data.success) {
             alert(data.message || 'Weightages saved successfully!');
             closeWeightageModal();
+            
+            // Optional: Reload the page to reflect changes
+            // location.reload();
         } else {
             alert(data.message || 'Error saving weightages');
         }
     })
     .catch(error => {
-        console.error('Error saving weightages:', error);
+        console.error('Fetch error:', error);
         alert('An error occurred while saving weightages: ' + error.message);
     })
     .finally(() => {
         saveBtn.innerHTML = originalText;
         saveBtn.disabled = false;
     });
+});
+// No longer disabling Add Assessment button based on password field
+
+// Generate password for edit modal
+function generateEditEventPassword() {
+    var passwordInput = document.getElementById('edit_event_password');
+    const length = 10;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        password += charset.charAt(Math.floor(Math.random() * n));
+    }
+    if (passwordInput) {
+        passwordInput.value = password;
+    }
+}
+function generateEventPassword() {
+    var passwordInput = document.getElementById('add_event_password');
+    var addBtn = document.getElementById('addAssessmentBtn');
+    const length = 10;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        password += charset.charAt(Math.floor(Math.random() * n));
+    }
+    if (passwordInput) {
+        passwordInput.value = password;
+        if (addBtn) addBtn.disabled = false;
+    }
+    toggleAddBtn();
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var passwordInput = document.getElementById('add_event_password');
+    var addEventForm = document.getElementById('addEventForm');
+    if (addEventForm) {
+        addEventForm.addEventListener('submit', function(e) {
+            var password = passwordInput.value.trim();
+            var errorMsg = '';
+            if (!password) {
+                errorMsg = 'Password is required.';
+            } else if (password.length < 8) {
+                errorMsg = 'Password must be at least 8 characters.';
+            } else if (!/[A-Z]/.test(password)) {
+                errorMsg = 'Password must contain at least one uppercase letter.';
+            } else if (!/[a-z]/.test(password)) {
+                errorMsg = 'Password must contain at least one lowercase letter.';
+            } else if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/~`_+=;'\-]/.test(password)) {
+                errorMsg = 'Password must contain at least one special character.';
+            } else if (/\s/.test(password)) {
+                errorMsg = 'Password must not contain spaces.';
+            }
+            if (errorMsg) {
+                e.preventDefault();
+                alert(errorMsg);
+                passwordInput.focus();
+                return false;
+            }
+        });
+    }
 });
 </script>

@@ -151,7 +151,10 @@ class EventsController extends Controller
                 'StartDate' => 'required|date',
                 'EndDate' => 'required|date|after:StartDate',
                 'CategoryID' => 'required|integer',
-                'selected_topic_ids' => 'required|array|min:1' // At least one topic required
+                'selected_topic_ids' => 'required|array|min:1', // At least one topic required
+                'EventPassword' => 'required|string',
+            ], [
+                'EventPassword.required' => 'Password is required.'
             ]);
             
             // Convert selected topics to comma-separated string
@@ -245,18 +248,34 @@ class EventsController extends Controller
                 'StartDate' => 'required|date',
                 'EndDate' => 'required|date|after:StartDate',
                 'CategoryID' => 'required|integer',
-                'selected_topic_ids' => 'array' // For selected topics from category
+                'selected_topic_ids' => 'array', // For selected topics from category
+                'EventPassword' => 'required|string',
+            ], [
+                'EventPassword.required' => 'Password is required.'
             ]);
             
             // If specific topics are selected, use those; otherwise keep existing
             if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
                 $validatedData['TopicID'] = implode(',', $validatedData['selected_topic_ids']);
             }
-            
+
             // Remove selected_topic_ids from validated data as it's not a database field
             unset($validatedData['selected_topic_ids']);
-            
-            $event->update($validatedData);
+
+            // Only update allowed fields
+            $event->EventName = $validatedData['EventName'];
+            $event->EventCode = $validatedData['EventCode'];
+            $event->QuestionLimit = $validatedData['QuestionLimit'];
+            $event->DurationEachQuestion = $validatedData['DurationEachQuestion'];
+            $event->StartDate = $validatedData['StartDate'];
+            $event->EndDate = $validatedData['EndDate'];
+            $event->CategoryID = $validatedData['CategoryID'];
+            $event->EventPassword = $validatedData['EventPassword'];
+            if (isset($validatedData['TopicID'])) {
+                $event->TopicID = $validatedData['TopicID'];
+            }
+            $event->DateUpdate = now();
+            $event->save();
             
             return response()->json([
                 'success' => true,
@@ -310,9 +329,14 @@ class EventsController extends Controller
                 }
             }
             
+            // Format StartDate and EndDate for input type="date"
+            $eventArr = $event->toArray();
+            $eventArr['StartDate'] = $event->StartDate ? (new \Carbon\Carbon($event->StartDate))->format('Y-m-d') : null;
+            $eventArr['EndDate'] = $event->EndDate ? (new \Carbon\Carbon($event->EndDate))->format('Y-m-d') : null;
+
             return response()->json([
                 'success' => true,
-                'event' => $event,
+                'event' => $eventArr,
                 'category_topics' => $categoryTopics,
                 'selected_topic_ids' => $selectedTopicIds,
                 'topic_names' => $topicNames
@@ -362,83 +386,110 @@ class EventsController extends Controller
         }
     }
 
-     public function updateWeightages(Request $request, $id)
-    {
-        try {
-            $event = AssessmentEvent::findOrFail($id);
-            
-            $validatedData = $request->validate([
-                'weightages' => 'required|array'
-            ]);
+    public function updateWeightages(Request $request, $id)
+{
+    try {
+        $event = AssessmentEvent::findOrFail($id);
+        
+        $validatedData = $request->validate([
+            'weightages' => 'required|array'
+        ]);
 
-            $weightages = $validatedData['weightages'];
-            $totalWeightage = array_sum($weightages);
+        $weightages = $validatedData['weightages'];
+        $totalWeightage = array_sum($weightages);
 
-            // Check for zero values - only if any weightage is set
-            $hasNonZeroWeightages = false;
-            foreach ($weightages as $w) {
-                if ((int)$w > 0) {
-                    $hasNonZeroWeightages = true;
-                    break;
-                }
+        // Debug logging
+        \Log::info('Weightages received:', [
+            'EventID' => $id,
+            'Weightages' => $weightages,
+            'Total' => $totalWeightage
+        ]);
+
+        // Check for zero values - only if any weightage is set
+        $hasNonZeroWeightages = false;
+        foreach ($weightages as $w) {
+            if ((int)$w > 0) {
+                $hasNonZeroWeightages = true;
+                break;
             }
+        }
 
-            // If any weightage is set, all must be non-zero
-            if ($hasNonZeroWeightages) {
-                foreach ($weightages as $w) {
-                    if ((int)$w === 0) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'If you set any weightages, all topics must have at least 1% weightage.'
-                        ], 422);
-                    }
-                }
-                
-                // Total must be exactly 100%
-                if ($totalWeightage != 100) {
+        // If any weightage is set, all must be non-zero
+        if ($hasNonZeroWeightages) {
+            foreach ($weightages as $w) {
+                if ((int)$w === 0) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Total weightage must be exactly 100% if you set any weightages.'
+                        'message' => 'If you set any weightages, all topics must have at least 1% weightage.'
                     ], 422);
                 }
             }
-
-            // Convert to JSON string for storage
-            $weightagesJson = json_encode($weightages);
             
-            // Update using direct DB query to ensure it saves properly
-            DB::table('assessmentevent')
-                ->where('EventID', $id)
-                ->update([
-                    'TopicWeightages' => $weightagesJson,
-                    'DateUpdate' => now()
-                ]);
-            
-            // Verify the update
-            $updatedEvent = AssessmentEvent::findOrFail($id);
-            \Log::info('Weightages saved:', [
-                'EventID' => $id,
-                'TopicWeightages' => $updatedEvent->TopicWeightages,
-                'Input' => $weightages
-            ]);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Weightages updated successfully!'
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error updating weightages:', [
-                'EventID' => $id,
-                'Error' => $e->getMessage(),
-                'Weightages' => $request->input('weightages')
-            ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating weightages: ' . $e->getMessage()
-            ], 500);
+            // Total must be exactly 100%
+            if ($totalWeightage != 100) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total weightage must be exactly 100% if you set any weightages.'
+                ], 422);
+            }
         }
+
+        // Convert to JSON string for storage
+        $weightagesJson = json_encode($weightages);
+        
+        // Update the event - using the model instead of raw DB query
+        $event->TopicWeightages = $weightagesJson;
+        $event->DateUpdate = now();
+        $saved = $event->save();
+        
+        // Debug logging
+        \Log::info('Weightages save attempt:', [
+            'EventID' => $id,
+            'SaveResult' => $saved,
+            'StoredValue' => $event->TopicWeightages
+        ]);
+        
+        // Verify the update by re-fetching
+        $updatedEvent = AssessmentEvent::findOrFail($id);
+        \Log::info('Verification after save:', [
+            'EventID' => $id,
+            'TopicWeightages' => $updatedEvent->TopicWeightages,
+            'Input' => $weightages
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Weightages updated successfully!',
+            'saved_data' => $updatedEvent->TopicWeightages // For debugging
+        ]);
+        
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        \Log::error('Validation error updating weightages:', [
+            'EventID' => $id,
+            'Errors' => $e->errors(),
+            'Input' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed: ' . json_encode($e->errors())
+        ], 422);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error updating weightages:', [
+            'EventID' => $id,
+            'Error' => $e->getMessage(),
+            'Trace' => $e->getTraceAsString(),
+            'Input' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating weightages: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function exportExcel(Request $request)
     {

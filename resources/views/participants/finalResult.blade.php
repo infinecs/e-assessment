@@ -39,4 +39,15 @@
         </a>
     </div>
 </body>
+<script>
+// Clear quiz_finished localStorage key for this event and participant to prevent redirect loop
+document.addEventListener('DOMContentLoaded', function() {
+    var eventCode = @json($eventCode);
+    var participantEmail = @json(session('participant_email', 'guest'));
+    var finishedKey = `quiz_finished_${eventCode}`;
+    var finishedKeyWithEmail = `quiz_finished_${eventCode}_${participantEmail}`;
+    localStorage.removeItem(finishedKey);
+    localStorage.removeItem(finishedKeyWithEmail);
+});
+</script>
 </html>

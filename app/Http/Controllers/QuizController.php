@@ -9,292 +9,628 @@ use App\Models\AssessmentTopic;
 use App\Models\AssessmentResultSet;
 use App\Models\AssessmentAnswer;
 use App\Models\Assessment;
-use App\Models\Participant; 
+use App\Models\Participant;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class QuizController extends Controller
-{    
-
+{
+    private const SESSION_TIMEOUT = 7200; // 2 hours in seconds
+    private const HEARTBEAT_TIMEOUT = 45; // 45 seconds - more forgiving
+    private const TAB_CHECK_INTERVAL = 10; // 10 seconds for tab checking
+    
     public function showQuiz($eventCode)
     {
-        // Always check for existing questions first
-        if (session()->has("quiz_questions_$eventCode")) {
-            $questionIds = session("quiz_questions_$eventCode");
-            $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)
-                ->orderByRaw("FIELD(QuestionID, " . implode(',', $questionIds) . ")")
-                ->get();
-        } else {
-            // Initial question loading logic (same as before)
+        try {
+            // Get event first to validate it exists
             $event = AssessmentEvent::where('EventCode', $eventCode)->firstOrFail();
-            $topicIds = array_map('trim', explode(',', $event->TopicID));
-            $questionLimit = (int)$event->QuestionLimit;
+            
+            // Check if participant is logged in
+            $email = session('participant_email');
+            if (!$email) {
+                return redirect()->route('participant.login')
+                    ->with('error', 'Please log in to access the quiz.');
+            }
 
-            $allQuestions = collect();
-            $perTopic = max(1, floor($questionLimit / count($topicIds)));
+            // Check if quiz is already completed
+            if (session("quiz_completed_$eventCode")) {
+                return redirect()->route('quiz.results', $eventCode);
+            }
 
-            foreach ($topicIds as $topicId) {
-                $topic = AssessmentTopic::find($topicId);
-                if (!$topic || !$topic->QuestionID) continue;
+            // Always check for existing questions first
+            if (session()->has("quiz_questions_$eventCode")) {
+                $questionIds = session("quiz_questions_$eventCode");
+                $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)
+                    ->orderByRaw("FIELD(QuestionID, " . implode(',', array_map('intval', $questionIds)) . ")")
+                    ->get();
+            } else {
+                // Generate new question set
+                $questions = $this->generateQuestionSet($event);
+                
+                if ($questions->isEmpty()) {
+                    return redirect()->back()->with('error', 'No questions available for this assessment.');
+                }
+                
+                // Store question IDs in session
+                session(["quiz_questions_$eventCode" => $questions->pluck('QuestionID')->toArray()]);
+            }
 
-                $ids = array_map('trim', explode(',', $topic->QuestionID));
-                shuffle($ids);
-                $selected = array_slice($ids, 0, $perTopic);
+            // Get saved answers from session
+            $savedAnswers = session("quiz_answers_$eventCode", []);
 
+            // Handle session initialization
+            $isNewSession = $this->initializeQuizSession($eventCode);
+
+            return view('participants.quizPage', [
+                'eventCode' => $eventCode,
+                'questions' => $questions,
+                'savedAnswers' => $savedAnswers,
+                'assessment' => $event,
+                'errors' => session()->get('errors'),
+                'isNewSession' => $isNewSession
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error showing quiz: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Unable to load quiz. Please try again.');
+        }
+    }
+
+    private function initializeQuizSession($eventCode)
+    {
+        $email = session('participant_email');
+        $sessionKey = "quiz_session_{$eventCode}_{$email}";
+        $startTimeKey = "quiz_start_time_{$eventCode}_{$email}";
+        
+        // Check if this is a brand new session
+        $isNewSession = !session()->has("quiz_started_$eventCode") || request()->has('new_session');
+        
+        if ($isNewSession) {
+            // Clear any existing session data
+            session()->forget([
+                "quiz_answers_$eventCode",
+                "quiz_timer_remaining_$eventCode"
+            ]);
+            
+            // Set new session markers
+            session([
+                "quiz_started_$eventCode" => true,
+                "quiz_session_id_$eventCode" => uniqid('quiz_', true),
+                "quiz_start_time_$eventCode" => now()->timestamp
+            ]);
+            
+            // Clear server-side cache for fresh start
+            Cache::forget("quiz_active_{$eventCode}_{$email}");
+            Cache::forget("quiz_heartbeat_{$eventCode}_{$email}");
+            Cache::forget("quiz_timer_{$eventCode}_{$email}");
+        }
+        
+        return $isNewSession;
+    }
+
+    private function generateQuestionSet($event)
+    {
+        $topicIds = array_filter(array_map('trim', explode(',', $event->TopicID ?? '')));
+    $questionLimit = (int)$event->QuestionLimit; // Use only QuestionLimit from DB
+        $weightages = $event->TopicWeightages ?? [];
+
+        if (empty($topicIds)) {
+            return collect();
+        }
+
+        $allQuestions = collect();
+        $topicQuestionCounts = [];
+        $totalAssigned = 0;
+
+        // Calculate number of questions per topic based on weightage
+        foreach ($topicIds as $topicId) {
+            $weight = isset($weightages[$topicId]) ? (int)$weightages[$topicId] : 0;
+            $count = ($weight > 0) ? round(($weight / 100) * $questionLimit) : 0;
+            $topicQuestionCounts[$topicId] = $count;
+            $totalAssigned += $count;
+        }
+
+        // Adjust for rounding errors
+        if ($totalAssigned !== $questionLimit && count($topicIds) > 0) {
+            $diff = $questionLimit - $totalAssigned;
+            $sorted = $topicIds;
+            usort($sorted, function($a, $b) use ($weightages) {
+                return ($weightages[$b] ?? 0) <=> ($weightages[$a] ?? 0);
+            });
+            $i = 0;
+            while ($diff !== 0 && $i < 1000) {
+                $tid = $sorted[$i % count($sorted)];
+                if ($diff > 0) {
+                    $topicQuestionCounts[$tid]++;
+                    $diff--;
+                } else if ($diff < 0 && $topicQuestionCounts[$tid] > 0) {
+                    $topicQuestionCounts[$tid]--;
+                    $diff++;
+                }
+                $i++;
+            }
+        }
+
+        // Select questions per topic
+        foreach ($topicIds as $topicId) {
+            $topic = AssessmentTopic::find($topicId);
+            if (!$topic || !$topic->QuestionID) continue;
+            $ids = array_filter(array_map('trim', explode(',', $topic->QuestionID)));
+            if (empty($ids)) continue;
+            shuffle($ids);
+            $count = $topicQuestionCounts[$topicId] ?? 0;
+            $selected = array_slice($ids, 0, $count);
+            if (!empty($selected)) {
                 $qs = AssessmentQuestion::whereIn('QuestionID', $selected)->get();
                 $allQuestions = $allQuestions->merge($qs);
             }
+        }
 
-            // Fill remaining questions if needed
-            $needed = $questionLimit - $allQuestions->count();
-            if ($needed > 0) {
-                $allIds = AssessmentTopic::whereIn('TopicID', $topicIds)
-                    ->pluck('QuestionID')
-                    ->flatMap(fn($ids) => array_map('trim', explode(',', $ids)))
-                    ->unique()
-                    ->toArray();
-
-                $alreadyPicked = $allQuestions->pluck('QuestionID')->toArray();
-                $remainingIds = array_values(array_diff($allIds, $alreadyPicked));
+        // Fill with random questions if needed to reach 20
+        $needed = $questionLimit - $allQuestions->count();
+        if ($needed > 0) {
+            $allTopicIds = AssessmentTopic::whereIn('TopicID', $topicIds)
+                ->whereNotNull('QuestionID')
+                ->where('QuestionID', '!=', '')
+                ->pluck('QuestionID')
+                ->filter()
+                ->toArray();
+            $allIds = [];
+            foreach ($allTopicIds as $questionIdString) {
+                $ids = array_filter(array_map('trim', explode(',', $questionIdString)));
+                $allIds = array_merge($allIds, $ids);
+            }
+            $allIds = array_unique($allIds);
+            $alreadyPicked = $allQuestions->pluck('QuestionID')->toArray();
+            $remainingIds = array_values(array_diff($allIds, $alreadyPicked));
+            if (!empty($remainingIds)) {
                 shuffle($remainingIds);
-
                 $extraIds = array_slice($remainingIds, 0, $needed);
                 $extraQuestions = AssessmentQuestion::whereIn('QuestionID', $extraIds)->get();
                 $allQuestions = $allQuestions->merge($extraQuestions);
             }
-
-            // Store questions in session, trimmed to the question limit
-            $allQuestions = $allQuestions->unique('QuestionID')->values()->take($questionLimit);
-            session(["quiz_questions_$eventCode" => $allQuestions->pluck('QuestionID')->toArray()]);
-            $questions = $allQuestions;
         }
 
-        // Preserve validation errors if they exist
-        $errors = session()->get('errors');
-
-        // Always get answers from session
-        $savedAnswers = session("quiz_answers_$eventCode", []);
-
-        return view('participants.quizPage', [
-            'eventCode' => $eventCode,
-            'questions' => $questions,
-            'savedAnswers' => $savedAnswers,
-            'assessment' => AssessmentEvent::where('EventCode', $eventCode)->first(),
-            'errors' => $errors // Pass errors to view
-        ]);
+        // Ensure exactly 20 questions
+        return $allQuestions->unique('QuestionID')->values()->take($questionLimit);
     }
 
+    public function checkActiveSession(Request $request, $eventCode)
+    {
+        try {
+            $email = session('participant_email');
+            if (!$email) {
+                return response()->json([
+                    'allowed' => false, 
+                    'message' => 'No participant session found',
+                    'action' => 'redirect_login'
+                ]);
+            }
+
+            $currentTabId = $request->input('tabId');
+            $forceNew = $request->input('force_new', false);
+            
+            if (!$currentTabId) {
+                return response()->json([
+                    'allowed' => false, 
+                    'message' => 'Invalid tab ID',
+                    'action' => 'refresh'
+                ]);
+            }
+
+            $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+            $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
+            $tabIdKey = "quiz_tab_id_{$eventCode}_{$email}";
+
+            // If force_new is requested, clear existing session
+            if ($forceNew) {
+                Cache::forget($activeSessionKey);
+                Cache::forget($heartbeatKey);
+                Cache::forget($tabIdKey);
+                
+                // Also clear session data for fresh start
+                session()->forget([
+                    "quiz_started_$eventCode",
+                    "quiz_answers_$eventCode"
+                ]);
+            }
+
+            // Check for existing active session
+            $activeSession = Cache::get($activeSessionKey);
+            $lastHeartbeat = Cache::get($heartbeatKey);
+            $storedTabId = Cache::get($tabIdKey);
+
+            if ($activeSession && $storedTabId !== $currentTabId) {
+                // Check if the other session is still alive
+                if ($lastHeartbeat && (time() - $lastHeartbeat) < self::HEARTBEAT_TIMEOUT) {
+                    return response()->json([
+                        'allowed' => false,
+                        'message' => 'Quiz is already active in another browser tab or device. Please close other sessions first.',
+                        'action' => 'show_takeover_option',
+                        'existing_session_age' => time() - $lastHeartbeat
+                    ]);
+                }
+            }
+
+            // Set this session as active
+            Cache::put($activeSessionKey, true, self::SESSION_TIMEOUT);
+            Cache::put($heartbeatKey, time(), self::SESSION_TIMEOUT);
+            Cache::put($tabIdKey, $currentTabId, self::SESSION_TIMEOUT);
+
+            return response()->json([
+                'allowed' => true,
+                'session_timeout' => self::SESSION_TIMEOUT,
+                'heartbeat_interval' => 15
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error checking active session: " . $e->getMessage());
+            return response()->json([
+                'allowed' => false, 
+                'message' => 'Server error occurred',
+                'action' => 'retry'
+            ], 500);
+        }
+    }
+
+    public function takeoverSession(Request $request, $eventCode)
+    {
+        try {
+            $email = session('participant_email');
+            $currentTabId = $request->input('tabId');
+            
+            if (!$email || !$currentTabId) {
+                return response()->json(['success' => false, 'message' => 'Invalid request']);
+            }
+
+            $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+            $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
+            $tabIdKey = "quiz_tab_id_{$eventCode}_{$email}";
+
+            // Force takeover - clear existing session and set new one
+            Cache::put($activeSessionKey, true, self::SESSION_TIMEOUT);
+            Cache::put($heartbeatKey, time(), self::SESSION_TIMEOUT);
+            Cache::put($tabIdKey, $currentTabId, self::SESSION_TIMEOUT);
+
+            return response()->json(['success' => true, 'message' => 'Session taken over successfully']);
+            
+        } catch (\Exception $e) {
+            Log::error("Error taking over session: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Server error'], 500);
+        }
+    }
+
+    public function heartbeat(Request $request, $eventCode)
+    {
+        try {
+            $email = session('participant_email');
+            if (!$email) {
+                return response()->json(['active' => false, 'reason' => 'no_session']);
+            }
+
+            $currentTabId = $request->input('tabId');
+            if (!$currentTabId) {
+                return response()->json(['active' => false, 'reason' => 'invalid_tab']);
+            }
+
+            $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+            $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
+            $tabIdKey = "quiz_tab_id_{$eventCode}_{$email}";
+            
+            $storedTabId = Cache::get($tabIdKey);
+
+            if ($storedTabId === $currentTabId) {
+                // Update heartbeat and extend session
+                Cache::put($heartbeatKey, time(), self::SESSION_TIMEOUT);
+                Cache::put($activeSessionKey, true, self::SESSION_TIMEOUT);
+                Cache::put($tabIdKey, $currentTabId, self::SESSION_TIMEOUT);
+                
+                return response()->json([
+                    'active' => true,
+                    'server_time' => time(),
+                    'remaining_time' => self::SESSION_TIMEOUT
+                ]);
+            }
+
+            return response()->json([
+                'active' => false, 
+                'reason' => 'session_taken_over',
+                'message' => 'Your session has been taken over by another tab or device'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error in heartbeat: " . $e->getMessage());
+            return response()->json(['active' => false, 'reason' => 'server_error'], 500);
+        }
+    }
+
+    public function clearActiveSession(Request $request, $eventCode)
+    {
+        try {
+            $email = session('participant_email');
+            if ($email) {
+                $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
+                $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
+                $tabIdKey = "quiz_tab_id_{$eventCode}_{$email}";
+                
+                Cache::forget($activeSessionKey);
+                Cache::forget($heartbeatKey);
+                Cache::forget($tabIdKey);
+            }
+
+            return response()->json(['success' => true]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error clearing active session: " . $e->getMessage());
+            return response()->json(['success' => false], 500);
+        }
+    }
+
+    public function saveAnswer(Request $request, $eventCode)
+    {
+        try {
+            $request->validate([
+                'questionId' => 'required|integer',
+                'value' => 'required|string'
+            ]);
+
+            $answers = session("quiz_answers_$eventCode", []);
+            $answers[$request->questionId] = $request->value;
+            session(["quiz_answers_$eventCode" => $answers]);
+
+            return response()->json(['status' => 'saved', 'timestamp' => now()->timestamp]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function clearAnswers(Request $request, $eventCode)
+    {
+        session()->forget("quiz_answers_$eventCode");
+        return response()->json(['status' => 'cleared']);
+    }
 
     public function submitQuiz(Request $request, $eventCode)
     {
-        // Validate all questions are answered
-        $questionIds = session("quiz_questions_$eventCode", []);
-        $rules = [];
-        foreach ($questionIds as $qid) {
-            $rules["answers.$qid"] = 'required';
-        }
-        $validator = \Validator::make($request->all(), $rules, [
-            'required' => 'Please answer all questions before submitting.'
-        ]);
-        if ($validator->fails()) {
-            // Save current answers to session
-            session(["quiz_answers_$eventCode" => $request->input('answers', [])]);
-            return redirect()
-                ->route('quiz.show', $eventCode)
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Get participant id from participants table
-        $answers = $request->input('answers', []);
-        $email = session('participant_email');
-        $participantId = 0;
-        if ($email) {
-            $participant = Participant::where('email', $email)->first();
-            if ($participant) {
-                $participantId = $participant->id;
+        try {
+            $questionIds = session("quiz_questions_$eventCode", []);
+            
+            if (empty($questionIds)) {
+                return redirect()->route('quiz.show', $eventCode)
+                    ->with('error', 'Session expired, please retake the quiz.');
             }
-        }
 
-        if (empty($questionIds)) {
-            return redirect()->route('quiz.show', $eventCode)
-                ->with('error', 'Session expired, please retake the quiz.');
-        }
+            // Validate all questions are answered
+            $rules = [];
+            $messages = [];
+            
+            foreach ($questionIds as $qid) {
+                $rules["answers.$qid"] = 'required';
+                $messages["answers.$qid.required"] = "Question $qid is required.";
+            }
 
-        // Get EventID from eventCode
-        $event = AssessmentEvent::where('EventCode', $eventCode)->first();
-        $eventId = $event ? $event->EventID : null;
+            $validator = Validator::make($request->all(), $rules, $messages);
+            
+            if ($validator->fails()) {
+                session(["quiz_answers_$eventCode" => $request->input('answers', [])]);
+                return redirect()
+                    ->route('quiz.show', $eventCode)
+                    ->withErrors($validator)
+                    ->withInput();
+            }
 
-        // Calculate score
-        $score = 0;
-        $total = count($questionIds);
-        foreach (array_unique($questionIds) as $qid) {
-            if (!isset($answers[$qid])) continue;
-            $selectedOption = $answers[$qid];
-            $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
-            $chosenAnswer = null;
-            foreach ($answerList as $index => $ans) {
-                if (chr(65 + $index) === $selectedOption) {
-                    $chosenAnswer = $ans;
-                    break;
+            // Get participant and event info
+            $email = session('participant_email');
+            $participantId = 0;
+            
+            if ($email) {
+                $participant = Participant::where('email', $email)->first();
+                if ($participant) {
+                    $participantId = $participant->id;
                 }
             }
-            if ($chosenAnswer && $chosenAnswer->ExpectedAnswer === 'Y') {
-                $score++;
-            }
-        }
 
-        // Save Assessment + Results
-        \DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId) {
-            $assessment = Assessment::create([
-                'ParticipantID' => $participantId,
-                'TotalScore'    => $score,
-                'TotalQuestion' => $total,
-                'EventID'       => $eventId,
-                'AdminID'       => 0,
-                'DateCreate'    => now(), // Set current timestamp
-                'DateUpdate'    => now(), // Set current timestamp
-            ]);
+            $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+            $eventId = $event ? $event->EventID : null;
+
+            // Calculate score
+            $answers = $request->input('answers', []);
+            $score = 0;
+            $total = count($questionIds);
+            
             foreach (array_unique($questionIds) as $qid) {
-                $answerLetter = $answers[$qid] ?? null;
-                $answerId = null;
-                if ($answerLetter) {
-                    $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
-                    foreach ($answerList as $index => $ans) {
-                        if (chr(65 + $index) === $answerLetter) {
-                            $answerId = $ans->AnswerID;
-                            break;
-                        }
+                if (!isset($answers[$qid])) continue;
+                
+                $selectedOption = $answers[$qid];
+                $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                
+                foreach ($answerList as $index => $ans) {
+                    if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
+                        $score++;
+                        break;
                     }
                 }
-                AssessmentResultSet::create([
-                    'AssessmentID' => $assessment->AssessmentID,
-                    'QuestionID'   => $qid,
-                    'AnswerID'     => $answerId,
-                    'DateCreate'    => now(), // Set current timestamp
-                    // 'created_at' will be set automatically
-                ]);
             }
-        });
 
-        // Store result for final page
-        session([
-            "quiz_result_$eventCode" => [
-                'score' => $score,
-                'total' => $total,
-            ],
-            "quiz_completed_$eventCode" => true
-        ]);
+            // Save assessment and results
+            DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId) {
+                $assessment = Assessment::create([
+                    'ParticipantID' => $participantId,
+                    'TotalScore' => $score,
+                    'TotalQuestion' => $total,
+                    'EventID' => $eventId,
+                    'AdminID' => 0,
+                    'DateCreate' => now(),
+                    'DateUpdate' => now(),
+                ]);
 
-        // Forget questions/answers so next attempt is fresh
-        session()->forget("quiz_questions_$eventCode");
-        session()->forget("quiz_answers_$eventCode");
+                foreach (array_unique($questionIds) as $qid) {
+                    $answerLetter = $answers[$qid] ?? null;
+                    $answerId = null;
+                    
+                    if ($answerLetter) {
+                        $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                        foreach ($answerList as $index => $ans) {
+                            if (chr(65 + $index) === $answerLetter) {
+                                $answerId = $ans->AnswerID;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    AssessmentResultSet::create([
+                        'AssessmentID' => $assessment->AssessmentID,
+                        'QuestionID' => $qid,
+                        'AnswerID' => $answerId,
+                        'DateCreate' => now(),
+                    ]);
+                }
+            });
 
-        return redirect()->route('quiz.results', $eventCode);
-    }
-
-
-public function saveAnswer(Request $request, $eventCode)
-{
-    $answers = session("quiz_answers_$eventCode", []);
-    $answers[$request->questionId] = $request->value;
-    session(["quiz_answers_$eventCode" => $answers]);
-
-    return response()->json(['status' => 'saved']);
-}
-
-public function clearAnswers(Request $request, $eventCode)
-{
-    // Clear saved answers from session for fresh start
-    session()->forget("quiz_answers_$eventCode");
-    
-    return response()->json(['status' => 'cleared']);
-}
-
-public function showResults($eventCode)
-{
-    if (!session("quiz_completed_$eventCode")) {
-        return redirect()->route('quiz.show', $eventCode);
-    }
-
-    $result = session("quiz_result_$eventCode");
-    return view('participants.finalResult', [
-        'eventCode' => $eventCode,
-        'result' => $result
-    ]);
-}
-
-/**
- * Check if there's already an active quiz session for this participant
- */
-public function checkActiveSession(Request $request, $eventCode)
-{
-    $email = session('participant_email');
-    if (!$email) {
-        return response()->json(['allowed' => false, 'message' => 'No participant session found']);
-    }
-
-    // Check if there's an active session in cache/database
-    $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
-    $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
-    $activeSession = cache()->get($activeSessionKey);
-    $currentTabId = $request->input('tabId');
-    
-    if ($activeSession && $activeSession !== $currentTabId) {
-        // Check if the existing session is still alive (heartbeat within last 30 seconds)
-        $lastHeartbeat = cache()->get($heartbeatKey);
-        if ($lastHeartbeat && (time() - $lastHeartbeat) < 30) {
-            return response()->json([
-                'allowed' => false, 
-                'message' => 'Quiz is already active in another browser or device'
+            // Store result and mark as completed
+            session([
+                "quiz_result_$eventCode" => [
+                    'score' => $score,
+                    'total' => $total,
+                ],
+                "quiz_completed_$eventCode" => true
             ]);
+
+            // Clean up session data
+            session()->forget([
+                "quiz_questions_$eventCode",
+                "quiz_answers_$eventCode",
+                "quiz_started_$eventCode",
+                "quiz_session_id_$eventCode"
+            ]);
+
+            // Clear server-side session tracking
+            $this->clearActiveSession($request, $eventCode);
+
+            return redirect()->route('quiz.results', $eventCode);
+            
+        } catch (\Exception $e) {
+            Log::error("Error submitting quiz: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error submitting quiz. Please try again.');
         }
     }
 
-    // Store this session as active (expires in 2 hours)
-    cache()->put($activeSessionKey, $currentTabId, now()->addHours(2));
-    cache()->put($heartbeatKey, time(), now()->addHours(2));
-    
-    return response()->json(['allowed' => true]);
-}
+    public function autoSubmitQuiz(Request $request, $eventCode)
+    {
+        try {
+            $questionIds = session("quiz_questions_$eventCode", []);
+            
+            if (empty($questionIds)) {
+                return response()->json(['status' => 'error', 'message' => 'Session expired']);
+            }
 
-/**
- * Clear the active session when quiz is completed or tab is closed
- */
-public function clearActiveSession(Request $request, $eventCode)
-{
-    $email = session('participant_email');
-    if ($email) {
-        $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
-        $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
-        cache()->forget($activeSessionKey);
-        cache()->forget($heartbeatKey);
-    }
-    
-    return response()->json(['success' => true]);
-}
+            $email = session('participant_email');
+            $participantId = 0;
+            
+            if ($email) {
+                $participant = Participant::where('email', $email)->first();
+                if ($participant) {
+                    $participantId = $participant->id;
+                }
+            }
 
-/**
- * Heartbeat to keep the session alive and check if still active
- */
-public function heartbeat(Request $request, $eventCode)
-{
-    $email = session('participant_email');
-    if (!$email) {
-        return response()->json(['active' => false]);
+            $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+            $eventId = $event ? $event->EventID : null;
+
+            $existingAssessment = Assessment::where('ParticipantID', $participantId)
+                                            ->where('EventID', $eventId)
+                                            ->exists();
+
+            if ($existingAssessment) {
+                return response()->json(['status' => 'already_submitted']);
+            }
+
+            $answers = $request->input('answers', []);
+            $score = 0;
+            $total = count($questionIds);
+            
+            foreach (array_unique($questionIds) as $qid) {
+                if (!isset($answers[$qid])) continue;
+                
+                $selectedOption = $answers[$qid];
+                $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                
+                foreach ($answerList as $index => $ans) {
+                    if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
+                        $score++;
+                        break;
+                    }
+                }
+            }
+
+            DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId) {
+                $assessment = Assessment::create([
+                    'ParticipantID' => $participantId,
+                    'TotalScore' => $score,
+                    'TotalQuestion' => $total,
+                    'EventID' => $eventId,
+                    'AdminID' => 0,
+                    'DateCreate' => now(),
+                    'DateUpdate' => now(),
+                ]);
+
+                foreach (array_unique($questionIds) as $qid) {
+                    $answerLetter = $answers[$qid] ?? null;
+                    $answerId = null;
+                    
+                    if ($answerLetter) {
+                        $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                        foreach ($answerList as $index => $ans) {
+                            if (chr(65 + $index) === $answerLetter) {
+                                $answerId = $ans->AnswerID;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    AssessmentResultSet::create([
+                        'AssessmentID' => $assessment->AssessmentID,
+                        'QuestionID' => $qid,
+                        'AnswerID' => $answerId,
+                        'DateCreate' => now(),
+                    ]);
+                }
+            });
+
+            session([
+                "quiz_completed_$eventCode" => true
+            ]);
+
+            session()->forget([
+                "quiz_questions_$eventCode",
+                "quiz_answers_$eventCode",
+                "quiz_started_$eventCode",
+                "quiz_session_id_$eventCode"
+            ]);
+
+            $this->clearActiveSession($request, $eventCode);
+
+            return response()->json(['status' => 'submitted']);
+            
+        } catch (\Exception $e) {
+            Log::error("Error auto-submitting quiz: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Server error during auto-submit'], 500);
+        }
     }
 
-    $activeSessionKey = "quiz_active_{$eventCode}_{$email}";
-    $heartbeatKey = "quiz_heartbeat_{$eventCode}_{$email}";
-    $activeSession = cache()->get($activeSessionKey);
-    $currentTabId = $request->input('tabId');
-    
-    if ($activeSession === $currentTabId) {
-        // Update heartbeat timestamp
-        cache()->put($heartbeatKey, time(), now()->addHours(2));
-        // Extend the session for another 2 hours
-        cache()->put($activeSessionKey, $currentTabId, now()->addHours(2));
-        return response()->json(['active' => true]);
+    public function showResults($eventCode)
+    {
+        if (!session("quiz_completed_$eventCode")) {
+            return redirect()->route('quiz.show', $eventCode);
+        }
+
+        $result = session("quiz_result_$eventCode");
+        
+        return view('participants.finalResult', [
+            'eventCode' => $eventCode,
+            'result' => $result
+        ]);
     }
-    
-    return response()->json(['active' => false]);
-}
 }

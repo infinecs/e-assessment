@@ -22,7 +22,8 @@ class AssessmentEvent extends Model
         'EndDate',
         'DateCreate',
         'DateUpdate',
-        'AdminID'
+        'AdminID',
+        'EventPassword'
     ];
 
     protected $casts = [
