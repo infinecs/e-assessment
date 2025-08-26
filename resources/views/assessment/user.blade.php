@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
                 <!-- Add button -->
                 <button type="button" id="add-user-btn"
-                    onclick="document.getElementById('addUserModal').classList.remove('hidden'); document.getElementById('addUserForm').reset();"
+                    onclick="resetAddUserValidation(); document.getElementById('addUserModal').classList.remove('hidden'); document.getElementById('addUserForm').reset();"
                     class="px-6 py-1.5 text-white btn bg-violet-500 border-violet-500 hover:bg-violet-600 hover:border-violet-600 focus:bg-violet-600 focus:border-violet-600 focus:ring focus:ring-violet-500/30 active:bg-violet-600 active:border-violet-600 text-sm">
                     Add
                 </button>
@@ -258,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div>
                                     <label for="add_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                                     <input type="email" id="add_user_email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
+                                    <input type="hidden" id="current-user-email" value="{{ auth()->user()->email ?? '' }}">
                                     <ul class="mt-1 text-xs" id="addUserEmailValidation">
                                         <li id="email-format-status" class="text-red-600">• Must be a valid email address</li>
                                         <li id="email-unique-status" class="text-red-600" style="display:none;">• Email already being used</li>
@@ -265,12 +266,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div id="addUserEmailError" class="text-red-600 text-xs hidden"></div>
 <script>
 // Live email validation for Add User modal
+let addUserLastCheckedEmail = '';
+let addUserEmailCheckTimeout = null;
+
+function resetAddUserValidation() {
+    document.getElementById('email-format-status').className = 'text-red-600';
+    const uniqueStatus = document.getElementById('email-unique-status');
+    uniqueStatus.style.display = 'none';
+    uniqueStatus.className = 'text-red-600';
+    document.getElementById('addUserEmailError').classList.add('hidden');
+    
+    addUserLastCheckedEmail = '';
+    if (addUserEmailCheckTimeout) {
+        clearTimeout(addUserEmailCheckTimeout);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('add_user_email');
     const formatStatus = document.getElementById('email-format-status');
     const uniqueStatus = document.getElementById('email-unique-status');
-    let lastCheckedEmail = '';
-    let emailCheckTimeout = null;
+    const currentUserEmail = document.getElementById('current-user-email')?.value?.trim().toLowerCase() || '';
+    
     if (emailInput && formatStatus && uniqueStatus) {
         // Prevent space input at the keydown level
         emailInput.addEventListener('keydown', function(e) {
@@ -302,10 +319,17 @@ document.addEventListener('DOMContentLoaded', function() {
             uniqueStatus.classList.remove('text-green-600');
             uniqueStatus.classList.add('text-red-600');
             if (email && validEmailRegex.test(email)) {
-                if (email === lastCheckedEmail) return;
-                lastCheckedEmail = email;
-                clearTimeout(emailCheckTimeout);
-                emailCheckTimeout = setTimeout(async () => {
+                // Prevent using the current user's email
+                if (email === currentUserEmail) {
+                    uniqueStatus.style.display = '';
+                    uniqueStatus.classList.remove('text-green-600');
+                    uniqueStatus.classList.add('text-red-600');
+                    return;
+                }
+                if (email === addUserLastCheckedEmail) return;
+                addUserLastCheckedEmail = email;
+                clearTimeout(addUserEmailCheckTimeout);
+                addUserEmailCheckTimeout = setTimeout(async () => {
                     try {
                         const res = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
                         const data = await res.json();
@@ -442,6 +466,7 @@ function togglePasswordVisibility(inputId, btn) {
 								<div>
                                     <label for="edit_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                                     <input type="email" id="edit_user_email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white">
+                                    <input type="hidden" id="current-user-email-edit" value="{{ auth()->user()->email ?? '' }}">
                                     <ul class="mt-1 text-xs" id="editUserEmailValidation">
                                         <li id="edit-email-format-status" class="text-red-600">• Must be a valid email address</li>
                                         <li id="edit-email-unique-status" class="text-red-600" style="display:none;">• Email already being used</li>
@@ -479,14 +504,28 @@ function togglePasswordVisibility(inputId, btn) {
 @section('scripts')
 <script>
 // Live email validation for Edit User modal
+let editUserLastCheckedEmail = '';
+let editUserEmailCheckTimeout = null;
+
+function resetEditUserValidation() {
+    document.getElementById('edit-email-format-status').className = 'text-red-600';
+    const uniqueStatus = document.getElementById('edit-email-unique-status');
+    uniqueStatus.style.display = 'none';
+    uniqueStatus.className = 'text-red-600';
+    
+    editUserLastCheckedEmail = '';
+    if (editUserEmailCheckTimeout) {
+        clearTimeout(editUserEmailCheckTimeout);
+    }
+}
+
 // (This script enables live format and uniqueness validation for the edit modal email field)
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('edit_user_email');
     const formatStatus = document.getElementById('edit-email-format-status');
     const uniqueStatus = document.getElementById('edit-email-unique-status');
-    let lastCheckedEmail = '';
-    let emailCheckTimeout = null;
     let originalEmail = '';
+    const currentUserEmailEdit = document.getElementById('current-user-email-edit')?.value?.trim().toLowerCase() || '';
     // Set originalEmail when opening modal
     window.setEditUserOriginalEmail = function(email) { originalEmail = email; };
     if (emailInput && formatStatus && uniqueStatus) {
@@ -523,14 +562,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 uniqueStatus.classList.remove('text-green-600');
                 return;
             }
+            // Prevent using the current user's email
+            if (email === currentUserEmailEdit) {
+                uniqueStatus.style.display = '';
+                uniqueStatus.classList.remove('text-green-600');
+                uniqueStatus.classList.add('text-red-600');
+                return;
+            }
             uniqueStatus.style.display = 'none';
             uniqueStatus.classList.remove('text-green-600');
             uniqueStatus.classList.add('text-red-600');
             if (email && validEmailRegex.test(email)) {
-                if (email === lastCheckedEmail) return;
-                lastCheckedEmail = email;
-                clearTimeout(emailCheckTimeout);
-                emailCheckTimeout = setTimeout(async () => {
+                if (email === editUserLastCheckedEmail) return;
+                editUserLastCheckedEmail = email;
+                clearTimeout(editUserEmailCheckTimeout);
+                editUserEmailCheckTimeout = setTimeout(async () => {
                     try {
                         const res = await fetch(`/users/search?query=${encodeURIComponent(email)}`);
                         const data = await res.json();
@@ -1139,13 +1185,23 @@ function setupFormHandlers() {
 
 // Main functions (called from HTML)
 async function editUser(id) {
+	resetEditUserValidation();
     try {
         currentEditUserId = id;
         const response = await UserOperations.getById(id);
         
         if (response.success) {
             const user = response.user;
-            document.getElementById('edit_user_email').value = user.email || '';
+            
+            // Set the email value
+            const emailInput = document.getElementById('edit_user_email');
+            if (emailInput) {
+                emailInput.value = user.email || '';
+                // Set the original email for validation
+                if (window.setEditUserOriginalEmail) {
+                    window.setEditUserOriginalEmail(user.email || '');
+                }
+            }
             
             // Set roles dropdown
             const rolesSelect = document.getElementById('edit_user_roles');
@@ -1161,10 +1217,11 @@ async function editUser(id) {
             
             ModalManager.open('editUserModal', false);
         } else {
-            // ...error notification removed...
+            // Handle error
+            console.error('Failed to load user data');
         }
     } catch (error) {
-    // ...error notification removed...
+        console.error('Error loading user:', error);
     }
 }
 
@@ -1252,6 +1309,8 @@ async function searchUsers(query) {
         
         if (response.success) {
             TableManager.update(response.users);
+            // Re-initialize dropdowns after updating the table
+            setupDropdowns();
         } else {
             // ...error notification removed...
         }
@@ -1291,31 +1350,30 @@ function updatePasswordValidation() {
 
 // Dropdown functionality
 function setupDropdowns() {
-    document.addEventListener('click', function(e) {
-        // Handle dropdown toggle
-        const dropdownToggle = e.target.closest('.dropdown-toggle');
-        if (dropdownToggle) {
-            e.preventDefault();
-            const dropdown = dropdownToggle.closest('.dropdown');
-            const menu = dropdown?.querySelector('.dropdown-menu');
-            
-            if (menu) {
+    // Remove previous listeners by cloning toggles (prevents stacking)
+    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+        const newToggle = toggle.cloneNode(true);
+        toggle.parentNode.replaceChild(newToggle, toggle);
+    });
+
+    // Attach click to each dropdown-toggle
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        if (toggle && menu) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
                 // Close all other dropdowns
-                document.querySelectorAll('.dropdown-menu').forEach(otherMenu => {
-                    if (otherMenu !== menu) {
-                        otherMenu.classList.add('hidden');
-                    }
+                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('hidden');
                 });
-                
-                // Toggle current dropdown
                 menu.classList.toggle('hidden');
-            }
-        } else {
-            // Close all dropdowns when clicking outside
-            document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                menu.classList.add('hidden');
             });
         }
+    });
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
     });
 }
 

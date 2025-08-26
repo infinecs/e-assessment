@@ -128,6 +128,7 @@
                                 </div>
 
                                 <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}">
+
                                     @csrf
 
                                     {{-- Name --}}
@@ -169,6 +170,21 @@
                                         @enderror
                                     </div>
 
+                                    {{-- Password --}}
+                                    <div class="mb-6">
+                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Password</label>
+                                        <div class="flex">
+                                            <input type="password" name="password" id="register-password"
+                                                class="w-full py-2 border-gray-50 rounded-l bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                                                placeholder="Enter password" required aria-label="Password" aria-describedby="register-password-addon">
+                                            <button class="px-4 border rounded-r border-gray-50 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
+                                                type="button" id="register-password-addon"><i class="mdi mdi-eye-off-outline"></i></button>
+                                        </div>
+                                        @error('password')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
                                     {{-- Submit --}}
                                     <div class="mb-3">
                                         <button
@@ -178,6 +194,26 @@
                                         </button>
                                     </div>
                                 </form>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function () {
+                                        var passwordInput = document.getElementById('register-password');
+                                        var eyeButton = document.getElementById('register-password-addon');
+                                        if (passwordInput && eyeButton) {
+                                            var icon = eyeButton.querySelector('i');
+                                            eyeButton.addEventListener('click', function () {
+                                                if (passwordInput.type === 'password') {
+                                                    passwordInput.type = 'text';
+                                                    icon.classList.remove('mdi-eye-off-outline');
+                                                    icon.classList.add('mdi-eye-outline');
+                                                } else {
+                                                    passwordInput.type = 'password';
+                                                    icon.classList.remove('mdi-eye-outline');
+                                                    icon.classList.add('mdi-eye-off-outline');
+                                                }
+                                            });
+                                        }
+                                    });
+                                </script>
                             </div>
 
                             <div class="text-center">

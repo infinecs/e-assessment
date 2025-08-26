@@ -358,7 +358,7 @@
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center dark:bg-zinc-700">
                     <div class="flex items-center mr-auto mt-3 sm:mt-0">
-                        <input type="text" id="edit_event_password" name="EventPassword" placeholder="Password" class="block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
+                        <input type="text" id="edit_event_password" name="EventPassword" placeholder="Password" class="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
                         <button type="button" onclick="generateEditEventPassword()" class="inline-flex justify-center rounded-md border border-green-300 shadow-sm px-3 py-2 bg-green-200 text-sm font-medium text-gray-700 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
                             Generate
                         </button>
@@ -463,7 +463,7 @@
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center dark:bg-zinc-700">
                     <div class="flex items-center mr-auto mt-3 sm:mt-0">
-                        <input type="text" id="add_event_password" name="EventPassword" placeholder="Password" class="block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
+                        <input type="text" id="add_event_password" name="EventPassword" placeholder="Password" class="block w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm dark:bg-zinc-700 dark:border-zinc-600 dark:text-white mr-2">
                         <button type="button" onclick="generateEventPassword()" class="inline-flex justify-center rounded-md border border-green-300 shadow-sm px-3 py-2 bg-green-200 text-sm font-medium text-gray-700 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 dark:bg-zinc-600 dark:text-gray-200 dark:border-zinc-500 dark:hover:bg-zinc-500">
                             Generate
                         </button>
@@ -1076,7 +1076,7 @@
                         modal.id = 'assessmentInfoModal';
                         modal.className = 'fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center bg-black bg-opacity-50';
                         modal.innerHTML = `
-                            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-zinc-800">
+                            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-auto dark:bg-zinc-800">
                                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-zinc-800">
                                     <div class="sm:flex sm:items-start">
                                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
@@ -1088,14 +1088,18 @@
                                                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-zinc-700 dark:text-gray-400">
                                                             <tr>
-                                                                <th scope="col" class="px-4 py-3">Category Name</th>
-                                                                <th scope="col" class="px-4 py-3">Topics</th>
+                                                                <th scope="col" class="px-4 py-3" style="width:auto;white-space:nowrap;">Category Name</th>
+                                                                <th scope="col" class="px-4 py-3" style="width:auto;white-space:nowrap;">Topics</th>
+                                                                <th scope="col" class="px-4 py-3" style="width:auto;white-space:nowrap;">Password</th>
+                                                                <th scope="col" class="px-4 py-3">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="px-4 py-3" id="categoryNameCell"></td>
-                                                                <td class="px-4 py-3" id="topicsCell"></td>
+                                                                <td class="px-4 py-3" id="categoryNameCell" style="width:auto;white-space:nowrap;"></td>
+                                                                <td class="px-4 py-3" id="topicsCell" style="width:auto;white-space:nowrap;"></td>
+                                                                <td class="px-4 py-3" id="passwordCell" style="width:auto;white-space:nowrap;"></td>
+                                <td class="px-4 py-3" id="actionCell"></td>
                                                             </tr>
                                                         </tbody>
                                                     </table>
@@ -1127,7 +1131,121 @@
                         }
                     }
                     modal.querySelector('#categoryNameCell').textContent = categoryName;
-                    modal.querySelector('#topicsCell').textContent = (data.topic_names && data.topic_names.length) ? data.topic_names.join(', ') : '-';
+                    // Show topics as a bulleted list
+                    if (data.topic_names && data.topic_names.length) {
+                        const ul = document.createElement('ul');
+                        ul.style.listStyleType = 'disc';
+                        ul.style.paddingLeft = '1.5em';
+                        data.topic_names.forEach(topic => {
+                            const li = document.createElement('li');
+                            li.textContent = topic;
+                            ul.appendChild(li);
+                        });
+                        const topicsCell = modal.querySelector('#topicsCell');
+                        topicsCell.textContent = '';
+                        topicsCell.appendChild(ul);
+                    } else {
+                        modal.querySelector('#topicsCell').textContent = '-';
+                    }
+                    // Password field with eye icon for show/hide
+                    const passwordValue = data.event.EventPassword || '-';
+                    const passwordCell = modal.querySelector('#passwordCell');
+                    passwordCell.innerHTML = `<span id="assessmentPassword" style="letter-spacing:2px;">${passwordValue ? '•'.repeat(passwordValue.length) : '-'}</span>`;
+
+                    // Improved design: subtle background, modern button, tooltip
+                    passwordCell.style.background = 'var(--tw-bg-opacity,1)'; // Remove custom color, use table bg
+                    passwordCell.style.borderRadius = '';
+                    passwordCell.style.textAlign = 'center';
+                    passwordCell.style.verticalAlign = 'middle';
+
+                    const actionCell = modal.querySelector('#actionCell');
+                    // Start with closed eye (password hidden)
+                    actionCell.innerHTML = `
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button id="togglePasswordBtn" type="button" title="Show/Hide Password" style="background: #ede9fe; border: none; outline: none; cursor: pointer; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; box-shadow: 0 1px 2px rgba(80,80,120,0.04);">
+                                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6d28d9" width="22" height="22">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95m3.249-2.383A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.973 9.973 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+                                </svg>
+                            </button>
+                            <button id="copyPasswordBtn" type="button" title="Copy Password" style="background: #dbeafe; border: none; outline: none; cursor: pointer; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; box-shadow: 0 1px 2px rgba(80,80,120,0.04);"
+                                onmouseenter="this.style.background='#93c5fd'" onmouseleave="this.style.background='#dbeafe'">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#2563eb" width="20" height="20">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" stroke="#2563eb" stroke-width="2" fill="none"/>
+                                    <rect x="3" y="3" width="13" height="13" rx="2" stroke="#2563eb" stroke-width="2" fill="none"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    // Copy password button functionality
+                    const copyBtn = actionCell.querySelector('#copyPasswordBtn');
+                    if (copyBtn) {
+                        copyBtn.addEventListener('click', function() {
+                            // Always copy the actual password, not the dots
+                            if (passwordValue && passwordValue !== '-') {
+                                navigator.clipboard.writeText(passwordValue).then(() => {
+                                    // Show notification below modal
+                                    let notif = document.getElementById('copyPasswordNotif');
+                                    if (!notif) {
+                                        notif = document.createElement('div');
+                                        notif.id = 'copyPasswordNotif';
+                                        notif.style.position = 'fixed';
+                                        notif.style.left = '50%';
+                                        notif.style.top = 'calc(50% + 180px)';
+                                        notif.style.transform = 'translateX(-50%)';
+                                        notif.style.background = '#2563eb';
+                                        notif.style.color = 'white';
+                                        notif.style.padding = '10px 24px';
+                                        notif.style.borderRadius = '8px';
+                                        notif.style.fontSize = '1rem';
+                                        notif.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                                        notif.style.zIndex = '9999';
+                                        notif.textContent = 'Password copied successfully!';
+                                        document.body.appendChild(notif);
+                                    } else {
+                                        notif.textContent = 'Password copied successfully!';
+                                        notif.style.display = '';
+                                    }
+                                    setTimeout(() => {
+                                        if (notif) notif.style.display = 'none';
+                                    }, 1500);
+                                });
+                            }
+                        });
+                    }
+                    // Always start hidden
+                    passwordCell.querySelector('#assessmentPassword').textContent = passwordValue ? '•'.repeat(passwordValue.length) : '-';
+                    const toggleBtn = actionCell.querySelector('#togglePasswordBtn');
+                    const passwordSpan = passwordCell.querySelector('#assessmentPassword');
+                    let revealed = false;
+                    toggleBtn.addEventListener('mouseenter', function() {
+                        toggleBtn.style.background = '#ddd6fe';
+                    });
+                    toggleBtn.addEventListener('mouseleave', function() {
+                        toggleBtn.style.background = '#ede9fe';
+                    });
+                    toggleBtn.addEventListener('click', function() {
+                        revealed = !revealed;
+                        if (revealed) {
+                            passwordSpan.textContent = passwordValue;
+                            // Eye open (show password)
+                            actionCell.querySelector('#eyeIcon').outerHTML = `
+                                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6d28d9" width="22" height="22">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            `;
+                        } else {
+                            passwordSpan.textContent = passwordValue ? '•'.repeat(passwordValue.length) : '-';
+                            // Eye closed (hide password)
+                            actionCell.querySelector('#eyeIcon').outerHTML = `
+                                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6d28d9" width="22" height="22">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95m3.249-2.383A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.973 9.973 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+                                </svg>
+                            `;
+                        }
+                    });
                     // Show modal
                     modal.classList.remove('hidden');
                     // Attach close event just like category modal
@@ -1670,25 +1788,50 @@
     function addEvent() {
         const formData = new FormData(document.getElementById('addEventForm'));
         const data = Object.fromEntries(formData);
-        
+
+        // Password validation (moved from DOMContentLoaded)
+        var passwordInput = document.getElementById('add_event_password');
+        var password = passwordInput ? passwordInput.value.trim() : '';
+        var errorMsg = '';
+        if (!password) {
+            errorMsg = 'Password is required.';
+        } else if (password.length < 8) {
+            errorMsg = 'Password must be at least 8 characters.';
+        } else if (!/[A-Z]/.test(password)) {
+            errorMsg = 'Password must contain at least one uppercase letter.';
+        } else if (!/[a-z]/.test(password)) {
+            errorMsg = 'Password must contain at least one lowercase letter.';
+        } else if (!/[0-9]/.test(password)) {
+            errorMsg = 'Password must contain at least one number.';
+        } else if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/~`_+=;'-]/.test(password)) {
+            errorMsg = 'Password must contain at least one special character.';
+        } else if (/\s/.test(password)) {
+            errorMsg = 'Password must not contain spaces.';
+        }
+        if (errorMsg) {
+            alert(errorMsg);
+            if (passwordInput) passwordInput.focus();
+            return false;
+        }
+
         // Validate dates
         const startDate = new Date(data.StartDate);
         const endDate = new Date(data.EndDate);
-        
+
         if (startDate >= endDate) {
             alert('End date must be after start date.');
             return;
         }
-        
+
         // Get selected topic IDs from our map
         const selectedTopics = Array.from(addModalSelectedTopics.keys());
-        
+
         // Validate that at least one topic is selected
         if (selectedTopics.length === 0) {
             alert('Please select at least one topic for the assessment.');
             return;
         }
-        
+
         data.selected_topic_ids = selectedTopics;
 
         // Debug logging
@@ -1741,7 +1884,7 @@
                     const responseStart = error.message.indexOf('response:') + 'response:'.length;
                     const responseText = error.message.substring(responseStart).trim();
                     const responseData = JSON.parse(responseText);
-                    
+
                     if (responseData.errors && typeof responseData.errors === 'object') {
                         // Get the first error message from the first field
                         const firstField = Object.keys(responseData.errors)[0];
@@ -2148,60 +2291,48 @@
 // No longer disabling Add Assessment button based on password field
 
 // Generate password for edit modal
+function generateStrongPassword(length = 10) {
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const number = '0123456789';
+    const special = '!@#$%^&*()_+[]{}|;:,.<>?/~`-=';
+    const all = upper + lower + number + special;
+    let password = '';
+    // Ensure at least one of each required character type
+    password += upper[Math.floor(Math.random() * upper.length)];
+    password += lower[Math.floor(Math.random() * lower.length)];
+    password += number[Math.floor(Math.random() * number.length)];
+    password += special[Math.floor(Math.random() * special.length)];
+    // Fill the rest
+    for (let i = 4; i < length; ++i) {
+        password += all[Math.floor(Math.random() * all.length)];
+    }
+    // Shuffle to avoid predictable positions
+    password = password.split('').sort(() => 0.5 - Math.random()).join('');
+    // Ensure no spaces
+    if (/\s/.test(password)) {
+        return generateStrongPassword(length);
+    }
+    return password;
+}
+
 function generateEditEventPassword() {
     var passwordInput = document.getElementById('edit_event_password');
-    const length = 10;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0, n = charset.length; i < length; ++i) {
-        password += charset.charAt(Math.floor(Math.random() * n));
-    }
+    var password = generateStrongPassword(10);
     if (passwordInput) {
         passwordInput.value = password;
     }
 }
+
 function generateEventPassword() {
     var passwordInput = document.getElementById('add_event_password');
     var addBtn = document.getElementById('addAssessmentBtn');
-    const length = 10;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0, n = charset.length; i < length; ++i) {
-        password += charset.charAt(Math.floor(Math.random() * n));
-    }
+    var password = generateStrongPassword(10);
     if (passwordInput) {
         passwordInput.value = password;
         if (addBtn) addBtn.disabled = false;
     }
     toggleAddBtn();
 }
-document.addEventListener('DOMContentLoaded', function() {
-    var passwordInput = document.getElementById('add_event_password');
-    var addEventForm = document.getElementById('addEventForm');
-    if (addEventForm) {
-        addEventForm.addEventListener('submit', function(e) {
-            var password = passwordInput.value.trim();
-            var errorMsg = '';
-            if (!password) {
-                errorMsg = 'Password is required.';
-            } else if (password.length < 8) {
-                errorMsg = 'Password must be at least 8 characters.';
-            } else if (!/[A-Z]/.test(password)) {
-                errorMsg = 'Password must contain at least one uppercase letter.';
-            } else if (!/[a-z]/.test(password)) {
-                errorMsg = 'Password must contain at least one lowercase letter.';
-            } else if (!/[!@#$%^&*(),.?":{}|<>\[\]\\/~`_+=;'\-]/.test(password)) {
-                errorMsg = 'Password must contain at least one special character.';
-            } else if (/\s/.test(password)) {
-                errorMsg = 'Password must not contain spaces.';
-            }
-            if (errorMsg) {
-                e.preventDefault();
-                alert(errorMsg);
-                passwordInput.focus();
-                return false;
-            }
-        });
-    }
-});
+// Password validation for add modal is now handled inside addEvent()
 </script>
