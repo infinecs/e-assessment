@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Tailwind Admin & Dashboard Template" name="description">
     <meta content="Themesbrand" name="author">
-    <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}">
 
     <link rel="stylesheet" href="{{ asset('libs/swiper/swiper-bundle.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/icons.css') }}">
@@ -112,8 +112,9 @@
                             <div class="mx-auto mb-12">
                                 <a href="#">
                                     
-                                    <span class="text-4xl font-black align-middle ltr:ml-1.5 rtl:mr-1.5 text-gray-900 dark:text-white">
-                                        E-Assessment
+                                    
+                                         <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-14 inline">
+                                       
                                     </span>
                                 </a>
                             </div>
@@ -121,7 +122,7 @@
                             <!-- Form -->
                             <div class="my-auto">
                                 <div class="text-center">
-                                    <h5 class="font-medium text-gray-700 dark:text-gray-100">Register to Take Quiz</h5>
+                                    <h5 class="font-medium text-gray-700 dark:text-gray-100">Register to Take Assessment</h5>
                                     <p class="mt-2 mb-4 text-gray-500 dark:text-gray-100/60">
                                         Fill in your details to begin.
                                     </p>
@@ -143,29 +144,28 @@
                                         @enderror
                                     </div>
 
-                                    {{-- Phone --}}
-                                    <div class="mb-4">
-                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Phone
-                                            Number</label>
-                                        <input type="text" name="phone_number" value="{{ old('phone_number') }}"
-                                            pattern="[0-9]+" title="Numbers only" required
-                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
-                                            placeholder="Enter phone number">
-                                        @error('phone_number')
-                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
                                     {{-- Email --}}
-                                    <div class="mb-6">
-                                        <label
-                                            class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Email</label>
+                                    <div class="mb-4">
+                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Email</label>
                                         <input type="email" name="email" value="{{ old('email') }}" required
                                             class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
                                             placeholder="Enter email"
                                             style="text-transform:lowercase;"
                                             oninput="this.value = this.value.toLowerCase()">
                                         @error('email')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    {{-- Confirm Email --}}
+                                    <div class="mb-6">
+                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Confirm Email</label>
+                                        <input type="email" name="email_confirmation" value="{{ old('email_confirmation') }}" required
+                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                                            placeholder="Re-enter email"
+                                            style="text-transform:lowercase;"
+                                            oninput="this.value = this.value.toLowerCase()">
+                                        @error('email_confirmation')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>

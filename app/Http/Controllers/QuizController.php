@@ -113,7 +113,7 @@ class QuizController extends Controller
     private function generateQuestionSet($event)
     {
         $topicIds = array_filter(array_map('trim', explode(',', $event->TopicID ?? '')));
-    $questionLimit = (int)$event->QuestionLimit; // Use only QuestionLimit from DB
+        $questionLimit = (int)$event->QuestionLimit;
         $weightages = $event->TopicWeightages ?? [];
 
         if (empty($topicIds)) {
@@ -122,34 +122,50 @@ class QuizController extends Controller
 
         $allQuestions = collect();
         $topicQuestionCounts = [];
-        $totalAssigned = 0;
 
-        // Calculate number of questions per topic based on weightage
+        // If weightages are not set or all zero, distribute equally
+        $hasWeightage = false;
         foreach ($topicIds as $topicId) {
-            $weight = isset($weightages[$topicId]) ? (int)$weightages[$topicId] : 0;
-            $count = ($weight > 0) ? round(($weight / 100) * $questionLimit) : 0;
-            $topicQuestionCounts[$topicId] = $count;
-            $totalAssigned += $count;
+            if (!empty($weightages[$topicId]) && $weightages[$topicId] > 0) {
+                $hasWeightage = true;
+                break;
+            }
         }
 
-        // Adjust for rounding errors
-        if ($totalAssigned !== $questionLimit && count($topicIds) > 0) {
-            $diff = $questionLimit - $totalAssigned;
-            $sorted = $topicIds;
-            usort($sorted, function($a, $b) use ($weightages) {
-                return ($weightages[$b] ?? 0) <=> ($weightages[$a] ?? 0);
-            });
-            $i = 0;
-            while ($diff !== 0 && $i < 1000) {
-                $tid = $sorted[$i % count($sorted)];
-                if ($diff > 0) {
-                    $topicQuestionCounts[$tid]++;
-                    $diff--;
-                } else if ($diff < 0 && $topicQuestionCounts[$tid] > 0) {
-                    $topicQuestionCounts[$tid]--;
-                    $diff++;
+        if ($hasWeightage) {
+            $totalAssigned = 0;
+            foreach ($topicIds as $topicId) {
+                $weight = isset($weightages[$topicId]) ? (int)$weightages[$topicId] : 0;
+                $count = ($weight > 0) ? round(($weight / 100) * $questionLimit) : 0;
+                $topicQuestionCounts[$topicId] = $count;
+                $totalAssigned += $count;
+            }
+            // Adjust for rounding errors
+            if ($totalAssigned !== $questionLimit && count($topicIds) > 0) {
+                $diff = $questionLimit - $totalAssigned;
+                $sorted = $topicIds;
+                usort($sorted, function($a, $b) use ($weightages) {
+                    return ($weightages[$b] ?? 0) <=> ($weightages[$a] ?? 0);
+                });
+                $i = 0;
+                while ($diff !== 0 && $i < 1000) {
+                    $tid = $sorted[$i % count($sorted)];
+                    if ($diff > 0) {
+                        $topicQuestionCounts[$tid]++;
+                        $diff--;
+                    } else if ($diff < 0 && $topicQuestionCounts[$tid] > 0) {
+                        $topicQuestionCounts[$tid]--;
+                        $diff++;
+                    }
+                    $i++;
                 }
-                $i++;
+            }
+        } else {
+            // Distribute equally if no weightage
+            $perTopic = intdiv($questionLimit, count($topicIds));
+            $remainder = $questionLimit % count($topicIds);
+            foreach ($topicIds as $i => $topicId) {
+                $topicQuestionCounts[$topicId] = $perTopic + ($i < $remainder ? 1 : 0);
             }
         }
 
@@ -168,9 +184,10 @@ class QuizController extends Controller
             }
         }
 
-        // Fill with random questions if needed to reach 20
+        // If still not enough, fill only from selected topics (unique only, no repeats)
         $needed = $questionLimit - $allQuestions->count();
         if ($needed > 0) {
+            // Gather all available question IDs from selected topics
             $allTopicIds = AssessmentTopic::whereIn('TopicID', $topicIds)
                 ->whereNotNull('QuestionID')
                 ->where('QuestionID', '!=', '')
@@ -193,8 +210,13 @@ class QuizController extends Controller
             }
         }
 
-        // Ensure exactly 20 questions
-        return $allQuestions->unique('QuestionID')->values()->take($questionLimit);
+        // Only use unique questions, and if not enough, return as many as available (no repeats)
+        $uniqueQuestions = $allQuestions->unique('QuestionID')->values();
+        if ($uniqueQuestions->count() > $questionLimit) {
+            return $uniqueQuestions->take($questionLimit);
+        } else {
+            return $uniqueQuestions;
+        }
     }
 
     public function checkActiveSession(Request $request, $eventCode)
@@ -518,119 +540,180 @@ class QuizController extends Controller
     }
 
     public function autoSubmitQuiz(Request $request, $eventCode)
-    {
-        try {
-            $questionIds = session("quiz_questions_$eventCode", []);
-            
-            if (empty($questionIds)) {
-                return response()->json(['status' => 'error', 'message' => 'Session expired']);
+{
+    try {
+        $questionIds = session("quiz_questions_$eventCode", []);
+        
+        if (empty($questionIds)) {
+            return response()->json(['status' => 'error', 'message' => 'Session expired']);
+        }
+
+        $email = session('participant_email');
+        $participantId = 0;
+        
+        if ($email) {
+            $participant = Participant::where('email', $email)->first();
+            if ($participant) {
+                $participantId = $participant->id;
             }
+        }
 
-            $email = session('participant_email');
-            $participantId = 0;
-            
-            if ($email) {
-                $participant = Participant::where('email', $email)->first();
-                if ($participant) {
-                    $participantId = $participant->id;
-                }
-            }
+        $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+        $eventId = $event ? $event->EventID : null;
 
-            $event = AssessmentEvent::where('EventCode', $eventCode)->first();
-            $eventId = $event ? $event->EventID : null;
+        // Check if already submitted to prevent duplicates
+        $existingAssessment = Assessment::where('ParticipantID', $participantId)
+                                        ->where('EventID', $eventId)
+                                        ->first();
 
-            $existingAssessment = Assessment::where('ParticipantID', $participantId)
-                                            ->where('EventID', $eventId)
-                                            ->exists();
-
-            if ($existingAssessment) {
-                return response()->json(['status' => 'already_submitted']);
-            }
-
-            $answers = $request->input('answers', []);
-            $score = 0;
-            $total = count($questionIds);
-            
-            foreach (array_unique($questionIds) as $qid) {
-                if (!isset($answers[$qid])) continue;
-                
-                $selectedOption = $answers[$qid];
-                $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
-                
-                foreach ($answerList as $index => $ans) {
-                    if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
-                        $score++;
-                        break;
-                    }
-                }
-            }
-
-            DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId) {
-                $assessment = Assessment::create([
-                    'ParticipantID' => $participantId,
-                    'TotalScore' => $score,
-                    'TotalQuestion' => $total,
-                    'EventID' => $eventId,
-                    'AdminID' => 0,
-                    'DateCreate' => now(),
-                    'DateUpdate' => now(),
-                ]);
-
-                foreach (array_unique($questionIds) as $qid) {
-                    $answerLetter = $answers[$qid] ?? null;
-                    $answerId = null;
-                    
-                    if ($answerLetter) {
-                        $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
-                        foreach ($answerList as $index => $ans) {
-                            if (chr(65 + $index) === $answerLetter) {
-                                $answerId = $ans->AnswerID;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    AssessmentResultSet::create([
-                        'AssessmentID' => $assessment->AssessmentID,
-                        'QuestionID' => $qid,
-                        'AnswerID' => $answerId,
-                        'DateCreate' => now(),
-                    ]);
-                }
-            });
-
+        if ($existingAssessment) {
+            // If assessment exists, use its data for the result
             session([
+                "quiz_result_$eventCode" => [
+                    'score' => $existingAssessment->TotalScore,
+                    'total' => $existingAssessment->TotalQuestion,
+                ],
                 "quiz_completed_$eventCode" => true
             ]);
+            
+            return response()->json(['status' => 'already_submitted']);
+        }
 
-            session()->forget([
-                "quiz_questions_$eventCode",
-                "quiz_answers_$eventCode",
-                "quiz_started_$eventCode",
-                "quiz_session_id_$eventCode"
+        // Get answers - from request or session as fallback
+        $answers = $request->input('answers', []);
+        if (empty($answers)) {
+            $answers = session("quiz_answers_$eventCode", []);
+        }
+
+        $score = 0;
+        $total = count($questionIds);
+        
+        // Calculate score for answered questions only
+        foreach (array_unique($questionIds) as $qid) {
+            if (!isset($answers[$qid])) continue;
+            
+            $selectedOption = $answers[$qid];
+            $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+            
+            foreach ($answerList as $index => $ans) {
+                if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
+                    $score++;
+                    break;
+                }
+            }
+        }
+
+        // Save assessment and results in transaction
+        DB::transaction(function () use ($participantId, $score, $total, $answers, $questionIds, $eventId, $eventCode) {
+            $assessment = Assessment::create([
+                'ParticipantID' => $participantId,
+                'TotalScore' => $score,
+                'TotalQuestion' => $total,
+                'EventID' => $eventId,
+                'AdminID' => 0,
+                'DateCreate' => now(),
+                'DateUpdate' => now(),
             ]);
 
-            $this->clearActiveSession($request, $eventCode);
+            // Save results for all questions (including unanswered ones)
+            foreach (array_unique($questionIds) as $qid) {
+                $answerLetter = $answers[$qid] ?? null;
+                $answerId = null;
+                
+                if ($answerLetter) {
+                    $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                    foreach ($answerList as $index => $ans) {
+                        if (chr(65 + $index) === $answerLetter) {
+                            $answerId = $ans->AnswerID;
+                            break;
+                        }
+                    }
+                }
+                
+                AssessmentResultSet::create([
+                    'AssessmentID' => $assessment->AssessmentID,
+                    'QuestionID' => $qid,
+                    'AnswerID' => $answerId, // Will be null for unanswered questions
+                    'DateCreate' => now(),
+                ]);
+            }
 
-            return response()->json(['status' => 'submitted']);
-            
-        } catch (\Exception $e) {
-            Log::error("Error auto-submitting quiz: " . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => 'Server error during auto-submit'], 500);
-        }
-    }
+            // Store result for the results page
+            session([
+                "quiz_result_$eventCode" => [
+                    'score' => $score,
+                    'total' => $total,
+                ],
+                "quiz_completed_$eventCode" => true
+            ]);
+        });
 
-    public function showResults($eventCode)
-    {
-        if (!session("quiz_completed_$eventCode")) {
-            return redirect()->route('quiz.show', $eventCode);
-        }
-
-        $result = session("quiz_result_$eventCode");
-        
-        return view('participants.finalResult', [
-            'eventCode' => $eventCode,
-            'result' => $result
+        // Clean up session data
+        session()->forget([
+            "quiz_questions_$eventCode",
+            "quiz_answers_$eventCode",
+            "quiz_started_$eventCode",
+            "quiz_session_id_$eventCode"
         ]);
+
+        // Clear server-side session tracking
+        $this->clearActiveSession($request, $eventCode);
+
+        return response()->json(['status' => 'submitted', 'score' => $score, 'total' => $total]);
+        
+    } catch (\Exception $e) {
+        Log::error("Error auto-submitting quiz: " . $e->getMessage());
+        return response()->json(['status' => 'error', 'message' => 'Server error during auto-submit'], 500);
     }
+}
+
+
+   public function showResults($eventCode)
+{
+    // First check if quiz was completed
+    if (!session("quiz_completed_$eventCode")) {
+        return redirect()->route('quiz.show', $eventCode)
+               ->with('error', 'Please complete the quiz first.');
+    }
+
+    $result = session("quiz_result_$eventCode");
+    
+    // If no result in session, try to get from database
+    if (!$result) {
+        $email = session('participant_email');
+        if ($email) {
+            $participant = Participant::where('email', $email)->first();
+            if ($participant) {
+                $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+                if ($event) {
+                    $assessment = Assessment::where('ParticipantID', $participant->id)
+                                           ->where('EventID', $event->EventID)
+                                           ->orderBy('DateCreate', 'desc')
+                                           ->first();
+                    
+                    if ($assessment) {
+                        $result = [
+                            'score' => $assessment->TotalScore,
+                            'total' => $assessment->TotalQuestion,
+                        ];
+                        
+                        // Store in session for consistency
+                        session(["quiz_result_$eventCode" => $result]);
+                    }
+                }
+            }
+        }
+    }
+    
+    // If still no result, redirect back to quiz
+    if (!$result) {
+        return redirect()->route('quiz.show', $eventCode)
+               ->with('error', 'No quiz results found. Please retake the quiz.');
+    }
+
+    return view('participants.finalResult', [
+        'eventCode' => $eventCode,
+        'result' => $result
+    ]);
+}
 }

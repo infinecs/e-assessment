@@ -20,11 +20,10 @@ class AssessmentResultController extends Controller
     // Apply server-side search filter
     $search = $request->input('search');
     if ($search) {
-        $query->whereHas('participant', function ($q) use ($search) {
-            $q->where('name', 'LIKE', "%{$search}%")
-              ->orWhere('phone_number', 'LIKE', "%{$search}%")
-              ->orWhere('email', 'LIKE', "%{$search}%");
-        });
+                $query->whereHas('participant', function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%");
+                });
     }
 
     // Apply event filter
@@ -92,7 +91,6 @@ class AssessmentResultController extends Controller
         foreach ($records as $row) {
             $html .= '<tr data-id="' . $row->AssessmentID . '"
                          data-participant-name="' . htmlspecialchars($row->participant->name ?? '') . '"
-                         data-participant-phone="' . htmlspecialchars($row->participant->phone_number ?? '') . '"
                          data-participant-email="' . htmlspecialchars($row->participant->email ?? '') . '"
                          data-event-id="' . ($row->EventID ?? '') . '"
                          data-date-answered="' . $row->DateCreate . '"
@@ -105,7 +103,6 @@ class AssessmentResultController extends Controller
                       </td>';
 
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->name ?? '-') . '</td>';
-            $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->phone_number ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->email ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->event->EventName ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . $row->TotalScore . ' / ' . $row->TotalQuestion . '</td>';
@@ -150,39 +147,50 @@ class AssessmentResultController extends Controller
 }
 
     public function bulkDelete(Request $request)
-    {
-        // Accept both JSON and form data for ids
-        $ids = $request->input('ids');
-        if (empty($ids) && $request->isJson()) {
-            $data = $request->json()->all();
-            $ids = $data['ids'] ?? [];
-        }
-        if (!is_array($ids)) {
-            // Try to decode if it's a string
-            $ids = json_decode($ids, true);
-        }
-        if (!is_array($ids) || empty($ids)) {
-            return response()->json(['status' => 'error', 'message' => 'No IDs provided', 'debug' => ['ids' => $ids, 'raw' => $request->all()]], 400);
-        }
-        // Find participant IDs for the selected assessments
-        $participantIds = Assessment::whereIn('AssessmentID', $ids)->pluck('ParticipantID')->unique()->toArray();
-
-        // First delete related resultset rows
-        AssessmentResultSet::whereIn('AssessmentID', $ids)->delete();
-        // Then delete the assessments themselves
-        Assessment::whereIn('AssessmentID', $ids)->delete();
-
-        // Delete participants only if they have no other assessments
-        $deletedParticipants = [];
-        foreach ($participantIds as $pid) {
-            $remainingAssessments = Assessment::where('ParticipantID', $pid)->count();
-            if ($remainingAssessments === 0) {
-                \App\Models\Participant::where('id', $pid)->delete();
-                $deletedParticipants[] = $pid;
-            }
-        }
-        return response()->json(['status' => 'success', 'deleted_ids' => $ids, 'deleted_participants' => $deletedParticipants]);
+{
+    // Accept both JSON and form data for ids
+    $ids = $request->input('ids');
+    if (empty($ids) && $request->isJson()) {
+        $data = $request->json()->all();
+        $ids = $data['ids'] ?? [];
     }
+    if (!is_array($ids)) {
+        // Try to decode if it's a string
+        $ids = json_decode($ids, true);
+    }
+    if (!is_array($ids) || empty($ids)) {
+        return response()->json(['status' => 'error', 'message' => 'No IDs provided', 'debug' => ['ids' => $ids, 'raw' => $request->all()]], 400);
+    }
+    
+    // Find participant IDs for the selected assessments
+    $participantIds = Assessment::whereIn('AssessmentID', $ids)->pluck('ParticipantID')->unique()->toArray();
+
+    // First delete related resultset rows
+    AssessmentResultSet::whereIn('AssessmentID', $ids)->delete();
+    
+    // Then delete the assessments themselves
+    Assessment::whereIn('AssessmentID', $ids)->delete();
+
+    // Only delete participants who have no remaining assessments
+    $deletedParticipants = [];
+    foreach ($participantIds as $pid) {
+        // Check if this participant has any remaining assessments
+        $remainingAssessments = Assessment::where('ParticipantID', $pid)->count();
+        
+        if ($remainingAssessments == 0) {
+            // Only delete if no assessments remain
+            \App\Models\Participant::where('id', $pid)->delete();
+            $deletedParticipants[] = $pid;
+        }
+    }
+    
+    return response()->json([
+        'status' => 'success', 
+        'deleted_ids' => $ids, 
+        'deleted_participants' => $deletedParticipants,
+        'message' => 'Deleted ' . count($ids) . ' assessment(s) and ' . count($deletedParticipants) . ' participant(s) with no remaining assessments'
+    ]);
+}
 
    public function details($id)
 {
@@ -247,7 +255,7 @@ public function exportExcel(Request $request)
     if ($search) {
         $query->whereHas('participant', function ($q) use ($search) {
             $q->where('name', 'LIKE', "%{$search}%")
-              ->orWhere('phone_number', 'LIKE', "%{$search}%")
+
               ->orWhere('email', 'LIKE', "%{$search}%");
         });
     }
@@ -291,7 +299,6 @@ public function exportExcel(Request $request)
         'No',
         'Assessment ID',
         'Participant Name',
-        'Phone Number',
         'Email',
         'Event Name',
         'Event Code',
@@ -315,7 +322,6 @@ public function exportExcel(Request $request)
             $rowNumber,
             $record->AssessmentID,
             $participant->name ?? 'N/A',
-            $participant->phone_number ?? 'N/A',
             $participant->email ?? 'N/A',
             $eventName,
             $eventCode,

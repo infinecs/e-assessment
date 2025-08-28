@@ -151,7 +151,8 @@ class AssessmentQuestionController extends Controller
             foreach ($validatedData['answers'] as $idx => $answerData) {
                 $answer = new AssessmentAnswer();
                 $answer->QuestionID = $question->QuestionID;
-                $answer->AnswerText = $answerData['text'];
+                // If text is null, set to empty string (for image-only answers)
+                $answer->AnswerText = isset($answerData['text']) && $answerData['text'] !== null ? $answerData['text'] : '';
                 $answer->AnswerType = isset($answerData['type']) && $answerData['type'] === 'image' ? 'I' : 'T';
                 // Strictly check for correct answer
                 $isCorrect = ($answerData['is_correct'] === true || $answerData['is_correct'] === 'true' || $answerData['is_correct'] === 1 || $answerData['is_correct'] === '1');

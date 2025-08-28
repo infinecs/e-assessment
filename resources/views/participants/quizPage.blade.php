@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assessment</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="shortcut icon" href="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}">
     <style>
         body {
             -webkit-user-select: none;
@@ -172,60 +173,73 @@
             <h2 class="text-3xl font-extrabold text-gray-900">
                 Event {{ $eventCode }} – Assessment
             </h2>
-            <p class="mt-2 text-gray-600">Please answer all the questions below.</p>
+            <p class="mt-2 text-gray-600">Please answer all the questions below. Right click disabled.</p>
         </div>
 
         <!-- Quiz Form -->
         <form id="quiz-form" action="{{ route('quiz.submit', ['eventCode' => $eventCode]) }}" method="POST" class="space-y-6">
             @csrf
             
-            @forelse($questions as $index => $q)
-                <div class="question-block border rounded-lg p-6 bg-white shadow" data-question-id="{{ $q->QuestionID }}">
-                    <!-- Question Image -->
-                    @if (!empty($q->QuestionImage))
-                        <div class="mb-4">
-                            <img src="{{ asset($q->QuestionImage) }}" alt="Question Image" class="max-h-48 rounded shadow mx-auto">
-                        </div>
-                    @endif
-                    
-                    <!-- Question Text -->
-                    <div class="mb-4 flex items-center">
-                        <h3 class="font-semibold text-lg text-gray-800">
-                            Q{{ $index + 1 }}. {{ $q->QuestionText }}
-                        </h3>
-                        <span class="error-star">*</span>
-                    </div>
+           @forelse($questions as $index => $q)
+    <div class="question-block border rounded-lg p-6 bg-white shadow" data-question-id="{{ $q->QuestionID }}">
+        
+        <!-- Debug info (remove this after testing) -->
+        <div class="mb-2 text-xs text-gray-500" style="display: none;">
+            DEBUG: QuestionImage = "{{ $q->QuestionImage }}" | Length: {{ strlen($q->QuestionImage ?? '') }}
+        </div>
+        
+        <!-- Question Image - Improved condition -->
+        @if (isset($q->QuestionImage) && !empty(trim($q->QuestionImage)))
+            <div class="mb-4">
+                <img src="{{ asset(trim($q->QuestionImage)) }}" 
+                     alt="Question {{ $index + 1 }} Image" 
+                     class="max-h-48 rounded shadow mx-auto block"
+                     onerror="this.style.display='none'; console.log('Image failed to load: {{ trim($q->QuestionImage) }}');">
+            </div>
+        @endif
+        
+        <!-- Question Text -->
+        <div class="mb-4 flex items-center">
+            <h3 class="font-semibold text-lg text-gray-800">
+                Q{{ $index + 1 }}. {{ $q->QuestionText }}
+            </h3>
+            <span class="error-star">*</span>
+        </div>
 
-                    <!-- Answer Options -->
-                    @php
-                        $answers = \App\Models\AssessmentAnswer::where('QuestionID', $q->QuestionID)->get();
-                    @endphp
+        <!-- Answer Options -->
+        @php
+            $answers = \App\Models\AssessmentAnswer::where('QuestionID', $q->QuestionID)->get();
+        @endphp
 
-                    @foreach ($answers as $key => $ans)
-                        @php $optionLetter = chr(65 + $key); @endphp
-                        <label class="block mb-3 flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" 
-                                   name="answers[{{ $q->QuestionID }}]" 
-                                   value="{{ $optionLetter }}"
-                                   class="w-4 h-4"
-                                   @if (isset($savedAnswers[$q->QuestionID]) && $savedAnswers[$q->QuestionID] == $optionLetter) checked @endif>
-                            
-                            @if (!empty($ans->AnswerImage))
-                                <img src="{{ asset($ans->AnswerImage) }}" alt="Answer Image" class="max-h-16 rounded border">
-                            @endif
-                            
-                            <span class="text-gray-700">{{ $optionLetter }}. {{ $ans->AnswerText }}</span>
-                        </label>
-                    @endforeach
-                </div>
-            @empty
-                <div class="text-center py-8">
-                    <p class="text-gray-700 text-lg">No questions found for this event.</p>
-                    <a href="/" class="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        Go Back
-                    </a>
-                </div>
-            @endforelse
+        @foreach ($answers as $key => $ans)
+            @php $optionLetter = chr(65 + $key); @endphp
+            <label class="block mb-3 flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                <input type="radio" 
+                       name="answers[{{ $q->QuestionID }}]" 
+                       value="{{ $optionLetter }}"
+                       class="w-4 h-4"
+                       @if (isset($savedAnswers[$q->QuestionID]) && $savedAnswers[$q->QuestionID] == $optionLetter) checked @endif>
+                
+                <!-- Answer Image - Also improved -->
+                @if (isset($ans->AnswerImage) && !empty(trim($ans->AnswerImage)))
+                    <img src="{{ asset(trim($ans->AnswerImage)) }}" 
+                         alt="Answer {{ $optionLetter }} Image" 
+                         class="max-h-16 rounded border"
+                         onerror="this.style.display='none'; console.log('Answer image failed: {{ trim($ans->AnswerImage) }}');">
+                @endif
+                
+                <span class="text-gray-700">{{ $optionLetter }}. {{ $ans->AnswerText }}</span>
+            </label>
+        @endforeach
+    </div>
+@empty
+    <div class="text-center py-8">
+        <p class="text-gray-700 text-lg">No questions found for this event.</p>
+        <a href="/" class="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Go Back
+        </a>
+    </div>
+@endforelse
 
             @if ($questions->count())
                 <div class="text-right pt-6">
@@ -250,7 +264,7 @@
         // Quiz configuration from server
         const QUIZ_CONFIG = {
             eventCode: '{{ $eventCode }}',
-            totalQuestions: {{ $questions->count() }},
+            totalQuestions: {{ $questions ? $questions->count() : 0 }},
             totalSeconds: {{ $questions->count() * (int)$assessment->DurationEachQuestion }},
             participantEmail: '{{ session("participant_email", "guest") }}',
             csrfToken: '{{ csrf_token() }}',
@@ -526,36 +540,95 @@
         }
 
         async function handleTimeUp() {
-            if (isSubmitting) return;
-            isSubmitting = true;
-            
-            console.log('⏰ Time expired - auto-submitting');
-            localStorage.setItem(STORAGE_KEYS.finished, '1');
-            clearQuizData();
-            clearIntervals();
-            updateSessionStatus('Time Expired', 'error');
-            
-            showModal('Time\'s Up!', 'Your time has expired. Your answers will be submitted automatically.', [], false);
-            
-            try {
-                const form = document.getElementById('quiz-form');
-                const formData = new FormData(form);
-                
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
-                } else {
-                    throw new Error('Server error');
-                }
-            } catch (error) {
-                console.error('Error auto-submitting:', error);
-                document.getElementById('quiz-form').submit();
+    if (isSubmitting || localStorage.getItem(STORAGE_KEYS.finished) === '1') {
+        return;
+    }
+    
+    console.log('⏰ Time expired - auto-submitting');
+    isSubmitting = true;
+    
+    // Mark as finished immediately to prevent multiple submissions
+    localStorage.setItem(STORAGE_KEYS.finished, '1');
+    
+    // Clear intervals and update status
+    clearIntervals();
+    isQuizActive = false;
+    updateSessionStatus('Time Expired - Auto Submitting', 'error');
+    
+    // Show the modal
+    showModal(
+        'Time\'s Up!', 
+        'Your time has expired. Your answers are being submitted automatically...', 
+        [], // No buttons - modal will auto-close
+        false // Not closable by user
+    );
+    
+    try {
+        // Collect current answers from the form
+        const form = document.getElementById('quiz-form');
+        const formData = new FormData(form);
+        
+        // Submit to the auto-submit endpoint
+        const response = await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/auto-submit`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': QUIZ_CONFIG.csrfToken
             }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'submitted' || result.status === 'already_submitted') {
+            // Clear all quiz data
+            clearQuizData();
+            
+            // Update modal message to show success
+            const modalContent = document.querySelector('#quiz-modal .modal-content p');
+            if (modalContent) {
+                modalContent.textContent = 'Your answers have been submitted successfully. Redirecting to results...';
+            }
+            
+            // Wait 2 seconds then redirect
+            setTimeout(() => {
+                window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+            }, 2000);
+            
+        } else {
+            throw new Error(result.message || 'Auto-submission failed');
         }
+        
+    } catch (error) {
+        console.error('Error during auto-submit:', error);
+        
+        // Update modal to show error and still redirect
+        const modalContent = document.querySelector('#quiz-modal .modal-content p');
+        if (modalContent) {
+            modalContent.textContent = 'Time expired. Redirecting to results page...';
+        }
+        
+        // Still redirect after error - let server handle the state
+        setTimeout(() => {
+            window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+        }, 2000);
+    }
+}
+
+// Also remove this duplicate code block that appears later in the file:
+// (Remove the entire block that starts with "// On page load, if quiz_auto_submitted flag is set...")
+
+// And update the page load check to this simpler version:
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if quiz was already auto-submitted
+    if (localStorage.getItem('quiz_auto_submitted')) {
+        localStorage.removeItem('quiz_auto_submitted');
+        clearQuizData();
+        window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+        return;
+    }
+    
+    initializeQuiz();
+});
 
         function setupEventHandlers() {
             const form = document.getElementById('quiz-form');
@@ -639,18 +712,7 @@
                 return;
             }
 
-            const confirmed = await showConfirmModal(
-                'Submit Quiz',
-                'Are you sure you want to submit your answers? This cannot be undone.',
-                [
-                    { text: 'Submit', value: true, class: 'btn-primary' },
-                    { text: 'Cancel', value: false, class: 'btn-secondary' }
-                ]
-            );
-
-            if (confirmed) {
-                await submitQuiz();
-            }
+            await submitQuiz();
         }
 
         async function submitQuiz() {

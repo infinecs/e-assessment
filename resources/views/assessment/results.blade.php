@@ -109,7 +109,7 @@ $(document).ready(function() {
                     <div class="flex items-center gap-3 flex-wrap">
                         <!-- Main Search Input -->
                         <div class="relative">
-                            <input type="text" id="searchInput" placeholder="Search by name, email, or phone..." 
+                            <input type="text" id="searchInput" placeholder="Search by name or email..."
                                 class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 text-sm w-64 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:placeholder-gray-400">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-gray-400 text-sm"></i>
@@ -249,7 +249,7 @@ $(document).ready(function() {
                                         </div>
                                     </th>
                                     <th class="px-3 py-2 text-center">Name</th>
-                                    <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Phone Number</span></th>
+                                    
                                     <th class="px-3 py-2 text-center">Email</th>
                                     <th class="px-3 py-2 text-center">Event Name</th>
                                     <th class="px-3 py-2 text-center"><span style="margin-right:10px;display:inline-block;">Score</span></th>
@@ -262,7 +262,7 @@ $(document).ready(function() {
                             @forelse($records as $row)
                                 <tr data-id="{{ $row->AssessmentID }}"
                                     data-participant-name="{{ $row->participant->name ?? '' }}"
-                                    data-participant-phone="{{ $row->participant->phone_number ?? '' }}"
+                                    
                                     data-participant-email="{{ $row->participant->email ?? '' }}"
                                     data-event-id="{{ $row->EventID ?? '' }}"
                                     data-date-answered="{{ $row->DateCreate }}"
@@ -274,7 +274,7 @@ $(document).ready(function() {
                                         </div>
                                     </td>
                                     <td class="px-3 py-2">{{ $row->participant->name ?? '-' }}</td>
-                                    <td class="px-3 py-2">{{ $row->participant->phone_number ?? '-' }}</td>
+
                                     <td class="px-3 py-2">{{ $row->participant->email ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->event->EventName ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->TotalScore }} / {{ $row->TotalQuestion }}</td>
