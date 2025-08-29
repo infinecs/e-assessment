@@ -48,52 +48,10 @@
                             <div class="w-full md:max-w-4xl lg:px-9">
                                 <div class="swiper login-slider">
                                     <div class="swiper-wrapper">
-                                        <!-- Slide 1 -->
-                                        <div class="swiper-slide">
-                                            <i class="text-5xl text-green-600 bx bxs-quote-alt-left"></i>
-                                            <h3 class="mt-4 text-white text-22">
-                                                “Great platform for learning and taking quick assessments.”
-                                            </h3>
-                                            <div class="flex pt-4 mt-6 mb-10">
-                                                <img src="{{ asset('images/users/avatar-1.jpg') }}"
-                                                    class="w-12 h-12 rounded-full" alt="...">
-                                                <div class="flex-1 mb-4 ltr:ml-3 rtl:mr-2">
-                                                    <h5 class="text-white font-size-18">Ilse R. Eaton</h5>
-                                                    <p class="mb-0 text-white/50">Manager</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Slide 2 -->
-                                        <div class="swiper-slide">
-                                            <i class="text-5xl text-green-600 bx bxs-quote-alt-left"></i>
-                                            <h3 class="mt-4 text-white text-22">
-                                                “Simple, clean and fast. Loved how easy it was to register and start.”
-                                            </h3>
-                                            <div class="flex pt-4 mt-6 mb-10">
-                                                <img src="{{ asset('images/users/avatar-2.jpg') }}"
-                                                    class="w-12 h-12 rounded-full" alt="...">
-                                                <div class="flex-1 mb-4 ltr:ml-3 rtl:mr-2">
-                                                    <h5 class="text-white font-size-18">Mariya Willam</h5>
-                                                    <p class="mb-0 text-white/50">Designer</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Slide 3 -->
-                                        <div class="swiper-slide">
-                                            <i class="text-5xl text-green-600 bx bxs-quote-alt-left"></i>
-                                            <h3 class="mt-4 text-white text-22">
-                                                “The quiz experience was smooth and interactive. Highly recommended.”
-                                            </h3>
-                                            <div class="flex pt-4 mt-6 mb-10">
-                                                <img src="{{ asset('images/users/avatar-3.jpg') }}"
-                                                    class="w-12 h-12 rounded-full" alt="...">
-                                                <div class="flex-1 mb-4 ltr:ml-3 rtl:mr-2">
-                                                    <h5 class="text-white font-size-18">Jiya Jons</h5>
-                                                    <p class="mb-0 text-white/50">Developer</p>
-                                                </div>
-                                            </div>
+                                        <div class="flex items-center justify-center w-full h-full">
+                                            <h1 style="font-family: 'Poppins', 'Segoe UI', Arial, sans-serif; font-size: 5rem; font-weight: 600; letter-spacing: 4px; color: #fff; text-shadow: 0 6px 32px rgba(80,0,180,0.28), 0 1px 0 #000; line-height: 1.1;">
+                                                <span style="display: inline-block; padding: 0.6em 0.5em; border-radius: 0.5em; background: rgba(124,58,237,0.7); box-shadow: 0 4px 32px rgba(124,58,237,0.18);">E-Assessment</span>
+                                            </h1>
                                         </div>
                                     </div>
                                     <div class="swiper-pagination"></div>

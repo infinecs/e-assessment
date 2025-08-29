@@ -210,13 +210,42 @@ class QuizController extends Controller
             }
         }
 
-        // Only use unique questions, and if not enough, return as many as available (no repeats)
+        // Only use unique questions, and always try to fill exactly questionLimit
         $uniqueQuestions = $allQuestions->unique('QuestionID')->values();
-        if ($uniqueQuestions->count() > $questionLimit) {
-            return $uniqueQuestions->take($questionLimit);
-        } else {
-            return $uniqueQuestions;
+
+        // If not enough, try to fill from all selected topics (no repeats)
+        if ($uniqueQuestions->count() < $questionLimit) {
+            // Gather all available unique question IDs from all selected topics
+            $allTopicIds = AssessmentTopic::whereIn('TopicID', $topicIds)
+                ->whereNotNull('QuestionID')
+                ->where('QuestionID', '!=', '')
+                ->pluck('QuestionID')
+                ->filter()
+                ->toArray();
+            $allIds = [];
+            foreach ($allTopicIds as $questionIdString) {
+                $ids = array_filter(array_map('trim', explode(',', $questionIdString)));
+                $allIds = array_merge($allIds, $ids);
+            }
+            $allIds = array_unique($allIds);
+            // Remove already picked
+            $alreadyPicked = $uniqueQuestions->pluck('QuestionID')->toArray();
+            $remainingIds = array_values(array_diff($allIds, $alreadyPicked));
+            if (!empty($remainingIds)) {
+                shuffle($remainingIds);
+                $needed = $questionLimit - $uniqueQuestions->count();
+                $extraIds = array_slice($remainingIds, 0, $needed);
+                $extraQuestions = AssessmentQuestion::whereIn('QuestionID', $extraIds)->get();
+                $uniqueQuestions = $uniqueQuestions->merge($extraQuestions)->unique('QuestionID')->values();
+            }
         }
+
+        // If still not enough unique questions, throw error (return empty)
+        if ($uniqueQuestions->count() < $questionLimit) {
+            return collect();
+        }
+
+        return $uniqueQuestions->take($questionLimit);
     }
 
     public function checkActiveSession(Request $request, $eventCode)
@@ -579,6 +608,7 @@ class QuizController extends Controller
             return response()->json(['status' => 'already_submitted']);
         }
 
+
         // Get answers - from request or session as fallback
         $answers = $request->input('answers', []);
         if (empty($answers)) {
@@ -587,18 +617,17 @@ class QuizController extends Controller
 
         $score = 0;
         $total = count($questionIds);
-        
-        // Calculate score for answered questions only
+
+        // Calculate score for all questions, treat unanswered as '0'
         foreach (array_unique($questionIds) as $qid) {
-            if (!isset($answers[$qid])) continue;
-            
-            $selectedOption = $answers[$qid];
-            $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
-            
-            foreach ($answerList as $index => $ans) {
-                if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
-                    $score++;
-                    break;
+            $selectedOption = isset($answers[$qid]) ? $answers[$qid] : '0';
+            if ($selectedOption !== '0') {
+                $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
+                foreach ($answerList as $index => $ans) {
+                    if (chr(65 + $index) === $selectedOption && $ans->ExpectedAnswer === 'Y') {
+                        $score++;
+                        break;
+                    }
                 }
             }
         }
@@ -615,12 +644,11 @@ class QuizController extends Controller
                 'DateUpdate' => now(),
             ]);
 
-            // Save results for all questions (including unanswered ones)
+            // Save results for all questions (including unanswered ones as '0')
             foreach (array_unique($questionIds) as $qid) {
-                $answerLetter = $answers[$qid] ?? null;
+                $answerLetter = isset($answers[$qid]) ? $answers[$qid] : '0';
                 $answerId = null;
-                
-                if ($answerLetter) {
+                if ($answerLetter !== '0') {
                     $answerList = AssessmentAnswer::where('QuestionID', $qid)->get();
                     foreach ($answerList as $index => $ans) {
                         if (chr(65 + $index) === $answerLetter) {
@@ -629,12 +657,12 @@ class QuizController extends Controller
                         }
                     }
                 }
-                
                 AssessmentResultSet::create([
                     'AssessmentID' => $assessment->AssessmentID,
                     'QuestionID' => $qid,
-                    'AnswerID' => $answerId, // Will be null for unanswered questions
+                    'AnswerID' => $answerId, // Will be null for unanswered, or set if answered
                     'DateCreate' => now(),
+                    'AnswerValue' => $answerLetter // Optionally store the letter or '0' for unanswered
                 ]);
             }
 

@@ -34,10 +34,10 @@
             @endphp
             <span class="text-3xl {{ $percentClass }}">{{ number_format($percentage, 2) }}%</span>
         </p>
-        <a href="{{ url('/') }}"
-           class="inline-block px-6 py-2 bg-violet-600 text-white rounded hover:bg-violet-700">
-           Finish
-        </a>
+          <button onclick="window.close();" type="button"
+              class="inline-block px-6 py-2 bg-violet-600 text-white rounded hover:bg-violet-700">
+              Finish
+          </button>
     </div>
 </body>
 <script>
