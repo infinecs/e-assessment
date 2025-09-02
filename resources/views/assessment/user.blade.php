@@ -1351,29 +1351,42 @@ function updatePasswordValidation() {
 // Dropdown functionality
 function setupDropdowns() {
     // Remove previous listeners by cloning toggles (prevents stacking)
-    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+    // Exclude the header dropdown to preserve its inline onclick handler
+    document.querySelectorAll('.dropdown-toggle:not(#page-header-user-dropdown)').forEach(toggle => {
         const newToggle = toggle.cloneNode(true);
         toggle.parentNode.replaceChild(newToggle, toggle);
     });
 
-    // Attach click to each dropdown-toggle
+    // Attach click to each dropdown-toggle (excluding header dropdown)
     document.querySelectorAll('.dropdown').forEach(dropdown => {
         const toggle = dropdown.querySelector('.dropdown-toggle');
         const menu = dropdown.querySelector('.dropdown-menu');
+        
+        // Skip the header dropdown
+        if (toggle && toggle.id === 'page-header-user-dropdown') {
+            return;
+        }
+        
         if (toggle && menu) {
             toggle.addEventListener('click', function(e) {
                 e.stopPropagation();
-                // Close all other dropdowns
+                // Close all other dropdowns (excluding header dropdown)
                 document.querySelectorAll('.dropdown-menu').forEach(m => {
-                    if (m !== menu) m.classList.add('hidden');
+                    if (m !== menu && m.id !== 'profile/log') {
+                        m.classList.add('hidden');
+                    }
                 });
                 menu.classList.toggle('hidden');
             });
         }
     });
-    // Close dropdowns when clicking outside
+    // Close dropdowns when clicking outside (excluding header dropdown to avoid conflicts)
     document.addEventListener('click', function(e) {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            if (menu.id !== 'profile/log') {
+                menu.classList.add('hidden');
+            }
+        });
     });
 }
 

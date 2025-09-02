@@ -577,6 +577,11 @@
                 const toggle = dropdown.querySelector('.dropdown-toggle');
                 const menu = dropdown.querySelector('.dropdown-menu');
                 
+                // Skip the header dropdown to preserve its inline onclick handler
+                if (toggle && toggle.id === 'page-header-user-dropdown') {
+                    return;
+                }
+                
                 if (toggle && menu) {
                     // Remove existing event listener by cloning
                     const newToggle = toggle.cloneNode(true);
@@ -584,7 +589,11 @@
                     
                     newToggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                        document.querySelectorAll('.dropdown-menu').forEach(m => {
+                            if (m.id !== 'profile/log') {
+                                m.classList.add('hidden');
+                            }
+                        });
                         menu.classList.toggle('hidden');
                     });
                 }
@@ -705,16 +714,31 @@
         document.querySelectorAll('.dropdown').forEach(dropdown => {
             const toggle = dropdown.querySelector('.dropdown-toggle');
             const menu = dropdown.querySelector('.dropdown-menu');
+            
+            // Skip the header dropdown to preserve its inline onclick handler
+            if (toggle && toggle.id === 'page-header-user-dropdown') {
+                return;
+            }
 
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-                menu.classList.toggle('hidden');
-            });
+            if (toggle && menu) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.dropdown-menu').forEach(m => {
+                        if (m.id !== 'profile/log') {
+                            m.classList.add('hidden');
+                        }
+                    });
+                    menu.classList.toggle('hidden');
+                });
+            }
         });
 
         document.addEventListener('click', () => {
-            document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                if (menu.id !== 'profile/log') {
+                    menu.classList.add('hidden');
+                }
+            });
         });
 
         // Edit category form submission
