@@ -1148,12 +1148,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.dropdown').forEach(dropdown => {
                 const toggle = dropdown.querySelector('.dropdown-toggle');
                 const menu = dropdown.querySelector('.dropdown-menu');
-                if (toggle) {
+                
+                // Skip the header dropdown to preserve its inline onclick handler
+                if (toggle && toggle.id === 'page-header-user-dropdown') {
+                    return;
+                }
+                
+                if (toggle && menu) {
                     const newToggle = toggle.cloneNode(true);
                     toggle.parentNode.replaceChild(newToggle, toggle);
                     newToggle.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                        document.querySelectorAll('.dropdown-menu').forEach(m => {
+                            if (m.id !== 'profile/log') {
+                                m.classList.add('hidden');
+                            }
+                        });
                         menu.classList.toggle('hidden');
                     });
                 }
@@ -1490,15 +1500,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dropdown = e.target.closest('.dropdown');
                 const menu = dropdown.querySelector('.dropdown-menu');
 
-                // Hide all menus first
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                // Hide all menus first (excluding header dropdown)
+                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                    if (m.id !== 'profile/log') {
+                        m.classList.add('hidden');
+                    }
+                });
 
                 // Toggle the clicked one
                 menu.classList.toggle('hidden');
             } 
             else {
-                // Click outside - hide all dropdowns
-                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+                // Click outside - hide all dropdowns (excluding header dropdown)
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu.id !== 'profile/log') {
+                        menu.classList.add('hidden');
+                    }
+                });
                 if (typeof topicDropdown !== 'undefined') topicDropdown.classList.add('hidden');
                 if (typeof addTopicDropdown !== 'undefined') addTopicDropdown.classList.add('hidden');
             }
