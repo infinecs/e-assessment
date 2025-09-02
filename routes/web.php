@@ -36,7 +36,7 @@ Route::middleware(['auth'])->group(function () {
     
     // User dashboard route - for general authenticated users
     Route::get('/user', function () {
-        return view('user');
+        return view('assessment.user');
     })->name('user.dashboard');
 });
 
