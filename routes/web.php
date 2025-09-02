@@ -22,15 +22,7 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::middleware('web')->group(function () {
-    Route::get('/admin', function () {
-        return view('assessment.index');
-    });
-
-    Route::get('/user', function () {
-        return view('user');
-    });
-});
+// Removed unprotected admin/user routes - these are now handled by protected routes below
 
 Route::get('/password.request', function () {
     return view('auth.recoverPW');
@@ -41,6 +33,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::post('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.updateProfile');
     Route::post('/settings/account', [SettingsController::class, 'updateAccount'])->name('settings.updateAccount');
+    
+    // User dashboard route - for general authenticated users
+    Route::get('/user', function () {
+        return view('user');
+    })->name('user.dashboard');
 });
 
 
@@ -111,29 +108,34 @@ Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
 Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 Route::post('/users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');
-});
 
-// Question answers routes
+// Question answers routes - admin only
 Route::get('/question/{id}/answers', [AssessmentQuestionController::class, 'getAnswers']);
 Route::post('/question/{id}/answers', [AssessmentQuestionController::class, 'updateAnswers']);
+});
+
+// Participant registration routes - intentionally public for participants to register
 Route::get('/participantRegister/{eventCode}', [ParticipantsController::class, 'showRegisterForm'])->name('participantRegister.show');
 Route::post('/participantRegister/{eventCode}', [ParticipantsController::class, 'register'])->name('participantRegister.store');
-// Quiz session management routes
-Route::group(['prefix' => 'quiz/{eventCode}'], function() {
-    Route::post('/check-active-session', [QuizController::class, 'checkActiveSession'])->name('quiz.checkActiveSession');
-    Route::post('/takeover-session', [QuizController::class, 'takeoverSession'])->name('quiz.takeoverSession');
-    Route::post('/heartbeat', [QuizController::class, 'heartbeat'])->name('quiz.heartbeat');
-    Route::post('/clear-active-session', [QuizController::class, 'clearActiveSession'])->name('quiz.clearActiveSession');
-    Route::post('/save-answer', [QuizController::class, 'saveAnswer'])->name('quiz.saveAnswer');
-    Route::post('/clear-answers', [QuizController::class, 'clearAnswers'])->name('quiz.clearAnswers');
-    
-    Route::get('/', [QuizController::class, 'showQuiz'])->name('quiz.show');
-    Route::post('/submit', [QuizController::class, 'submitQuiz'])->name('quiz.submit');
-    Route::get('/results', [QuizController::class, 'showResults'])->name('quiz.results');
-    Route::post('/auto-submit', [QuizController::class, 'autoSubmitQuiz'])->name('quiz.autoSubmit');
 
+// Quiz session management routes - require participant authentication
+Route::middleware(['participant.auth'])->group(function() {
+    Route::group(['prefix' => 'quiz/{eventCode}'], function() {
+        Route::post('/check-active-session', [QuizController::class, 'checkActiveSession'])->name('quiz.checkActiveSession');
+        Route::post('/takeover-session', [QuizController::class, 'takeoverSession'])->name('quiz.takeoverSession');
+        Route::post('/heartbeat', [QuizController::class, 'heartbeat'])->name('quiz.heartbeat');
+        Route::post('/clear-active-session', [QuizController::class, 'clearActiveSession'])->name('quiz.clearActiveSession');
+        Route::post('/save-answer', [QuizController::class, 'saveAnswer'])->name('quiz.saveAnswer');
+        Route::post('/clear-answers', [QuizController::class, 'clearAnswers'])->name('quiz.clearAnswers');
+        
+        Route::get('/', [QuizController::class, 'showQuiz'])->name('quiz.show');
+        Route::post('/submit', [QuizController::class, 'submitQuiz'])->name('quiz.submit');
+        Route::get('/results', [QuizController::class, 'showResults'])->name('quiz.results');
+        Route::post('/auto-submit', [QuizController::class, 'autoSubmitQuiz'])->name('quiz.autoSubmit');
+    });
+    
+    // Force submit blank answers if user leaves quiz page
+    Route::post('/quiz/{eventCode}/force-submit-blank', [QuizController::class, 'forceSubmitBlank'])->name('quiz.forceSubmitBlank');
 });
-// Force submit blank answers if user leaves quiz page
-Route::post('/quiz/{eventCode}/force-submit-blank', [QuizController::class, 'forceSubmitBlank'])->name('quiz.forceSubmitBlank');
 
 
