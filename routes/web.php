@@ -18,6 +18,34 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+// Debug route: only enabled when APP_DEBUG is true. Use temporarily to inspect session and CSRF state after login.
+Route::get('/session-debug', function (\Illuminate\Http\Request $request) {
+    if (!config('app.debug')) {
+        abort(404);
+    }
+
+    $cookieName = config('session.cookie');
+    $cookieValue = $request->cookie($cookieName);
+
+    return response()->json([
+        'app_env' => env('APP_ENV'),
+        'app_debug' => config('app.debug'),
+        'app_url' => env('APP_URL'),
+        'session_driver' => config('session.driver'),
+        'session_cookie_name' => $cookieName,
+        'session_cookie_value' => $cookieValue,
+        'session_id' => session()->getId(),
+        'csrf_token_session' => session()->token(),
+        'csrf_token_helper' => csrf_token(),
+        'session_config' => [
+            'domain' => config('session.domain'),
+            'secure' => config('session.secure'),
+            'same_site' => config('session.same_site'),
+        ],
+    ]);
+});
+
+
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');

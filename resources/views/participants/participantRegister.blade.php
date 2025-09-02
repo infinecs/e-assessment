@@ -244,7 +244,7 @@
             .catch(error => {
                 console.log('CSRF token refresh failed:', error);
             });
-        }, 30 * 60 * 1000); // 30 minutes
+        }, 10 * 60 * 1000); // 10 minutes (more frequent for production stability)
     </script>
     <script src="{{ asset('libs/swiper/swiper-bundle.min.js') }}"></script>
     <script src="{{ asset('js/pages/login.init.js') }}"></script>

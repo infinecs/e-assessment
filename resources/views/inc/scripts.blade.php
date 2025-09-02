@@ -3,5 +3,8 @@
         <script src="libs/metismenujs/metismenujs.min.js"></script>
         <script src="libs/simplebar/simplebar.min.js"></script>
 
+        <!-- Global CSRF Error Handler for Production -->
+        <script src="js/csrf-handler.js"></script>
+
         <script  src="js/app.js"></script>
 
