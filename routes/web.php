@@ -46,8 +46,8 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::middleware(['rolelog:admin'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'index'])->name('assessment.index');
-});
+Route::get('/admin', [AdminController::class, 'index'])->name('assessment.index');
+//Route for events
 Route::view('/events', 'assessment.events')->name('events');
 Route::get('/events', [EventsController::class, 'index'])->name('events');
 Route::post('/events', [EventsController::class, 'store'])->name('events.store');
@@ -55,28 +55,23 @@ Route::post('/events/bulk-delete', [EventsController::class, 'bulkDestroy'])->na
 Route::delete('/events/{id}', [EventsController::class, 'destroy'])->name('events.destroy');
 Route::put('/events/{id}', [EventsController::class, 'update'])->name('events.update');
 Route::get('/events/{id}/details', [EventsController::class, 'getEventDetails'])->name('events.details');
-
 Route::post('/events/{id}/weightages', [EventsController::class, 'updateWeightages'])->name('events.updateWeightages');
-
 Route::get('/events/export-excel', [EventsController::class, 'exportExcel'])->name('events.exportExcel');
-Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 
 Route::view('/results', 'assessment.results')->name('results');
 Route::get('/results', [AssessmentResultController::class, 'index'])->name('results');
-
 Route::delete('/assessment-results/delete', [AssessmentResultController::class, 'bulkDelete'])
     ->name('assessment.bulkDelete');
-
 // Route for assessment details modal AJAX
 Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'details']);
-
 // Route for Excel export
 Route::get('/assessment/export-excel', [AssessmentResultController::class, 'exportExcel'])
     ->name('assessment.exportExcel');
 
     
 
-
+//Route for category
+Route::get('/category/{id}/topics', [EventsController::class, 'getCategoryTopics'])->name('category.topics');
 Route::view('/category', 'assessment.category')->name('category');
 Route::get('/category', [AssessmentCategoryController::class, 'index'])->name('category');
 Route::post('/category', [AssessmentCategoryController::class, 'store'])->name('category.store');
@@ -105,25 +100,24 @@ Route::put('/question/{id}', [AssessmentQuestionController::class, 'update'])->n
 Route::get('/question/{id}/details', [AssessmentQuestionController::class, 'getQuestionDetails'])->name('question.details');
 Route::get('/question/export-excel', [AssessmentQuestionController::class, 'exportExcel'])->name('question.exportExcel');
 
+
+Route::post('/participants', [ParticipantsController::class, 'store'])->name('participants.store');
+//Route for events
+Route::get('/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/users/search', [UserController::class, 'search'])->name('users.search'); // Move this up
+Route::post('/users', [UserController::class, 'store'])->name('users.store');
+Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::post('/users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');
+});
+
 // Question answers routes
 Route::get('/question/{id}/answers', [AssessmentQuestionController::class, 'getAnswers']);
 Route::post('/question/{id}/answers', [AssessmentQuestionController::class, 'updateAnswers']);
-
-
-
-Route::get('/participantRegister/{eventCode}', [ParticipantsController::class, 'showRegisterForm'])
-    ->name('participantRegister.show');
-
-Route::post('/participantRegister/{eventCode}', [ParticipantsController::class, 'register'])
-    ->name('participantRegister.store');
-
-Route::post('/participants', [ParticipantsController::class, 'store'])
-    ->name('participants.store');
-
-
-
-// Add these routes to your web.php or routes file
-
+Route::get('/participantRegister/{eventCode}', [ParticipantsController::class, 'showRegisterForm'])->name('participantRegister.show');
+Route::post('/participantRegister/{eventCode}', [ParticipantsController::class, 'register'])->name('participantRegister.store');
 // Quiz session management routes
 Route::group(['prefix' => 'quiz/{eventCode}'], function() {
     Route::post('/check-active-session', [QuizController::class, 'checkActiveSession'])->name('quiz.checkActiveSession');
@@ -142,13 +136,4 @@ Route::group(['prefix' => 'quiz/{eventCode}'], function() {
 // Force submit blank answers if user leaves quiz page
 Route::post('/quiz/{eventCode}/force-submit-blank', [QuizController::class, 'forceSubmitBlank'])->name('quiz.forceSubmitBlank');
 
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
 
-
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-Route::get('/users/search', [UserController::class, 'search'])->name('users.search'); // Move this up
-Route::post('/users', [UserController::class, 'store'])->name('users.store');
-Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
-Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
-Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
-Route::post('/users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');
