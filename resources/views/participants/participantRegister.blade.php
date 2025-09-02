@@ -86,9 +86,16 @@
                                     </p>
                                 </div>
 
-                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}">
+                                {{-- Show CSRF error if exists --}}
+                                @if ($errors->has('_token'))
+                                    <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                                        Session expired. Please refresh the page and try again.
+                                    </div>
+                                @endif
 
+                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}" id="registration-form">
                                     @csrf
+                                    <meta name="csrf-token" content="{{ csrf_token() }}">
 
                                     {{-- Name --}}
                                     <div class="mb-4">
@@ -195,6 +202,50 @@
     <script src="{{ asset('libs/feather-icons/feather.min.js') }}"></script>
     <script src="{{ asset('libs/metismenujs/metismenujs.min.js') }}"></script>
     <script src="{{ asset('libs/simplebar/simplebar.min.js') }}"></script>
+
+    <!-- CSRF Token Refresh Script -->
+    <script>
+        // Set up CSRF token for AJAX requests
+        let token = document.querySelector('meta[name="csrf-token"]');
+        if (token) {
+            window.Laravel = {
+                csrfToken: token.getAttribute('content')
+            };
+        }
+
+        // Handle form submission with CSRF token refresh
+        document.getElementById('registration-form').addEventListener('submit', function(e) {
+            // Update CSRF token before submission
+            let csrfInput = this.querySelector('input[name="_token"]');
+            if (csrfInput && window.Laravel && window.Laravel.csrfToken) {
+                csrfInput.value = window.Laravel.csrfToken;
+            }
+        });
+
+        // Refresh CSRF token every 30 minutes
+        setInterval(function() {
+            fetch('/csrf-token', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.csrf_token) {
+                    let metaToken = document.querySelector('meta[name="csrf-token"]');
+                    let formToken = document.querySelector('input[name="_token"]');
+                    if (metaToken) metaToken.setAttribute('content', data.csrf_token);
+                    if (formToken) formToken.value = data.csrf_token;
+                    if (window.Laravel) window.Laravel.csrfToken = data.csrf_token;
+                }
+            })
+            .catch(error => {
+                console.log('CSRF token refresh failed:', error);
+            });
+        }, 30 * 60 * 1000); // 30 minutes
+    </script>
     <script src="{{ asset('libs/swiper/swiper-bundle.min.js') }}"></script>
     <script src="{{ asset('js/pages/login.init.js') }}"></script>
     <script src="{{ asset('js/app.js') }}"></script>
