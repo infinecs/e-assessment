@@ -524,7 +524,8 @@
 
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
-                timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+                timeDisplay.textContent = `${minutes}:${formattedSeconds}`;
 
                 totalSeconds--;
 
