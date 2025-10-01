@@ -525,7 +525,13 @@
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
                 timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
 
+            // Display initial time
+            updateTimer();
+            
+            // Decrement and update every second
+            timerInterval = setInterval(function() {
                 totalSeconds--;
 
                 // Save every 10 seconds to reduce localStorage writes
@@ -533,10 +539,9 @@
                     localStorage.setItem(STORAGE_KEYS.timer, totalSeconds);
                     localStorage.setItem(STORAGE_KEYS.timer + '_timestamp', Date.now());
                 }
-            }
-
-            updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
+                
+                updateTimer();
+            }, 1000);
         }
 
         async function handleTimeUp() {
