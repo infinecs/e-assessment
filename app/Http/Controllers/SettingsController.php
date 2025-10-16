@@ -26,7 +26,7 @@ class SettingsController extends Controller
                 'email',
                 'max:255',
                 'regex:/^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/', // stricter format, lowercase only
-                'unique:users,email,' . $user->id,
+                'unique:' . (new \App\Models\User)->getTable() . ',email,' . $user->id,
             ],
             'password' => [
                 'required',
