@@ -278,6 +278,7 @@ class AssessmentTopicController extends Controller
         // Get filter parameters
         $search = $request->input('search');
         $categories = $request->input('categories') ? explode(',', $request->input('categories')) : [];
+        $ids = $request->input('ids') ? array_filter(array_map('trim', explode(',', $request->input('ids')))) : [];
 
         // Get all categories for lookup
         $allCategories = \Illuminate\Support\Facades\DB::table('assessmentcategory')
@@ -288,29 +289,34 @@ class AssessmentTopicController extends Controller
         // Build query with filters
         $query = AssessmentTopic::orderBy('DateCreate', 'desc');
 
-        // Apply search filter
-        if ($search) {
-            $query->where('TopicName', 'LIKE', "%{$search}%");
-        }
+        if (!empty($ids)) {
+            // Export only selected rows
+            $records = $query->whereIn('TopicID', $ids)->get();
+        } else {
+            // Apply search filter
+            if ($search) {
+                $query->where('TopicName', 'LIKE', "%{$search}%");
+            }
 
-        // Get all topics
-        $records = $query->get();
+            // Get all topics
+            $records = $query->get();
 
-        // Filter by categories if specified
-        if (!empty($categories)) {
-            $records = $records->filter(function ($topic) use ($allCategories, $categories) {
-                foreach ($allCategories as $category) {
-                    if (!in_array($category->CategoryID, $categories)) continue;
-                    
-                    if ($category->TopicIDs) {
-                        $topicIds = array_map('trim', explode(',', $category->TopicIDs));
-                        if (in_array($topic->TopicID, $topicIds)) {
-                            return true;
+            // Filter by categories if specified
+            if (!empty($categories)) {
+                $records = $records->filter(function ($topic) use ($allCategories, $categories) {
+                    foreach ($allCategories as $category) {
+                        if (!in_array($category->CategoryID, $categories)) continue;
+
+                        if ($category->TopicIDs) {
+                            $topicIds = array_map('trim', explode(',', $category->TopicIDs));
+                            if (in_array($topic->TopicID, $topicIds)) {
+                                return true;
+                            }
                         }
                     }
-                }
-                return false;
-            });
+                    return false;
+                });
+            }
         }
 
         // Create CSV content

@@ -1518,17 +1518,23 @@
         // Export to Excel functionality (uses current filters)
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
-            // Get current filter values
-            const searchTerm = searchInput.value.trim();
-            const selectedCategoryNames = Array.from(selectedCategories);
-            const selectedTopicNames = Array.from(selectedTopics);
-            
-            // Build query parameters
             const params = new URLSearchParams();
-            if (searchTerm) params.append('search', searchTerm);
-            if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
-            if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
-            
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+
+            if (checkedBoxes.length > 0) {
+                // Export only selected rows
+                const ids = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-event-id')).filter(Boolean);
+                params.append('ids', ids.join(','));
+            } else {
+                // Export all with current filters
+                const searchTerm = searchInput.value.trim();
+                const selectedCategoryNames = Array.from(selectedCategories);
+                const selectedTopicNames = Array.from(selectedTopics);
+                if (searchTerm) params.append('search', searchTerm);
+                if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
+                if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+            }
+
             // Create download URL using Laravel route
             const exportUrl = `{{ route('events.exportExcel') }}?${params.toString()}`;
             
@@ -2295,7 +2301,7 @@ function generateStrongPassword(length = 10) {
     const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lower = 'abcdefghijklmnopqrstuvwxyz';
     const number = '0123456789';
-    const special = '!@#$%^&*()_+[]{}|;:,.<>?/~`-=';
+    const special = '@';
     const all = upper + lower + number + special;
     let password = '';
     // Ensure at least one of each required character type
