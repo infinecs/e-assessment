@@ -365,16 +365,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                     
                     <!-- Topic Dropdown -->
-                    <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50">
                         <div class="p-3">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
                                 <button type="button" id="clearTopics" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
                             </div>
-                            <input type="text" id="topicSearchFilter" placeholder="Search topics..." 
+                            <input type="text" id="topicSearchFilter" placeholder="Search topics..."
                                 class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                            <div id="topicListFilter" class="space-y-2">
-                                <!-- Topics will be loaded here -->
+                            <div class="relative">
+                                <button type="button" id="topicScrollUp"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mb-1 transition-colors">
+                                    <i class="fas fa-chevron-up text-xs"></i>
+                                </button>
+                                <div id="topicListFilter" class="space-y-2">
+                                    <!-- Topics will be loaded here -->
+                                </div>
+                                <div id="topicPageInfo" class="text-center text-xs text-gray-400 dark:text-gray-500 py-1"></div>
+                                <button type="button" id="topicScrollDown"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mt-1 transition-colors">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -879,6 +890,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let allTopics = [];
         let selectedTopicsForSearch = new Set();
         let searchTimeout = null;
+        let currentTopicPage = 0;
+        const TOPICS_PER_PAGE = 15;
 
         // Debounced search function
         function debounceSearch() {
@@ -904,23 +917,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Render topic list
+        // Render topic list (paginated, 15 per page)
         function renderTopicList() {
-            console.log('Rendering topic list, topics count:', allTopics.length); // Debug log
             const searchTerm = topicSearchFilter.value.toLowerCase();
-            const filteredTopics = allTopics.filter(topic => 
-                topic.TopicName.toLowerCase().includes(searchTerm) || 
+            const filteredTopics = allTopics.filter(topic =>
+                topic.TopicName.toLowerCase().includes(searchTerm) ||
                 topic.TopicID.toString().includes(searchTerm)
             );
 
-            console.log('Filtered topics count:', filteredTopics.length); // Debug log
+            const totalPages = Math.max(1, Math.ceil(filteredTopics.length / TOPICS_PER_PAGE));
+            if (currentTopicPage >= totalPages) currentTopicPage = totalPages - 1;
+            if (currentTopicPage < 0) currentTopicPage = 0;
+
+            const start = currentTopicPage * TOPICS_PER_PAGE;
+            const pageTopics = filteredTopics.slice(start, start + TOPICS_PER_PAGE);
+
             topicListFilter.innerHTML = '';
-            filteredTopics.forEach(topic => {
+            pageTopics.forEach(topic => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
-                    <input type="checkbox" id="topic_${topic.TopicID}" 
-                           value="${topic.TopicID}" 
+                    <input type="checkbox" id="topic_${topic.TopicID}"
+                           value="${topic.TopicID}"
                            data-name="${topic.TopicName}"
                            class="topic-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                     <label for="topic_${topic.TopicID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -940,8 +958,20 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleTopicChange);
             });
-            
-            console.log('Topic list rendered with', filteredTopics.length, 'items'); // Debug log
+
+            // Update page indicator
+            const topicPageInfo = document.getElementById('topicPageInfo');
+            if (filteredTopics.length > TOPICS_PER_PAGE) {
+                topicPageInfo.textContent = `${start + 1}–${Math.min(start + TOPICS_PER_PAGE, filteredTopics.length)} of ${filteredTopics.length}`;
+            } else {
+                topicPageInfo.textContent = '';
+            }
+
+            // Update button states
+            const topicScrollUp = document.getElementById('topicScrollUp');
+            const topicScrollDown = document.getElementById('topicScrollDown');
+            topicScrollUp.classList.toggle('opacity-30', currentTopicPage === 0);
+            topicScrollDown.classList.toggle('opacity-30', currentTopicPage >= totalPages - 1);
         }
 
         // Handle topic selection
@@ -1331,7 +1361,34 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTopicDisplay();
         });
 
-        topicSearchFilter.addEventListener('input', renderTopicList);
+        topicSearchFilter.addEventListener('input', () => {
+            currentTopicPage = 0;
+            renderTopicList();
+        });
+
+        // Topic list pagination buttons
+        const topicScrollUp = document.getElementById('topicScrollUp');
+        const topicScrollDown = document.getElementById('topicScrollDown');
+
+        topicScrollUp.addEventListener('click', () => {
+            if (currentTopicPage > 0) {
+                currentTopicPage--;
+                renderTopicList();
+            }
+        });
+
+        topicScrollDown.addEventListener('click', () => {
+            const searchTerm = topicSearchFilter.value.toLowerCase();
+            const filteredCount = allTopics.filter(t =>
+                t.TopicName.toLowerCase().includes(searchTerm) ||
+                t.TopicID.toString().includes(searchTerm)
+            ).length;
+            const totalPages = Math.max(1, Math.ceil(filteredCount / TOPICS_PER_PAGE));
+            if (currentTopicPage < totalPages - 1) {
+                currentTopicPage++;
+                renderTopicList();
+            }
+        });
         performSearchBtn.addEventListener('click', function() {
             const searchTerm = searchInput.value.trim();
             const selectedTopicIds = Array.from(selectedTopicsForSearch);
@@ -1753,15 +1810,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Export to Excel functionality (uses current filters)
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
-            // Get current filter values
-            const searchTerm = searchInput.value.trim();
-            const selectedTopics = Array.from(selectedTopicsForSearch);
-            
-            // Build query parameters
             const params = new URLSearchParams();
-            if (searchTerm) params.append('search', searchTerm);
-            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
-            
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+
+            if (checkedBoxes.length > 0) {
+                // Export only selected rows
+                const ids = Array.from(checkedBoxes).map(cb => cb.dataset.questionId).filter(Boolean);
+                params.append('ids', ids.join(','));
+            } else {
+                // Export all with current filters
+                const searchTerm = searchInput.value.trim();
+                const selectedTopics = Array.from(selectedTopicsForSearch);
+                if (searchTerm) params.append('search', searchTerm);
+                if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            }
+
             // Create download URL using Laravel route
             const exportUrl = `/question/export-excel?${params.toString()}`;
             

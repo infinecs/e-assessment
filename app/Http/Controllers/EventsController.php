@@ -497,6 +497,7 @@ class EventsController extends Controller
         $search = $request->input('search');
         $categories = $request->input('categories') ? explode(',', $request->input('categories')) : [];
         $topics = $request->input('topics') ? explode(',', $request->input('topics')) : [];
+        $ids = $request->input('ids') ? array_filter(array_map('trim', explode(',', $request->input('ids')))) : [];
 
         // Build query with filters
         $query = DB::table('assessmentevent as e')
@@ -504,41 +505,46 @@ class EventsController extends Controller
             ->select('e.*', 'c.CategoryName')
             ->orderBy('e.EventID', 'desc');
 
-        // Apply search filter (event name or code)
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('e.EventName', 'LIKE', "%{$search}%")
-                  ->orWhere('e.EventCode', 'LIKE', "%{$search}%");
-            });
-        }
+        if (!empty($ids)) {
+            // Export only selected rows
+            $records = $query->whereIn('e.EventID', $ids)->get();
+        } else {
+            // Apply search filter (event name or code)
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('e.EventName', 'LIKE', "%{$search}%")
+                      ->orWhere('e.EventCode', 'LIKE', "%{$search}%");
+                });
+            }
 
-        // Apply category filter
-        if (!empty($categories)) {
-            $query->whereIn('c.CategoryName', $categories);
-        }
+            // Apply category filter
+            if (!empty($categories)) {
+                $query->whereIn('c.CategoryName', $categories);
+            }
 
-        // Get the filtered data
-        $records = $query->get();
+            // Get the filtered data
+            $records = $query->get();
 
-        // Apply topic filter if needed
-        if (!empty($topics)) {
-            $records = $records->filter(function ($record) use ($topics) {
-                if (!$record->TopicID) return false;
-                
-                // Get topic names for this event
-                $eventTopicIds = array_map('trim', explode(',', $record->TopicID));
-                $eventTopicIds = array_unique(array_filter($eventTopicIds));
-                
-                if (empty($eventTopicIds)) return false;
-                
-                $eventTopicNames = DB::table('assessmenttopic')
-                    ->whereIn('TopicID', $eventTopicIds)
-                    ->pluck('TopicName')
-                    ->toArray();
-                
-                // Check if any of the event's topics match the filter
-                return !empty(array_intersect($eventTopicNames, $topics));
-            });
+            // Apply topic filter if needed
+            if (!empty($topics)) {
+                $records = $records->filter(function ($record) use ($topics) {
+                    if (!$record->TopicID) return false;
+
+                    // Get topic names for this event
+                    $eventTopicIds = array_map('trim', explode(',', $record->TopicID));
+                    $eventTopicIds = array_unique(array_filter($eventTopicIds));
+
+                    if (empty($eventTopicIds)) return false;
+
+                    $eventTopicNames = DB::table('assessmenttopic')
+                        ->whereIn('TopicID', $eventTopicIds)
+                        ->pluck('TopicName')
+                        ->toArray();
+
+                    // Check if any of the event's topics match the filter
+                    return !empty(array_intersect($eventTopicNames, $topics));
+                });
+            }
         }
 
         // Create CSV content

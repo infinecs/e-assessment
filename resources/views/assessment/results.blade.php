@@ -1209,21 +1209,27 @@ $(document).ready(function() {
         // Export to Excel functionality
         const exportExcelBtn = document.getElementById('export-excel-btn');
         exportExcelBtn.addEventListener('click', function() {
-            // Get current filter values from the search state
-            const searchTerm = searchInput.value.trim();
-            const dateAnswered = dateAnsweredFilter.value;
-            const selectedEvents = Array.from(selectedEventsForSearch);
-            const selectedCategories = Array.from(selectedCategoriesForSearch);
-            const selectedTopics = Array.from(selectedTopicsForSearch);
-            
-            // Build query parameters
             const params = new URLSearchParams();
-            if (searchTerm) params.append('search', searchTerm);
-            if (dateAnswered) params.append('date_answered', dateAnswered);
-            if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
-            if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
-            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
-            
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+
+            if (checkedBoxes.length > 0) {
+                // Export only selected rows
+                const ids = Array.from(checkedBoxes).map(cb => cb.closest('tr').dataset.id).filter(Boolean);
+                params.append('ids', ids.join(','));
+            } else {
+                // Export all with current filters
+                const searchTerm = searchInput.value.trim();
+                const dateAnswered = dateAnsweredFilter.value;
+                const selectedEvents = Array.from(selectedEventsForSearch);
+                const selectedCategories = Array.from(selectedCategoriesForSearch);
+                const selectedTopics = Array.from(selectedTopicsForSearch);
+                if (searchTerm) params.append('search', searchTerm);
+                if (dateAnswered) params.append('date_answered', dateAnswered);
+                if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
+                if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
+                if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            }
+
             // Create download URL using Laravel route
             const exportUrl = `{{ route('assessment.exportExcel') }}?${params.toString()}`;
             

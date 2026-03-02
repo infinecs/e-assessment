@@ -246,46 +246,51 @@ public function exportExcel(Request $request)
     $events = $request->input('events') ? explode(',', $request->input('events')) : [];
     $categories = $request->input('categories') ? explode(',', $request->input('categories')) : [];
     $topics = $request->input('topics') ? explode(',', $request->input('topics')) : [];
+    $ids = $request->input('ids') ? array_filter(array_map('trim', explode(',', $request->input('ids')))) : [];
 
     // Build query with filters
     $query = Assessment::with(['participant', 'event', 'resultSets.question.answers'])
         ->orderBy('DateCreate', 'desc');
 
-    // Apply search filter (name, phone, email)
-    if ($search) {
-        $query->whereHas('participant', function ($q) use ($search) {
-            $q->where('name', 'LIKE', "%{$search}%")
-
-              ->orWhere('email', 'LIKE', "%{$search}%");
-        });
-    }
-
-    // Apply event filter
-    if (!empty($events)) {
-        $query->whereIn('EventID', $events);
-    }
-
-    // Apply category filter (through events)
-    if (!empty($categories)) {
-        $query->whereHas('event', function ($q) use ($categories) {
-            $q->whereIn('CategoryID', $categories);
-        });
-    }
-
-    // Apply topic filter (through event topics)
-    if (!empty($topics)) {
-        $query->whereHas('event', function ($q) use ($topics) {
-            $q->where(function ($subQuery) use ($topics) {
-                foreach ($topics as $topicId) {
-                    $subQuery->orWhere('TopicID', 'LIKE', "%{$topicId}%");
-                }
+    if (!empty($ids)) {
+        // Export only selected rows
+        $query->whereIn('AssessmentID', $ids);
+    } else {
+        // Apply search filter (name, phone, email)
+        if ($search) {
+            $query->whereHas('participant', function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
             });
-        });
-    }
+        }
 
-    // Apply date filter
-    if ($dateAnswered) {
-        $query->whereDate('DateCreate', $dateAnswered);
+        // Apply event filter
+        if (!empty($events)) {
+            $query->whereIn('EventID', $events);
+        }
+
+        // Apply category filter (through events)
+        if (!empty($categories)) {
+            $query->whereHas('event', function ($q) use ($categories) {
+                $q->whereIn('CategoryID', $categories);
+            });
+        }
+
+        // Apply topic filter (through event topics)
+        if (!empty($topics)) {
+            $query->whereHas('event', function ($q) use ($topics) {
+                $q->where(function ($subQuery) use ($topics) {
+                    foreach ($topics as $topicId) {
+                        $subQuery->orWhere('TopicID', 'LIKE', "%{$topicId}%");
+                    }
+                });
+            });
+        }
+
+        // Apply date filter
+        if ($dateAnswered) {
+            $query->whereDate('DateCreate', $dateAnswered);
+        }
     }
 
     // Get the filtered data

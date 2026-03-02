@@ -148,6 +148,11 @@ class AssessmentQuestionController extends Controller
             $question->DateUpdate = now();
             $question->save();
 
+            // Sync AssessmentTopic.QuestionID with the new question ID
+            if (!empty($validatedData['selected_topic_ids'])) {
+                $this->addQuestionToTopic($validatedData['selected_topic_ids'][0], $question->QuestionID);
+            }
+
             foreach ($validatedData['answers'] as $idx => $answerData) {
                 $answer = new AssessmentAnswer();
                 $answer->QuestionID = $question->QuestionID;
@@ -210,6 +215,11 @@ class AssessmentQuestionController extends Controller
             // Delete associated answers
             AssessmentAnswer::where('QuestionID', $id)->delete();
 
+            // Remove question ID from its topic's QuestionID CSV
+            if ($question->DefaultTopic) {
+                $this->removeQuestionFromTopic($question->DefaultTopic, $id);
+            }
+
             $question->delete();
 
             return response()->json([
@@ -252,6 +262,13 @@ class AssessmentQuestionController extends Controller
             }
             // Delete associated answers first
             AssessmentAnswer::whereIn('QuestionID', $questionIds)->delete();
+
+            // Remove each question ID from its topic's QuestionID CSV
+            foreach ($questions as $question) {
+                if ($question->DefaultTopic) {
+                    $this->removeQuestionFromTopic($question->DefaultTopic, $question->QuestionID);
+                }
+            }
 
             // Delete questions
             $deletedCount = AssessmentQuestion::whereIn('QuestionID', $questionIds)->delete();
@@ -328,10 +345,14 @@ class AssessmentQuestionController extends Controller
                 $validatedData['QuestionImage'] = null;
             }
 
+            // Capture old topic before any changes
+            $oldTopicId = $question->DefaultTopic;
+
             // If specific topics are selected, use the first one as DefaultTopic
             if (isset($validatedData['selected_topic_ids']) && !empty($validatedData['selected_topic_ids'])) {
                 $validatedData['DefaultTopic'] = $validatedData['selected_topic_ids'][0];
             }
+            $newTopicId = $validatedData['DefaultTopic'] ?? $oldTopicId;
 
             // Remove non-database fields
             unset($validatedData['selected_topic_ids']);
@@ -341,6 +362,19 @@ class AssessmentQuestionController extends Controller
             $validatedData['DateUpdate'] = now();
             $question->fill($validatedData);
             $question->save();
+
+            // Sync AssessmentTopic.QuestionID: remove from old topic if changed, add to new topic
+            if ((string)$oldTopicId !== (string)$newTopicId) {
+                if ($oldTopicId) {
+                    $this->removeQuestionFromTopic($oldTopicId, $question->QuestionID);
+                }
+                if ($newTopicId) {
+                    $this->addQuestionToTopic($newTopicId, $question->QuestionID);
+                }
+            } else if ($newTopicId) {
+                // Same topic - ensure question ID is present (idempotent)
+                $this->addQuestionToTopic($newTopicId, $question->QuestionID);
+            }
 
             // Handle answers update if provided
             if ($request->has('answers')) {
@@ -358,6 +392,32 @@ class AssessmentQuestionController extends Controller
                 'message' => 'Error updating question: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function addQuestionToTopic($topicId, $questionId): void
+    {
+        $topic = AssessmentTopic::find($topicId);
+        if (!$topic) return;
+
+        $existingIds = array_filter(array_map('trim', explode(',', $topic->QuestionID ?? '')));
+        if (!in_array((string)$questionId, $existingIds)) {
+            $existingIds[] = (string)$questionId;
+            $topic->QuestionID = implode(',', $existingIds);
+            $topic->DateUpdate = now();
+            $topic->save();
+        }
+    }
+
+    private function removeQuestionFromTopic($topicId, $questionId): void
+    {
+        $topic = AssessmentTopic::find($topicId);
+        if (!$topic) return;
+
+        $existingIds = array_filter(array_map('trim', explode(',', $topic->QuestionID ?? '')));
+        $existingIds = array_values(array_filter($existingIds, fn($id) => (string)$id !== (string)$questionId));
+        $topic->QuestionID = implode(',', $existingIds);
+        $topic->DateUpdate = now();
+        $topic->save();
     }
 
     private function updateAnswersWithImages($request, $questionId)
@@ -552,19 +612,25 @@ class AssessmentQuestionController extends Controller
         // Get filter parameters
         $search = $request->input('search');
         $topics = $request->input('topics') ? explode(',', $request->input('topics')) : [];
+        $ids = $request->input('ids') ? array_filter(array_map('trim', explode(',', $request->input('ids')))) : [];
 
         // Build query with filters
         $query = AssessmentQuestion::with(['answers', 'topic'])
             ->orderBy('DateCreate', 'desc');
 
-        // Apply search filter (question text)
-        if ($search) {
-            $query->where('QuestionText', 'LIKE', "%{$search}%");
-        }
+        if (!empty($ids)) {
+            // Export only selected rows
+            $query->whereIn('QuestionID', $ids);
+        } else {
+            // Apply search filter (question text)
+            if ($search) {
+                $query->where('QuestionText', 'LIKE', "%{$search}%");
+            }
 
-        // Apply topic filter
-        if (!empty($topics)) {
-            $query->whereIn('DefaultTopic', $topics);
+            // Apply topic filter
+            if (!empty($topics)) {
+                $query->whereIn('DefaultTopic', $topics);
+            }
         }
 
         // Get the filtered data
