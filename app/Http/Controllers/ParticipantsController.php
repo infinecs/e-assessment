@@ -15,52 +15,53 @@ class ParticipantsController extends Controller
 
     public function register(Request $request, $eventCode)
     {
-        // Validate inputs
+        // Validate basic inputs (email uniqueness is handled separately to allow re-entry)
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'confirmed', // Laravel will check email_confirmation matches
-                function ($attribute, $value, $fail) {
-                    $today = now()->toDateString();
-                    $exists = \App\Models\Participant::where('email', $value)
-                        ->whereDate('created_at', $today)
-                        ->exists();
-                    if ($exists) {
-                        $fail('This email has already been used today.');
-                    }
-                },
-            ],
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|confirmed',
             'password' => 'required|string',
         ]);
 
-        // Fetch the event and check password
+        // Fetch the event and verify the assessment password
         $event = \App\Models\AssessmentEvent::where('EventCode', $eventCode)->first();
         if (!$event) {
-            return back()->withErrors(['password' => 'Invalid event code.'])->withInput();
+            return back()->withErrors(['password' => 'Invalid assessment code.'])->withInput();
         }
         if ($validated['password'] !== $event->EventPassword) {
             return back()->withErrors(['password' => 'Incorrect assessment password.'])->withInput();
         }
 
-        // Create participant
+        // If the participant already registered today, allow re-entry instead of blocking
+        $today = now()->toDateString();
+        $existingParticipant = Participant::where('email', $validated['email'])
+            ->whereDate('created_at', $today)
+            ->first();
+
+        if ($existingParticipant) {
+            session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode", "quiz_result_$eventCode", "quiz_completed_$eventCode"]);
+            session([
+                'participant_email' => $existingParticipant->email,
+                'participant_id'    => $existingParticipant->id,
+            ]);
+            return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
+        }
+
+        // Create new participant record
         $participant = Participant::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
+            'name'       => $validated['name'],
+            'email'      => $validated['email'],
             'event_code' => $eventCode,
         ]);
 
-        // Clear all quiz-related session data for this event code
+        // Clear any stale quiz session data for this event code
         session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode", "quiz_result_$eventCode", "quiz_completed_$eventCode"]);
 
-        // Store participant info in session (this is key!)
+        // Store participant info in session
         session([
             'participant_email' => $participant->email,
             'participant_id'    => $participant->id,
         ]);
 
-        // Redirect to quiz page with new session parameter
         return redirect()->route('quiz.show', ['eventCode' => $eventCode])->with('new_session', true);
     }
 }

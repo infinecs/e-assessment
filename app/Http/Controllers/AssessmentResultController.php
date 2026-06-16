@@ -238,6 +238,75 @@ class AssessmentResultController extends Controller
     ]);
 }
 
+public function exportDetailExcel($id)
+{
+    $assessment = Assessment::with(['participant', 'event', 'resultSets.question.answers'])->find($id);
+
+    if (!$assessment) {
+        abort(404, 'Assessment not found');
+    }
+
+    $participant = $assessment->participant;
+    $event = $assessment->event;
+    $percentage = $assessment->TotalQuestion > 0
+        ? round(($assessment->TotalScore / $assessment->TotalQuestion) * 100, 2)
+        : 0;
+
+    $csvData = [];
+
+    // Candidate info block
+    $csvData[] = ['Candidate Details'];
+    $csvData[] = ['Name', $participant->name ?? 'N/A'];
+    $csvData[] = ['Email', $participant->email ?? 'N/A'];
+    $csvData[] = ['Event', $event->EventName ?? 'N/A'];
+    $csvData[] = ['Score', $assessment->TotalScore . ' / ' . $assessment->TotalQuestion];
+    $csvData[] = ['Percentage', $percentage . '%'];
+    $csvData[] = ['Date Answered', \Carbon\Carbon::parse($assessment->DateCreate)->format('d M Y H:i')];
+    $csvData[] = [];
+
+    // Q&A comparison table
+    $csvData[] = ['No', 'Question', 'Candidate Answer', 'Correct Answer', 'Result'];
+
+    $qNum = 1;
+    foreach ($assessment->resultSets as $resultSet) {
+        $question = $resultSet->question;
+        if (!$question) {
+            $csvData[] = [$qNum++, 'Question not found', 'N/A', 'N/A', 'N/A'];
+            continue;
+        }
+
+        $candidateText = 'N/A';
+        $correctText   = 'N/A';
+
+        foreach ($question->answers as $answer) {
+            if ($answer->AnswerID == $resultSet->AnswerID) {
+                $candidateText = $answer->AnswerText;
+            }
+            if ($answer->ExpectedAnswer === 'Y') {
+                $correctText = $answer->AnswerText;
+            }
+        }
+
+        $result = ($candidateText !== 'N/A' && $candidateText === $correctText) ? 'Correct' : 'Wrong';
+
+        $csvData[] = [$qNum++, $question->QuestionText, $candidateText, $correctText, $result];
+    }
+
+    $filename = 'assessment-detail-' . $id . '-' . date('Y-m-d-H-i-s') . '.csv';
+
+    return response()->streamDownload(function () use ($csvData) {
+        $handle = fopen('php://output', 'w');
+        fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        foreach ($csvData as $row) {
+            fputcsv($handle, $row);
+        }
+        fclose($handle);
+    }, $filename, [
+        'Content-Type'        => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ]);
+}
+
 public function exportExcel(Request $request)
 {
     // Get filter parameters

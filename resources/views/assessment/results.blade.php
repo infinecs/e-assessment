@@ -127,16 +127,27 @@ $(document).ready(function() {
                             </button>
                             
                             <!-- Event Dropdown -->
-                            <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            <div id="eventDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50">
                                 <div class="p-3">
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Assessments</span>
                                         <button type="button" id="clearEvents" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
                                     </div>
-                                    <input type="text" id="eventSearchFilter" placeholder="Search assessments..." 
+                                    <input type="text" id="eventSearchFilter" placeholder="Search assessments..."
                                         class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                                    <div id="eventListFilter" class="space-y-2">
-                                        <!-- Events will be loaded here -->
+                                    <div class="relative">
+                                        <button type="button" id="eventScrollUp"
+                                            class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mb-1 transition-colors">
+                                            <i class="fas fa-chevron-up text-xs"></i>
+                                        </button>
+                                        <div id="eventListFilter" class="space-y-2">
+                                            <!-- Events will be loaded here -->
+                                        </div>
+                                        <div id="eventPageInfo" class="text-center text-xs text-gray-400 dark:text-gray-500 py-1"></div>
+                                        <button type="button" id="eventScrollDown"
+                                            class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mt-1 transition-colors">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -179,7 +190,7 @@ $(document).ready(function() {
                             </button>
                             
                             <!-- Topic Dropdown -->
-                            <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                            <div id="topicDropdownFilter" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50">
                                 <div class="p-3">
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
@@ -187,8 +198,19 @@ $(document).ready(function() {
                                     </div>
                                     <input type="text" id="topicSearchFilter" placeholder="Search topics..." 
                                         class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                                    <div id="topicListFilter" class="space-y-2">
-                                        <!-- Topics will be loaded here -->
+                                    <div class="relative">
+                                        <button type="button" id="topicScrollUp"
+                                            class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mb-1 transition-colors">
+                                            <i class="fas fa-chevron-up text-xs"></i>
+                                        </button>
+                                        <div id="topicListFilter" class="space-y-2">
+                                            <!-- Topics will be loaded here -->
+                                        </div>
+                                        <div id="topicPageInfo" class="text-center text-xs text-gray-400 dark:text-gray-500 py-1"></div>
+                                        <button type="button" id="topicScrollDown"
+                                            class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mt-1 transition-colors">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -334,7 +356,11 @@ $(document).ready(function() {
             <div class="text-center text-gray-600 dark:text-gray-300">Loading...</div>
         </div>
         <!-- Footer -->
-        <div class="px-6 py-3 border-t border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-right">
+        <div class="px-6 py-3 border-t border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 flex justify-between items-center">
+            <button id="export-detail-btn"
+                class="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-base font-semibold shadow flex items-center gap-2">
+                <i class="fas fa-file-csv"></i> Export to CSV
+            </button>
             <button id="close-modal-footer"
                 class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold shadow">
                 Close
@@ -353,19 +379,32 @@ $(document).ready(function() {
 
         function handleExportExcel() {
             const exportExcelBtn = document.getElementById('export-excel-btn');
-            // Get current filter values from the search state
-            const searchTerm = searchInput.value.trim();
-            const dateAnswered = dateAnsweredFilter.value;
-            const selectedEvents = Array.from(selectedEventsForSearch);
-            const selectedCategories = Array.from(selectedCategoriesForSearch);
-            const selectedTopics = Array.from(selectedTopicsForSearch);
             // Build query parameters
             const params = new URLSearchParams();
-            if (searchTerm) params.append('search', searchTerm);
-            if (dateAnswered) params.append('date_answered', dateAnswered);
-            if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
-            if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
-            if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length > 0) {
+                // Export only selected rows when at least one checkbox is selected.
+                const ids = Array.from(checkedBoxes)
+                    .map(cb => cb.closest('tr')?.dataset?.id)
+                    .filter(Boolean);
+                if (ids.length > 0) {
+                    params.append('ids', ids.join(','));
+                }
+            } else {
+                // Export all with current filters when no row is selected.
+                const searchTerm = searchInput.value.trim();
+                const dateAnswered = dateAnsweredFilter.value;
+                const selectedEvents = Array.from(selectedEventsForSearch);
+                const selectedCategories = Array.from(selectedCategoriesForSearch);
+                const selectedTopics = Array.from(selectedTopicsForSearch);
+
+                if (searchTerm) params.append('search', searchTerm);
+                if (dateAnswered) params.append('date_answered', dateAnswered);
+                if (selectedEvents.length > 0) params.append('events', selectedEvents.join(','));
+                if (selectedCategories.length > 0) params.append('categories', selectedCategories.join(','));
+                if (selectedTopics.length > 0) params.append('topics', selectedTopics.join(','));
+            }
             // Create download URL using Laravel route
             const exportUrl = `${exportExcelRoute}?${params.toString()}`;
             // Show loading state
@@ -479,11 +518,14 @@ $(document).ready(function() {
         let allEvents = [];
         let allCategories = [];
         let allTopics = [];
-        let categoryTopicsMap = new Map(); // Maps categoryId to array of topic objects
         let selectedEventsForSearch = new Set();
         let selectedCategoriesForSearch = new Set();
         let selectedTopicsForSearch = new Set();
         let searchTimeout = null;
+        let currentEventPage = 0;
+        const EVENTS_PER_PAGE = 15;
+        let currentTopicPage = 0;
+        const TOPICS_PER_PAGE = 15;
 
         // Debounced search function
         function debounceSearch() {
@@ -508,28 +550,6 @@ $(document).ready(function() {
                 allCategories = categories;
                 renderCategoryList();
                 
-                // Load category-topic relationships
-                for (const category of allCategories) {
-                    try {
-                        console.log(`Loading topics for category ${category.CategoryID} (${category.CategoryName})`);
-                        const response = await fetch(`/category/${category.CategoryID}/topics`);
-                        const data = await response.json();
-                        
-                        console.log(`Response for category ${category.CategoryID}:`, data);
-                        
-                        if (data.success && data.topics) {
-                            // Store with both string and number keys to handle type mismatches
-                            categoryTopicsMap.set(category.CategoryID.toString(), data.topics);
-                            categoryTopicsMap.set(category.CategoryID, data.topics);
-                            console.log(`Stored ${data.topics.length} topics for category ${category.CategoryID}`);
-                        } else {
-                            console.log(`No topics found for category ${category.CategoryID}`);
-                        }
-                    } catch (error) {
-                        console.warn(`Failed to load topics for category ${category.CategoryID}:`, error);
-                    }
-                }
-                
                 // Load topics
                 const topics = @json($allTopics ?? []);
                 allTopics = topics;
@@ -544,18 +564,25 @@ $(document).ready(function() {
         // Render event list
         function renderEventList() {
             const searchTerm = eventSearchFilter.value.toLowerCase();
-            const filteredEvents = allEvents.filter(event => 
-                event.EventName.toLowerCase().includes(searchTerm) || 
+            const filteredEvents = allEvents.filter(event =>
+                event.EventName.toLowerCase().includes(searchTerm) ||
                 event.EventID.toString().includes(searchTerm)
             );
 
+            const totalPages = Math.max(1, Math.ceil(filteredEvents.length / EVENTS_PER_PAGE));
+            if (currentEventPage >= totalPages) currentEventPage = totalPages - 1;
+            if (currentEventPage < 0) currentEventPage = 0;
+
+            const start = currentEventPage * EVENTS_PER_PAGE;
+            const pageEvents = filteredEvents.slice(start, start + EVENTS_PER_PAGE);
+
             eventListFilter.innerHTML = '';
-            filteredEvents.forEach(event => {
+            pageEvents.forEach(event => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
-                    <input type="checkbox" id="event_${event.EventID}" 
-                           value="${event.EventID}" 
+                    <input type="checkbox" id="event_${event.EventID}"
+                           value="${event.EventID}"
                            data-name="${event.EventName}"
                            class="event-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                     <label for="event_${event.EventID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -575,6 +602,21 @@ $(document).ready(function() {
             document.querySelectorAll('.event-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleEventChange);
             });
+
+            // Update page indicator and scroll button states
+            const eventPageInfo = document.getElementById('eventPageInfo');
+            if (filteredEvents.length > EVENTS_PER_PAGE) {
+                eventPageInfo.textContent = `${start + 1}-${Math.min(start + EVENTS_PER_PAGE, filteredEvents.length)} of ${filteredEvents.length}`;
+            } else {
+                eventPageInfo.textContent = '';
+            }
+
+            const eventScrollUp = document.getElementById('eventScrollUp');
+            const eventScrollDown = document.getElementById('eventScrollDown');
+            eventScrollUp.classList.toggle('opacity-30', currentEventPage === 0);
+            eventScrollDown.classList.toggle('opacity-30', currentEventPage >= totalPages - 1);
+
+            updateEventDisplay();
         }
 
         // Render category list
@@ -615,50 +657,22 @@ $(document).ready(function() {
 
         // Render topic list
         function renderTopicList() {
-            console.log('renderTopicList called');
-            console.log('selectedCategoriesForSearch:', Array.from(selectedCategoriesForSearch));
-            console.log('categoryTopicsMap:', categoryTopicsMap);
-            
             const searchTerm = topicSearchFilter.value.toLowerCase();
             
-            // Get available topics based on selected categories
-            let availableTopics = [];
-            if (selectedCategoriesForSearch.size === 0) {
-                // If no categories selected, show all topics
-                availableTopics = allTopics;
-                console.log('No categories selected, showing all topics:', availableTopics.length);
-            } else {
-                // Only show topics from selected categories
-                const topicsSet = new Set();
-                selectedCategoriesForSearch.forEach(categoryId => {
-                    console.log(`Looking for topics in category ${categoryId}`);
-                    // Try both string and number versions of the categoryId
-                    let categoryTopics = categoryTopicsMap.get(categoryId) || categoryTopicsMap.get(categoryId.toString()) || categoryTopicsMap.get(parseInt(categoryId));
-                    
-                    if (categoryTopics) {
-                        console.log(`Found ${categoryTopics.length} topics for category ${categoryId}:`, categoryTopics);
-                        categoryTopics.forEach(topic => {
-                            topicsSet.add(topic);
-                        });
-                    } else {
-                        console.log(`No topics found for category ${categoryId} in categoryTopicsMap`);
-                        console.log('Available keys in categoryTopicsMap:', Array.from(categoryTopicsMap.keys()));
-                    }
-                });
-                availableTopics = Array.from(topicsSet);
-                console.log('Available topics from selected categories:', availableTopics);
-            }
-            
-            // Filter topics by search term
-            const filteredTopics = availableTopics.filter(topic => 
+            const filteredTopics = allTopics.filter(topic => 
                 topic.TopicName.toLowerCase().includes(searchTerm) || 
                 topic.TopicID.toString().includes(searchTerm)
             );
-            
-            console.log('Filtered topics after search:', filteredTopics);
+
+            const totalPages = Math.max(1, Math.ceil(filteredTopics.length / TOPICS_PER_PAGE));
+            if (currentTopicPage >= totalPages) currentTopicPage = totalPages - 1;
+            if (currentTopicPage < 0) currentTopicPage = 0;
+
+            const start = currentTopicPage * TOPICS_PER_PAGE;
+            const pageTopics = filteredTopics.slice(start, start + TOPICS_PER_PAGE);
 
             topicListFilter.innerHTML = '';
-            filteredTopics.forEach(topic => {
+            pageTopics.forEach(topic => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
@@ -679,18 +693,23 @@ $(document).ready(function() {
                 if (checkbox) checkbox.checked = true;
             });
 
-            // Remove topics from selected set that are no longer available
-            const availableTopicIds = new Set(filteredTopics.map(topic => topic.TopicID.toString()));
-            selectedTopicsForSearch.forEach(topicId => {
-                if (!availableTopicIds.has(topicId)) {
-                    selectedTopicsForSearch.delete(topicId);
-                }
-            });
-
             // Add event listeners
             document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleTopicChange);
             });
+
+            // Update page indicator and scroll control states
+            const topicPageInfo = document.getElementById('topicPageInfo');
+            if (filteredTopics.length > TOPICS_PER_PAGE) {
+                topicPageInfo.textContent = `${start + 1}-${Math.min(start + TOPICS_PER_PAGE, filteredTopics.length)} of ${filteredTopics.length}`;
+            } else {
+                topicPageInfo.textContent = '';
+            }
+
+            const topicScrollUp = document.getElementById('topicScrollUp');
+            const topicScrollDown = document.getElementById('topicScrollDown');
+            topicScrollUp.classList.toggle('opacity-30', currentTopicPage === 0);
+            topicScrollDown.classList.toggle('opacity-30', currentTopicPage >= totalPages - 1);
             
             // Update display after filtering
             updateTopicDisplay();
@@ -709,7 +728,6 @@ $(document).ready(function() {
 
         function handleCategoryChange(event) {
             const categoryId = event.target.value;
-            console.log('Category change:', categoryId, 'checked:', event.target.checked);
             
             if (event.target.checked) {
                 selectedCategoriesForSearch.add(categoryId);
@@ -717,8 +735,6 @@ $(document).ready(function() {
                 selectedCategoriesForSearch.delete(categoryId);
             }
             updateCategoryDisplay();
-            // Re-render topics list based on new category selection
-            renderTopicList();
         }
 
         function handleTopicChange(event) {
@@ -1015,8 +1031,6 @@ $(document).ready(function() {
             selectedCategoriesForSearch.clear();
             document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
             updateCategoryDisplay();
-            // Re-render topics list when categories are cleared
-            renderTopicList();
         });
 
         clearTopics.addEventListener('click', () => {
@@ -1025,10 +1039,41 @@ $(document).ready(function() {
             updateTopicDisplay();
         });
 
+        document.getElementById('eventScrollUp').addEventListener('click', () => {
+            if (currentEventPage > 0) {
+                currentEventPage--;
+                renderEventList();
+            }
+        });
+
+        document.getElementById('eventScrollDown').addEventListener('click', () => {
+            currentEventPage++;
+            renderEventList();
+        });
+
         // Search functionality
-        eventSearchFilter.addEventListener('input', renderEventList);
+        eventSearchFilter.addEventListener('input', () => {
+            currentEventPage = 0;
+            renderEventList();
+        });
         categorySearchFilter.addEventListener('input', renderCategoryList);
-        topicSearchFilter.addEventListener('input', renderTopicList);
+        topicSearchFilter.addEventListener('input', () => {
+            currentTopicPage = 0;
+            renderTopicList();
+        });
+
+        document.getElementById('topicScrollUp').addEventListener('click', () => {
+            if (currentTopicPage > 0) {
+                currentTopicPage--;
+                renderTopicList();
+            }
+        });
+
+        document.getElementById('topicScrollDown').addEventListener('click', () => {
+            currentTopicPage++;
+            renderTopicList();
+        });
+
         performSearchBtn.addEventListener('click', performFilteredSearch);
         clearAllFilters.addEventListener('click', clearAllFiltersAction);
         
@@ -1115,8 +1160,6 @@ $(document).ready(function() {
                         }
                     });
                     updateCategoryDisplay();
-                    // Re-render topics list after category selection is restored
-                    renderTopicList();
                 }, 150);
             }
             
@@ -1159,52 +1202,6 @@ $(document).ready(function() {
                 bulkDeleteBtn.classList.toggle('hidden', !anyChecked);
             }
         }
-
-        // Note: selectAll and initial rowCheckboxes event listeners are now handled in initializeRowCheckboxes()
-        // This ensures they work properly after AJAX content updates
-
-        bulkDeleteBtn.addEventListener('click', () => {
-            const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                .map(cb => {
-                    // Find the closest tr with a data-id attribute
-                    let tr = cb.closest('tr');
-                    return tr && tr.dataset.id ? tr.dataset.id : null;
-                })
-                .filter(id => id !== null);
-
-            if (selectedIds.length === 0) return;
-            if (!confirm(`Delete ${selectedIds.length} records?`)) return;
-
-            fetch('{{ route('assessment.bulkDelete') }}', {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ids: selectedIds
-                })
-            })
-            .then(async res => {
-                let data;
-                try {
-                    data = await res.json();
-                } catch (e) {
-                    throw new Error('Invalid JSON response');
-                }
-                if (data.status === 'success') {
-                    performFilteredSearch();
-                } else {
-                    let msg = 'Failed to delete records.';
-                    if (data.message) msg += '\n' + data.message;
-                    if (data.debug) msg += '\nDebug: ' + JSON.stringify(data.debug);
-                    alert(msg);
-                }
-            })
-            .catch(err => {
-                alert('Error deleting records. ' + (err && err.message ? err.message : ''));
-            });
-        });
 
         // Export to Excel functionality
         const exportExcelBtn = document.getElementById('export-excel-btn');
@@ -1262,10 +1259,31 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('details-modal');
     const modalContent = document.getElementById('modal-content');
     const closeModal = document.getElementById('close-modal');
-    const closeModalFooter = document.getElementById('close-modal-footer'); // optional if footer button exists
+    const closeModalFooter = document.getElementById('close-modal-footer');
+    const exportDetailBtn = document.getElementById('export-detail-btn');
+
+    let currentAssessmentId = null;
+
+    exportDetailBtn.addEventListener('click', function () {
+        if (!currentAssessmentId) return;
+        const url = `/assessment/${currentAssessmentId}/export-detail`;
+        const originalHtml = exportDetailBtn.innerHTML;
+        exportDetailBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        exportDetailBtn.disabled = true;
+        const link = document.createElement('a');
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => {
+            exportDetailBtn.innerHTML = originalHtml;
+            exportDetailBtn.disabled = false;
+        }, 2000);
+    });
 
     // Function to open modal and load details - make it globally available
     window.openModal = function(id) {
+        currentAssessmentId = id;
         modal.classList.remove('hidden');
         document.body.classList.add('modal-shadow');
         modalContent.innerHTML = 'Loading...';

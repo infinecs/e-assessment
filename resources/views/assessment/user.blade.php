@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <td class="px-2 py-1.5">{{ $user->roles ?? '-' }}</td>
                                     <td class="px-2 py-1.5">{{ $user->created_at ? $user->created_at->format('d M Y') : '-' }}</td>
                                     <td class="px-2 py-1.5 text-center">
-                                        <div class="relative inline-block dropdown">
+                                        <div class="relative inline-block dropdown user-actions-dropdown">
                                            <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
                                                <i class="bx bx-dots-vertical text-base"></i>
                                            </button>
@@ -945,7 +945,7 @@ const TableManager = {
     
     createActionDropdown(userId, userEmail) {
         return `
-            <div class="relative inline-block dropdown">
+            <div class="relative inline-block dropdown user-actions-dropdown">
                 <button type="button" class="dropdown-toggle flex items-center justify-center w-7 h-7 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 focus:ring focus:ring-gray-200 dark:bg-zinc-600 dark:text-gray-100 dark:hover:bg-zinc-500">
                     <i class="bx bx-dots-vertical text-base"></i>
                 </button>
@@ -1351,20 +1351,20 @@ function updatePasswordValidation() {
 // Dropdown functionality
 function setupDropdowns() {
     // Remove previous listeners by cloning toggles (prevents stacking)
-    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+    document.querySelectorAll('.user-actions-dropdown .dropdown-toggle').forEach(toggle => {
         const newToggle = toggle.cloneNode(true);
         toggle.parentNode.replaceChild(newToggle, toggle);
     });
 
     // Attach click to each dropdown-toggle
-    document.querySelectorAll('.dropdown').forEach(dropdown => {
+    document.querySelectorAll('.user-actions-dropdown').forEach(dropdown => {
         const toggle = dropdown.querySelector('.dropdown-toggle');
         const menu = dropdown.querySelector('.dropdown-menu');
         if (toggle && menu) {
             toggle.addEventListener('click', function(e) {
                 e.stopPropagation();
                 // Close all other dropdowns
-                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                document.querySelectorAll('.user-actions-dropdown .dropdown-menu').forEach(m => {
                     if (m !== menu) m.classList.add('hidden');
                 });
                 menu.classList.toggle('hidden');
@@ -1373,7 +1373,7 @@ function setupDropdowns() {
     });
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(e) {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+        document.querySelectorAll('.user-actions-dropdown .dropdown-menu').forEach(menu => menu.classList.add('hidden'));
     });
 }
 

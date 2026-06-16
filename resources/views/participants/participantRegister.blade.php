@@ -86,9 +86,18 @@
                                     </p>
                                 </div>
 
-                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}">
+                                <form method="POST" action="{{ url('participantRegister/' . urlencode($eventCode)) }}">
 
                                     @csrf
+
+                                    {{-- Error summary --}}
+                                    @if ($errors->any())
+                                        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                                            @foreach ($errors->all() as $error)
+                                                <p>{{ $error }}</p>
+                                            @endforeach
+                                        </div>
+                                    @endif
 
                                     {{-- Name --}}
                                     <div class="mb-4">
