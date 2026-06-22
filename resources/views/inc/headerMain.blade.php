@@ -4,9 +4,16 @@
 
         <!-- Left: Logo & Menu Toggle -->
         <div class="flex items-center topbar-brand">
-            <div class="hidden lg:flex navbar-brand items-center justify-between shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none">
+            <!-- Full Logo (Expanded) -->
+            <div class="hidden lg:flex navbar-brand items-center justify-between shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none group-data-[sidebar-size=sm]:hidden">
                 <a href="{{ route('assessment.index') }}" class="flex items-center text-3xl font-black tracking-tight flex-shrink-0 dark:text-white leading-[69px] px-2 py-1 rounded hover:opacity-80 transition-opacity" title="Go to Dashboard">
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-9 inline">
+                </a>
+            </div>
+            <!-- Collapsed Logo Icon -->
+            <div class="hidden lg:flex navbar-brand items-center justify-center shrink px-4 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none group-data-[sidebar-size=sm]:flex w-[70px]">
+                <a href="{{ route('assessment.index') }}" class="flex items-center justify-center flex-shrink-0 dark:text-white rounded hover:opacity-80 transition-opacity" title="Go to Dashboard">
+                    <img src="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}" alt="Infinecs Logo" class="h-8 inline">
                 </a>
             </div>
             <!-- Sidebar Toggle Button -->
