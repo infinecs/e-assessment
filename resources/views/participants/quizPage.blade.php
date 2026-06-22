@@ -182,12 +182,7 @@
             
            @forelse($questions as $index => $q)
     <div class="question-block border rounded-lg p-6 bg-white shadow" data-question-id="{{ $q->QuestionID }}">
-        
-        <!-- Debug info (remove this after testing) -->
-        <div class="mb-2 text-xs text-gray-500" style="display: none;">
-            DEBUG: QuestionImage = "{{ $q->QuestionImage }}" | Length: {{ strlen($q->QuestionImage ?? '') }}
-        </div>
-        
+
         <!-- Question Image - Improved condition -->
         @if (isset($q->QuestionImage) && !empty(trim($q->QuestionImage)))
             <div class="mb-4">
@@ -207,9 +202,7 @@
         </div>
 
         <!-- Answer Options -->
-        @php
-            $answers = \App\Models\AssessmentAnswer::where('QuestionID', $q->QuestionID)->get();
-        @endphp
+        @php $answers = $q->answers; @endphp
 
         @foreach ($answers as $key => $ans)
             @php $optionLetter = chr(65 + $key); @endphp

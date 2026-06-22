@@ -909,7 +909,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Load topics from the page data
                 const topics = @json($allTopics ?? []);
                 allTopics = topics;
-                console.log('Loaded topics:', allTopics); // Debug log
                 renderTopicList();
                 console.log('Filter data loaded successfully!');
             } catch (error) {
@@ -972,6 +971,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const topicScrollDown = document.getElementById('topicScrollDown');
             topicScrollUp.classList.toggle('opacity-30', currentTopicPage === 0);
             topicScrollDown.classList.toggle('opacity-30', currentTopicPage >= totalPages - 1);
+
+            updateTopicDisplay();
         }
 
         // Handle topic selection
@@ -1349,10 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         topicFilterBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Topic filter button clicked'); // Debug log
-            console.log('Topics loaded:', allTopics.length); // Debug log
             topicDropdownFilter.classList.toggle('hidden');
-            console.log('Dropdown visible:', !topicDropdownFilter.classList.contains('hidden')); // Debug log
         });
 
         clearTopics.addEventListener('click', () => {
@@ -1378,16 +1376,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         topicScrollDown.addEventListener('click', () => {
-            const searchTerm = topicSearchFilter.value.toLowerCase();
-            const filteredCount = allTopics.filter(t =>
-                t.TopicName.toLowerCase().includes(searchTerm) ||
-                t.TopicID.toString().includes(searchTerm)
-            ).length;
-            const totalPages = Math.max(1, Math.ceil(filteredCount / TOPICS_PER_PAGE));
-            if (currentTopicPage < totalPages - 1) {
-                currentTopicPage++;
-                renderTopicList();
-            }
+            currentTopicPage++;
+            renderTopicList();
         });
         performSearchBtn.addEventListener('click', function() {
             const searchTerm = searchInput.value.trim();
@@ -1422,15 +1412,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Initialize search
-        console.log('Initializing search functionality...'); // Debug log
-        console.log('Search elements check:');
-        console.log('- topicFilterBtn:', !!topicFilterBtn);
-        console.log('- topicDropdownFilter:', !!topicDropdownFilter);
-        console.log('- topicListFilter:', !!topicListFilter);
-        console.log('- topicSearchFilter:', !!topicSearchFilter);
         loadFiltersData();
         initializeFilters(); // Restore filters from URL
-        console.log('Search initialization complete'); // Debug log
 
         // Initialize filters and restore state from URL parameters
         function initializeFilters() {

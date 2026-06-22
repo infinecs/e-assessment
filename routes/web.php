@@ -94,6 +94,9 @@ Route::delete('/assessment-results/delete', [AssessmentResultController::class, 
     ->name('assessment.bulkDelete');
 // Route for assessment details modal AJAX
 Route::get('/assessment/{id}/details', [AssessmentResultController::class, 'details']);
+// Route for single-assessment detail export
+Route::get('/assessment/{id}/export-detail', [AssessmentResultController::class, 'exportDetailExcel'])
+    ->name('assessment.exportDetailExcel');
 // Route for Excel export
 Route::get('/assessment/export-excel', [AssessmentResultController::class, 'exportExcel'])
     ->name('assessment.exportExcel');

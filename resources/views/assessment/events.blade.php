@@ -100,14 +100,27 @@
                     </button>
                     
                     <!-- Category Dropdown -->
-                    <div id="categoryDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div id="categoryDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50">
                         <div class="p-3">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Categories</span>
                                 <button type="button" id="clearCategories" class="text-xs text-violet-600 hover:text-violet-800">Clear All</button>
                             </div>
-                            <div id="categoryList" class="space-y-2">
-                                <!-- Categories will be loaded here -->
+                            <input type="text" id="categorySearch" placeholder="Search categories..."
+                                class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
+                            <div class="relative">
+                                <button type="button" id="categoryScrollUp"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mb-1 transition-colors">
+                                    <i class="fas fa-chevron-up text-xs"></i>
+                                </button>
+                                <div id="categoryList" class="space-y-2">
+                                    <!-- Categories will be loaded here -->
+                                </div>
+                                <div id="categoryPageInfo" class="text-center text-xs text-gray-400 dark:text-gray-500 py-1"></div>
+                                <button type="button" id="categoryScrollDown"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mt-1 transition-colors">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -124,7 +137,7 @@
                     </button>
                     
                     <!-- Topic Dropdown -->
-                    <div id="topicDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div id="topicDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg shadow-lg z-50">
                         <div class="p-3">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Topics</span>
@@ -132,8 +145,19 @@
                             </div>
                             <input type="text" id="topicSearch" placeholder="Search topics..." 
                                 class="w-full mb-3 px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded text-sm bg-white dark:bg-zinc-600 dark:text-white">
-                            <div id="topicList" class="space-y-2">
-                                <!-- Topics will be loaded here -->
+                            <div class="relative">
+                                <button type="button" id="topicScrollUp"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mb-1 transition-colors">
+                                    <i class="fas fa-chevron-up text-xs"></i>
+                                </button>
+                                <div id="topicList" class="space-y-2">
+                                    <!-- Topics will be loaded here -->
+                                </div>
+                                <div id="topicPageInfo" class="text-center text-xs text-gray-400 dark:text-gray-500 py-1"></div>
+                                <button type="button" id="topicScrollDown"
+                                    class="w-full flex justify-center items-center py-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-600 rounded border border-gray-200 dark:border-zinc-600 mt-1 transition-colors">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -554,6 +578,7 @@
         const categoryFilterBtn = document.getElementById('categoryFilterBtn');
         const categoryDropdown = document.getElementById('categoryDropdown');
         const categoryList = document.getElementById('categoryList');
+        const categorySearch = document.getElementById('categorySearch');
         const categoryCount = document.getElementById('categoryCount');
         const clearCategories = document.getElementById('clearCategories');
 
@@ -570,11 +595,13 @@
         // Search state
         let allCategories = [];
         let allTopics = [];
-        let categoryTopicsMap = new Map(); // Maps categoryId to array of topic names
         let selectedCategories = new Set();
         let selectedTopics = new Set();
-        let eventTopicMap = new Map(); // Maps eventId to topic names
         let searchTimeout = null; // For debouncing search
+        let currentCategoryPage = 0;
+        const CATEGORIES_PER_PAGE = 15;
+        let currentTopicPage = 0;
+        const TOPICS_PER_PAGE = 15;
 
         // Debounced search function
         function debounceSearch() {
@@ -585,67 +612,13 @@
         }
 
         // Load categories and topics for filters
-        async function loadFiltersData() {
-            console.log('Loading categories and topics for filters...');
-            
+        function loadFiltersData() {
             try {
-                // Load categories
-                const categories = @json($allCategories ?? []);
-                allCategories = categories;
+                allCategories = @json($allCategories ?? []);
+                allTopics = @json($allTopics ?? []);
+
                 renderCategoryList();
-
-                // Load category-topic relationships
-                for (const category of allCategories) {
-                    try {
-                        const response = await fetch(`/category/${category.CategoryID}/topics`);
-                        const data = await response.json();
-                        
-                        if (data.success && data.topics) {
-                            const topicNames = data.topics.map(topic => topic.TopicName);
-                            categoryTopicsMap.set(category.CategoryID, topicNames);
-                        }
-                    } catch (error) {
-                        console.warn(`Failed to load topics for category ${category.CategoryID}:`, error);
-                    }
-                }
-
-                // Load all topics from events
-                const eventRows = Array.from(tableRows).filter(row => 
-                    row.children.length > 1 && !row.children[0].getAttribute('colspan')
-                );
-
-                let loadedCount = 0;
-                const topicsSet = new Set();
-
-                for (const row of eventRows) {
-                    const eventId = row.dataset.eventId;
-                    if (!eventId) continue;
-
-                    try {
-                        const response = await fetch(`/events/${eventId}/details`);
-                        const data = await response.json();
-                        
-                        if (data.success && data.topic_names) {
-                            // Store topic names for this event
-                            eventTopicMap.set(eventId, data.topic_names);
-                            
-                            // Add topics to the global set
-                            data.topic_names.forEach(topic => topicsSet.add(topic));
-                        }
-                        
-                        loadedCount++;
-                    } catch (error) {
-                        console.warn(`Failed to load topics for event ${eventId}:`, error);
-                        loadedCount++;
-                    }
-                }
-
-                // Convert topics set to array and sort
-                allTopics = Array.from(topicsSet).sort();
                 renderTopicList();
-
-                console.log('Filter data loaded successfully!');
-                
             } catch (error) {
                 console.error('Error loading filter data:', error);
             }
@@ -653,13 +626,26 @@
 
         // Render category list
         function renderCategoryList() {
+            const searchTerm = categorySearch.value.toLowerCase();
+            const filteredCategories = allCategories.filter(category =>
+                category.CategoryName.toLowerCase().includes(searchTerm) ||
+                category.CategoryID.toString().includes(searchTerm)
+            );
+
+            const totalPages = Math.max(1, Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE));
+            if (currentCategoryPage >= totalPages) currentCategoryPage = totalPages - 1;
+            if (currentCategoryPage < 0) currentCategoryPage = 0;
+
+            const start = currentCategoryPage * CATEGORIES_PER_PAGE;
+            const pageCategories = filteredCategories.slice(start, start + CATEGORIES_PER_PAGE);
+
             categoryList.innerHTML = '';
-            allCategories.forEach(category => {
+            pageCategories.forEach(category => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
-                    <input type="checkbox" id="cat_${category.CategoryID}" 
-                           value="${category.CategoryID}" 
+                    <input type="checkbox" id="cat_${category.CategoryID}"
+                           value="${category.CategoryID}"
                            data-name="${category.CategoryName}"
                            class="category-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
                     <label for="cat_${category.CategoryID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -669,74 +655,88 @@
                 categoryList.appendChild(div);
             });
 
+            // Restore selected state
+            selectedCategories.forEach(categoryId => {
+                const checkbox = document.getElementById(`cat_${categoryId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
             // Add event listeners
             document.querySelectorAll('.category-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleCategoryChange);
             });
+
+            // Update page indicator and scroll button states
+            const categoryPageInfo = document.getElementById('categoryPageInfo');
+            if (filteredCategories.length > CATEGORIES_PER_PAGE) {
+                categoryPageInfo.textContent = `${start + 1}-${Math.min(start + CATEGORIES_PER_PAGE, filteredCategories.length)} of ${filteredCategories.length}`;
+            } else {
+                categoryPageInfo.textContent = '';
+            }
+
+            const categoryScrollUp = document.getElementById('categoryScrollUp');
+            const categoryScrollDown = document.getElementById('categoryScrollDown');
+            categoryScrollUp.classList.toggle('opacity-30', currentCategoryPage === 0);
+            categoryScrollDown.classList.toggle('opacity-30', currentCategoryPage >= totalPages - 1);
+
+            updateCategoryDisplay();
         }
 
-        // Render topic list
+        // Render topic list (paginated, 15 per page)
         function renderTopicList() {
             const searchTerm = topicSearch.value.toLowerCase();
-            
-            // Get available topics based on selected categories
-            let availableTopics = [];
-            if (selectedCategories.size === 0) {
-                // If no categories selected, show all topics
-                availableTopics = allTopics;
-            } else {
-                // Only show topics from selected categories
-                const topicsSet = new Set();
-                selectedCategories.forEach(categoryName => {
-                    // Find category ID by name
-                    const category = allCategories.find(cat => cat.CategoryName === categoryName);
-                    if (category && categoryTopicsMap.has(category.CategoryID)) {
-                        categoryTopicsMap.get(category.CategoryID).forEach(topic => {
-                            topicsSet.add(topic);
-                        });
-                    }
-                });
-                availableTopics = Array.from(topicsSet).sort();
-            }
-            
-            // Filter topics by search term
-            const filteredTopics = availableTopics.filter(topic => 
-                topic.toLowerCase().includes(searchTerm)
+
+            const filteredTopics = allTopics.filter(topic =>
+                topic.TopicName.toLowerCase().includes(searchTerm) ||
+                topic.TopicID.toString().includes(searchTerm)
             );
 
+            const totalPages = Math.max(1, Math.ceil(filteredTopics.length / TOPICS_PER_PAGE));
+            if (currentTopicPage >= totalPages) currentTopicPage = totalPages - 1;
+            if (currentTopicPage < 0) currentTopicPage = 0;
+
+            const start = currentTopicPage * TOPICS_PER_PAGE;
+            const pageTopics = filteredTopics.slice(start, start + TOPICS_PER_PAGE);
+
             topicList.innerHTML = '';
-            filteredTopics.forEach(topic => {
+            pageTopics.forEach(topic => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
-                    <input type="checkbox" id="topic_${topic.replace(/\s+/g, '_')}" 
-                           value="${topic}" 
+                    <input type="checkbox" id="topic_${topic.TopicID}" 
+                           value="${topic.TopicID}" 
+                           data-name="${topic.TopicName}"
                            class="topic-filter-checkbox w-4 h-4 border-gray-300 rounded bg-white">
-                    <label for="topic_${topic.replace(/\s+/g, '_')}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                        ${topic}
+                    <label for="topic_${topic.TopicID}" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        ${topic.TopicName}
                     </label>
                 `;
                 topicList.appendChild(div);
             });
 
-            // Restore selected state for topics that are still available
-            selectedTopics.forEach(topic => {
-                const checkbox = document.getElementById(`topic_${topic.replace(/\s+/g, '_')}`);
+            // Restore selected state
+            selectedTopics.forEach(topicId => {
+                const checkbox = document.getElementById(`topic_${topicId}`);
                 if (checkbox) checkbox.checked = true;
-            });
-
-            // Remove topics from selected set that are no longer available
-            const availableTopicsSet = new Set(filteredTopics);
-            selectedTopics.forEach(topic => {
-                if (!availableTopicsSet.has(topic)) {
-                    selectedTopics.delete(topic);
-                }
             });
 
             // Add event listeners
             document.querySelectorAll('.topic-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', handleTopicChange);
             });
+
+            // Update page indicator and scroll control states
+            const topicPageInfo = document.getElementById('topicPageInfo');
+            if (filteredTopics.length > TOPICS_PER_PAGE) {
+                topicPageInfo.textContent = `${start + 1}-${Math.min(start + TOPICS_PER_PAGE, filteredTopics.length)} of ${filteredTopics.length}`;
+            } else {
+                topicPageInfo.textContent = '';
+            }
+
+            const topicScrollUp = document.getElementById('topicScrollUp');
+            const topicScrollDown = document.getElementById('topicScrollDown');
+            topicScrollUp.classList.toggle('opacity-30', currentTopicPage === 0);
+            topicScrollDown.classList.toggle('opacity-30', currentTopicPage >= totalPages - 1);
             
             // Update display after filtering
             updateTopicDisplay();
@@ -760,12 +760,12 @@
 
         // Handle topic selection
         function handleTopicChange(event) {
-            const topic = event.target.value;
+            const topicId = event.target.value;
             
             if (event.target.checked) {
-                selectedTopics.add(topic);
+                selectedTopics.add(topicId);
             } else {
-                selectedTopics.delete(topic);
+                selectedTopics.delete(topicId);
             }
             
             updateTopicDisplay();
@@ -805,13 +805,13 @@
         function performFilteredSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
             const selectedCategoryNames = Array.from(selectedCategories);
-            const selectedTopicNames = Array.from(selectedTopics);
+            const selectedTopicIds = Array.from(selectedTopics);
             
             // Build query parameters for server-side filtering
             const params = new URLSearchParams();
             if (searchTerm) params.append('search', searchTerm);
             if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
-            if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+            if (selectedTopicIds.length > 0) params.append('topics', selectedTopicIds.join(','));
             params.append('ajax', '1'); // Add AJAX flag
             
             // Show loading state
@@ -851,7 +851,7 @@
                     const newParams = new URLSearchParams();
                     if (searchTerm) newParams.append('search', searchTerm);
                     if (selectedCategoryNames.length > 0) newParams.append('categories', selectedCategoryNames.join(','));
-                    if (selectedTopicNames.length > 0) newParams.append('topics', selectedTopicNames.join(','));
+                    if (selectedTopicIds.length > 0) newParams.append('topics', selectedTopicIds.join(','));
                     currentUrl.search = newParams.toString();
                     window.history.pushState({}, '', currentUrl.toString());
 
@@ -962,8 +962,24 @@
             selectedCategories.clear();
             document.querySelectorAll('.category-filter-checkbox').forEach(cb => cb.checked = false);
             updateCategoryDisplay();
-            // Re-render topics list when categories are cleared
             renderTopicList();
+        });
+
+        categorySearch.addEventListener('input', () => {
+            currentCategoryPage = 0;
+            renderCategoryList();
+        });
+
+        document.getElementById('categoryScrollUp').addEventListener('click', () => {
+            if (currentCategoryPage > 0) {
+                currentCategoryPage--;
+                renderCategoryList();
+            }
+        });
+
+        document.getElementById('categoryScrollDown').addEventListener('click', () => {
+            currentCategoryPage++;
+            renderCategoryList();
         });
 
         clearTopics.addEventListener('click', () => {
@@ -972,7 +988,23 @@
             updateTopicDisplay();
         });
 
-        topicSearch.addEventListener('input', renderTopicList);
+        topicSearch.addEventListener('input', () => {
+            currentTopicPage = 0;
+            renderTopicList();
+        });
+
+        document.getElementById('topicScrollUp').addEventListener('click', () => {
+            if (currentTopicPage > 0) {
+                currentTopicPage--;
+                renderTopicList();
+            }
+        });
+
+        document.getElementById('topicScrollDown').addEventListener('click', () => {
+            currentTopicPage++;
+            renderTopicList();
+        });
+
         performSearchBtn.addEventListener('click', performFilteredSearch);
         clearAllFilters.addEventListener('click', clearAllFiltersAction);
         
@@ -1040,11 +1072,11 @@
                 
                 setTimeout(() => {
                     selectedTopics.clear(); // Clear first to avoid duplicates
-                    topics.forEach(topicName => {
-                        const checkbox = document.getElementById(`topic_${topicName.replace(/\s+/g, '_')}`);
+                    topics.forEach(topicId => {
+                        const checkbox = document.getElementById(`topic_${topicId}`);
                         if (checkbox) {
                             checkbox.checked = true;
-                            selectedTopics.add(topicName); // Only add if checkbox exists
+                            selectedTopics.add(topicId); // Only add if checkbox exists
                         }
                     });
                     updateTopicDisplay();
@@ -1529,10 +1561,10 @@
                 // Export all with current filters
                 const searchTerm = searchInput.value.trim();
                 const selectedCategoryNames = Array.from(selectedCategories);
-                const selectedTopicNames = Array.from(selectedTopics);
+                const selectedTopicIds = Array.from(selectedTopics);
                 if (searchTerm) params.append('search', searchTerm);
                 if (selectedCategoryNames.length > 0) params.append('categories', selectedCategoryNames.join(','));
-                if (selectedTopicNames.length > 0) params.append('topics', selectedTopicNames.join(','));
+                if (selectedTopicIds.length > 0) params.append('topics', selectedTopicIds.join(','));
             }
 
             // Create download URL using Laravel route

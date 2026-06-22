@@ -30,7 +30,7 @@ class QuizController extends Controller
             // Check if participant is logged in
             $email = session('participant_email');
             if (!$email) {
-                return redirect()->route('participant.login')
+                return redirect()->route('participantRegister.show', $eventCode)
                     ->with('error', 'Please log in to access the quiz.');
             }
 
@@ -43,18 +43,26 @@ class QuizController extends Controller
             if (session()->has("quiz_questions_$eventCode")) {
                 $questionIds = session("quiz_questions_$eventCode");
                 $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)
+                    ->with('answers')
                     ->orderByRaw("FIELD(QuestionID, " . implode(',', array_map('intval', $questionIds)) . ")")
                     ->get();
             } else {
                 // Generate new question set
                 $questions = $this->generateQuestionSet($event);
-                
+
                 if ($questions->isEmpty()) {
                     return redirect()->back()->with('error', 'No questions available for this assessment.');
                 }
-                
+
                 // Store question IDs in session
-                session(["quiz_questions_$eventCode" => $questions->pluck('QuestionID')->toArray()]);
+                $questionIds = $questions->pluck('QuestionID')->toArray();
+                session(["quiz_questions_$eventCode" => $questionIds]);
+
+                // Reload with eager-loaded answers to avoid N+1 in the view
+                $questions = AssessmentQuestion::whereIn('QuestionID', $questionIds)
+                    ->with('answers')
+                    ->orderByRaw("FIELD(QuestionID, " . implode(',', array_map('intval', $questionIds)) . ")")
+                    ->get();
             }
 
             // Get saved answers from session
@@ -485,6 +493,24 @@ class QuizController extends Controller
 
             $event = AssessmentEvent::where('EventCode', $eventCode)->first();
             $eventId = $event ? $event->EventID : null;
+
+            // Prevent duplicate submissions (manual submit path)
+            if ($participantId && $eventId) {
+                $existing = Assessment::where('ParticipantID', $participantId)
+                    ->where('EventID', $eventId)
+                    ->first();
+                if ($existing) {
+                    session([
+                        "quiz_result_$eventCode" => [
+                            'score' => $existing->TotalScore,
+                            'total' => $existing->TotalQuestion,
+                        ],
+                        "quiz_completed_$eventCode" => true,
+                    ]);
+                    session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode"]);
+                    return redirect()->route('quiz.results', $eventCode);
+                }
+            }
 
             // Calculate score
             $answers = $request->input('answers', []);

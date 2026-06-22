@@ -32,18 +32,12 @@ class EventsController extends Controller
             $query->whereIn('c.CategoryName', $categories);
         }
 
-        // Apply topic filter if provided (this is more complex as it requires checking TopicID field)
+        // Apply topic filter if provided (topic IDs, same behavior as question page)
         if ($request->has('topics') && !empty($request->topics)) {
             $topics = explode(',', $request->topics);
-            // We need to get topic IDs first
-            $topicIds = DB::table('assessmenttopic')
-                ->whereIn('TopicName', $topics)
-                ->pluck('TopicID')
-                ->toArray();
-            
-            if (!empty($topicIds)) {
-                $query->where(function ($q) use ($topicIds) {
-                    foreach ($topicIds as $topicId) {
+            if (!empty($topics)) {
+                $query->where(function ($q) use ($topics) {
+                    foreach ($topics as $topicId) {
                         $q->orWhere('e.TopicID', 'LIKE', "%{$topicId}%");
                     }
                 });
@@ -116,7 +110,7 @@ class EventsController extends Controller
             }
             
             // Render pagination links using default view (works with query builder paginator)
-            $paginationLinks = $records->links()->toHtml();
+            $paginationLinks = $records->render('pagination::tailwind');
 
             return response()->json([
                 'success' => true,
@@ -136,8 +130,13 @@ class EventsController extends Controller
             ->select('CategoryID', 'CategoryName')
             ->orderBy('CategoryName')
             ->get();
+
+        $allTopics = DB::table('assessmenttopic')
+            ->select('TopicID', 'TopicName')
+            ->orderBy('TopicName')
+            ->get();
             
-        return view('assessment.events', compact('records', 'allCategories'));
+        return view('assessment.events', compact('records', 'allCategories', 'allTopics'));
     }
 
     public function store(Request $request)
@@ -525,24 +524,18 @@ class EventsController extends Controller
             // Get the filtered data
             $records = $query->get();
 
-            // Apply topic filter if needed
+            // Apply topic filter if needed (topic IDs)
             if (!empty($topics)) {
                 $records = $records->filter(function ($record) use ($topics) {
                     if (!$record->TopicID) return false;
 
-                    // Get topic names for this event
                     $eventTopicIds = array_map('trim', explode(',', $record->TopicID));
                     $eventTopicIds = array_unique(array_filter($eventTopicIds));
 
                     if (empty($eventTopicIds)) return false;
 
-                    $eventTopicNames = DB::table('assessmenttopic')
-                        ->whereIn('TopicID', $eventTopicIds)
-                        ->pluck('TopicName')
-                        ->toArray();
-
-                    // Check if any of the event's topics match the filter
-                    return !empty(array_intersect($eventTopicNames, $topics));
+                    // Check if any of the event topic IDs match the filter topic IDs
+                    return !empty(array_intersect(array_map('strval', $eventTopicIds), array_map('strval', $topics)));
                 });
             }
         }

@@ -97,6 +97,15 @@
                                     @csrf
                                     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+                                    {{-- Error summary --}}
+                                    @if ($errors->any())
+                                        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                                            @foreach ($errors->all() as $error)
+                                                <p>{{ $error }}</p>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
                                     {{-- Name --}}
                                     <div class="mb-4">
                                         <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Full
