@@ -21,7 +21,7 @@
             @include('inc.sidebarMain')
 
             <!-- Main Content -->
-            <div class="main-content group-data-[sidebar-size=sm]:ml-[70px] flex flex-col flex-1 bg-white dark:bg-zinc-800">
+            <div class="main-content group-data-[sidebar-size=sm]:ml-[70px] ml-64 flex flex-col flex-1 bg-white dark:bg-zinc-800 transition-all duration-300 ease-in-out">
                 <div class="flex-1 page-content dark:bg-zinc-700">
                     <div class="container-fluid px-[0.625rem] py-2">
                         @yield('content')

@@ -1,6 +1,6 @@
 <!-- ========== Left Sidebar Start ========== -->
 <aside
-    class="fixed bottom-0 z-10 h-screen ltr:border-r rtl:border-l vertical-menu rtl:right-0 ltr:left-0 top-[70px] bg-slate-50 border-gray-50 print:hidden dark:bg-zinc-800 dark:border-neutral-700"
+    class="fixed bottom-0 z-10 h-screen ltr:border-r rtl:border-l vertical-menu rtl:right-0 ltr:left-0 top-[70px] bg-slate-50 border-gray-50 print:hidden dark:bg-zinc-800 dark:border-neutral-700 transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px]"
     role="navigation" aria-label="Sidebar Navigation">
     <div data-simplebar class="h-full">
         <div class="metismenu pb-10 pt-2.5" id="sidebar-menu">
@@ -9,18 +9,20 @@
                     data-key="t-menu">Menu</li>
                 <li>
                     <a href="{{ url('/admin') }}"
-                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white">
-                        <i data-feather="home" fill="#545a6d33"></i>
-                        <span data-key="t-dashboard"> Dashboard</span>
+                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3"
+                        title="Dashboard">
+                        <i data-feather="home" fill="#545a6d33" class="inline-block"></i>
+                        <span data-key="t-dashboard" class="group-data-[sidebar-size=sm]:hidden"> Dashboard</span>
                     </a>
                 </li>
                 <li>
                     <a href="javascript: void(0);" aria-expanded="false"
-                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear nav-menu hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white">
-                        <i data-feather="file-text" class="align-middle" fill="#545a6d33"></i>
-                        <span data-key="t-apps"> Assessment</span>
+                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear nav-menu hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3"
+                        title="Assessment">
+                        <i data-feather="file-text" class="align-middle inline-block" fill="#545a6d33"></i>
+                        <span data-key="t-apps" class="group-data-[sidebar-size=sm]:hidden"> Assessment</span>
                     </a>
-                    <ul>
+                    <ul class="group-data-[sidebar-size=sm]:hidden">
                         <li>
                             <a href="{{ url('/events') }}"
                                 class="pl-[52.8px] pr-6 py-[6.4px] block text-[13.5px] font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white">Assessments</a>
@@ -45,9 +47,10 @@
                 </li>
                  <li>
                     <a href="{{ url('/users') }}"
-                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white">
-                        <i data-feather="user" fill="#545a6d33"></i>
-                        <span data-key="t-dashboard"> Users</span>
+                        class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3"
+                        title="Users">
+                        <i data-feather="user" fill="#545a6d33" class="inline-block"></i>
+                        <span data-key="t-dashboard" class="group-data-[sidebar-size=sm]:hidden"> Users</span>
                     </a>
                 </li>
             </ul>

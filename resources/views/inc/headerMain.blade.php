@@ -9,6 +9,13 @@
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-9 inline">
                 </a>
             </div>
+            <!-- Sidebar Toggle Button -->
+            <button id="sidebar-toggle" 
+                class="flex items-center px-3 py-2 h-[70px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Toggle sidebar"
+                title="Toggle Sidebar">
+                <i data-feather="menu" class="w-5 h-5"></i>
+            </button>
         </div>
 
         <!-- Right: Profile Dropdown -->
