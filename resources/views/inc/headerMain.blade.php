@@ -6,11 +6,11 @@
         <div class="flex items-center topbar-brand">
             <!-- Responsive Logo -->
             <div class="hidden lg:flex navbar-brand items-center justify-center shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none transition-all duration-300 ease-in-out group-data-[sidebar-size=sm]:px-4 group-data-[sidebar-size=sm]:w-[70px]">
-                <a href="{{ route('assessment.index') }}" class="flex items-center text-3xl font-black tracking-tight flex-shrink-0 dark:text-white leading-[69px] px-2 py-1 rounded hover:opacity-80 transition-opacity" title="Go to Dashboard">
+                <a href="{{ route('assessment.index') }}" class="flex items-center justify-center text-3xl font-black tracking-tight flex-shrink-0 dark:text-white leading-[69px] px-2 py-1 rounded hover:opacity-80 transition-opacity" title="Go to Dashboard">
                     <!-- Full Logo (shown when expanded) -->
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-9 inline group-data-[sidebar-size=sm]:hidden">
                     <!-- Icon only (shown when collapsed) -->
-                    <img src="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}" alt="Infinecs Logo" class="h-8 inline hidden group-data-[sidebar-size=sm]:inline">
+                    <img src="{{ asset('images/logo-sm.svg') }}" alt="Infinecs Logo" class="h-6 w-6 inline hidden group-data-[sidebar-size=sm]:inline">
                 </a>
             </div>
             <!-- Sidebar Toggle Button -->
