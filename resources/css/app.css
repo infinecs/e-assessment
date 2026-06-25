@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Show logo icon when sidebar is collapsed */
+.group[data-sidebar-size=sm] .group-data-\[sidebar-size\=sm\]\:inline {
+    display: inline !important;
+}

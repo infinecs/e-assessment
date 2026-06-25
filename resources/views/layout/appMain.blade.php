@@ -10,6 +10,7 @@
         <link rel="shortcut icon" href="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}">
         <!-- Tailwind CSS -->
         <link rel="stylesheet" href="{{ asset('css/tailwind2.css') }}">
+        @vite(['resources/css/app.css'])
     </head>
 
     <body data-mode="light" data-sidebar-size="lg" class="group min-h-screen flex flex-col">
