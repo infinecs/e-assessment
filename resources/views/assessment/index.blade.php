@@ -110,8 +110,20 @@
             <div class="card-body border-b border-gray-100 dark:border-zinc-600">
                 <h6 class="mb-1 text-gray-600 text-15 dark:text-gray-100">Results Distribution</h6>
             </div>
-            <div class="flex flex-wrap gap-3 card-body">
-                <div id="results-donut-chart" data-colors='["#5156be", "#ffbf53", "#fd625e", "#4ba6ef", "#2ab57d"]' class="e-charts" style="height:350px;"></div>
+            <div class="flex items-center p-4 gap-6 rounded-lg border-2 border-violet-600 m-4" style="box-shadow:0 2px 8px rgba(81,86,190,0.08);">
+                <div class="flex-1">
+                    <div id="results-donut-chart" data-colors='["#5156be", "#ffbf53", "#fd625e", "#4ba6ef", "#2ab57d"]' class="e-charts" style="height:300px; width:100%;"></div>
+                </div>
+                <div class="flex flex-col gap-4 pr-4">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background:#2ab57d;"></span>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">Passed</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background:#fd625e;"></span>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">Failed</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -120,11 +132,26 @@
             <div class="card-body border-b border-gray-100 dark:border-zinc-600">
                 <h6 class="mb-1 text-gray-600 text-15 dark:text-gray-100">Assessment Participation</h6>
             </div>
-            <div class="flex flex-wrap gap-3 card-body">
-                <div id="events-bar-chart" style="height:350px;"></div>
-                @if(empty($eventChartLabels) || count($eventChartLabels) === 0)
-                    <div class="w-full text-center text-gray-500 py-8">No assessment participation data available.</div>
-                @endif
+            <div class="flex items-center p-4 gap-6 rounded-lg border-2 border-violet-600 m-4" style="box-shadow:0 2px 8px rgba(81,86,190,0.08);">
+                <div class="flex-1">
+                    <div id="events-bar-chart" style="height:300px; width:100%;"></div>
+                    @if(empty($eventChartLabels) || count($eventChartLabels) === 0)
+                        <div class="w-full text-center text-gray-500 py-8">No assessment participation data available.</div>
+                    @endif
+                </div>
+                @php
+                    $pieColorsPhp = ['#5156be', '#ffbf53', '#fd625e', '#4ba6ef', '#2ab57d', '#8e44ad', '#e67e22', '#16a085'];
+                @endphp
+                <div class="flex flex-col gap-4 pr-4 flex-shrink-0" style="width:160px;">
+                    @if(!empty($eventChartLabels))
+                        @foreach($eventChartLabels as $i => $label)
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background:{{ $pieColorsPhp[$i % count($pieColorsPhp)] }};"></span>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{{ $label }}</span>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -135,20 +162,14 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
     #results-donut-chart {
-        min-height: 350px;
+        min-height: 300px;
         width: 100%;
-        background: #fff;
-        border-radius: 8px;
-        border: 2px solid #5156be;
-        box-shadow: 0 2px 8px rgba(81,86,190,0.08);
+        background: transparent;
     }
     #events-bar-chart {
-        min-height: 350px;
+        min-height: 300px;
         width: 100%;
-        background: #f8fafc;
-        border-radius: 8px;
-        border: 2px solid #5156be;
-        box-shadow: 0 2px 8px rgba(81,86,190,0.08);
+        background: transparent;
     }
 </style>
 <script>
@@ -160,10 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltip: {
                 trigger: 'item'
             },
-            legend: {
-                top: '5%',
-                left: 'center'
-            },
+            legend: { show: false },
             series: [
                 {
                     name: 'Results',
@@ -215,10 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltip: {
                 trigger: 'item'
             },
-            legend: {
-                top: '5%',
-                left: 'center'
-            },
+            legend: { show: false },
             series: [
                 {
                     name: 'Assessments',
