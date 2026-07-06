@@ -10,7 +10,8 @@
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
                          class="h-9 w-auto group-data-[sidebar-size=sm]:hidden dark:hidden">
                     <img src="{{ asset('images/logos/infinecs-logo-white.png') }}" alt="Full logo"
-                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden hidden dark:block">
+                         class="h-9 group-data-[sidebar-size=sm]:hidden hidden dark:block object-contain object-left"
+                         style="width: 191px;">
                     <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
                          class="hidden group-data-[sidebar-size=sm]:inline h-10 w-10 object-contain">
 </a>
