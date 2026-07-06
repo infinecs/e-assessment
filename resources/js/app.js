@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ── MetisMenu (sidebar accordion) ──────────────────────────────────────
+    if (typeof MetisMenu !== 'undefined') {
+        new MetisMenu('#side-menu');
+    }
+
     // ── Dark Mode Toggle ────────────────────────────────────────────────────
     const savedMode = localStorage.getItem('color-mode') || 'light';
     body.setAttribute('data-mode', savedMode);
