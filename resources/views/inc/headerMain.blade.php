@@ -22,8 +22,17 @@
             </button>
         </div>
 
-        <!-- Right: Profile Dropdown -->
+        <!-- Right: Dark Mode Toggle + Profile Dropdown -->
         <div class="flex items-center ltr:ml-auto rtl:mr-auto">
+<!-- Dark Mode Toggle -->
+            <button id="dark-mode-toggle"
+                class="flex items-center px-3 py-2 h-[70px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Toggle dark mode"
+                title="Toggle Dark Mode">
+                <i id="icon-moon" data-feather="moon" class="w-5 h-5"></i>
+                <i id="icon-sun" data-feather="sun" class="w-5 h-5 hidden"></i>
+            </button>
+
 <div class="relative dropdown">
                 <button type="button"
                     class="flex items-center px-3 py-2 h-[70px] border-x border-gray-50 bg-gray-50/30 dropdown-toggle dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"

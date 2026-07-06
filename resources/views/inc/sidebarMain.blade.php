@@ -10,7 +10,7 @@
                 <li>
                     <a href="{{ url('/admin') }}"
                         class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3 group-data-[sidebar-size=sm]:flex group-data-[sidebar-size=sm]:justify-center group-data-[sidebar-size=sm]:items-center"
-                        title="Dashboard">
+                        aria-label="Dashboard" data-tooltip="Dashboard">
                         <i data-feather="home" fill="#545a6d33" class="inline-block"></i>
                         <span data-key="t-dashboard" class="group-data-[sidebar-size=sm]:hidden"> Dashboard</span>
                     </a>
@@ -18,7 +18,7 @@
                 <li>
                     <a href="javascript: void(0);" aria-expanded="false"
                         class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear nav-menu hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3 group-data-[sidebar-size=sm]:flex group-data-[sidebar-size=sm]:justify-center group-data-[sidebar-size=sm]:items-center"
-                        title="Assessment">
+                        aria-label="Assessment" data-tooltip="Assessment">
                         <i data-feather="file-text" class="align-middle inline-block" fill="#545a6d33"></i>
                         <span data-key="t-apps" class="group-data-[sidebar-size=sm]:hidden"> Assessment</span>
                     </a>
@@ -48,7 +48,7 @@
                  <li>
                     <a href="{{ url('/users') }}"
                         class="block py-2.5 px-6 text-sm font-medium text-gray-950 transition-all duration-150 ease-linear hover:text-violet-500 dark:text-gray-300 dark:active:text-white dark:hover:text-white group-data-[sidebar-size=sm]:px-3 group-data-[sidebar-size=sm]:flex group-data-[sidebar-size=sm]:justify-center group-data-[sidebar-size=sm]:items-center"
-                        title="Users">
+                        aria-label="Users" data-tooltip="Users">
                         <i data-feather="user" fill="#545a6d33" class="inline-block"></i>
                         <span data-key="t-dashboard" class="group-data-[sidebar-size=sm]:hidden"> Users</span>
                     </a>
