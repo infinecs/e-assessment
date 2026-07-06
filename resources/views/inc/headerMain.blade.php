@@ -8,10 +8,7 @@
             <div class="hidden lg:flex navbar-brand items-center justify-center shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px] group-data-[sidebar-size=sm]:px-0">
                 <a href="{{ route('assessment.index') }}">
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
-                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden dark:hidden">
-                    <img src="{{ asset('images/logos/infinecs-logo-white.png') }}" alt="Full logo"
-                         class="h-9 group-data-[sidebar-size=sm]:hidden hidden dark:block object-contain object-left"
-                         style="width: 191px;">
+                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden">
                     <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
                          class="hidden group-data-[sidebar-size=sm]:inline h-10 w-10 object-contain">
 </a>
@@ -25,17 +22,8 @@
             </button>
         </div>
 
-        <!-- Right: Dark Mode Toggle + Profile Dropdown -->
+        <!-- Right: Profile Dropdown -->
         <div class="flex items-center ltr:ml-auto rtl:mr-auto">
-<!-- Dark Mode Toggle -->
-            <button id="dark-mode-toggle"
-                class="flex items-center justify-center w-9 h-9 mx-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-                aria-label="Toggle dark mode"
-                title="Toggle Dark Mode">
-                <i id="icon-moon" data-feather="moon" class="w-4 h-4"></i>
-                <i id="icon-sun" data-feather="sun" class="w-4 h-4 hidden"></i>
-            </button>
-
 <div class="relative dropdown">
                 <button type="button"
                     class="flex items-center px-3 py-2 h-[70px] border-x border-gray-50 bg-gray-50/30 dropdown-toggle dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
