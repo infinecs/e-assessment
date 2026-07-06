@@ -1,6 +1,6 @@
 <!-- ========== Left Sidebar Start ========== -->
 <aside
-    class="fixed bottom-0 z-10 h-screen ltr:border-r rtl:border-l vertical-menu rtl:right-0 ltr:left-0 top-[70px] bg-slate-50 border-gray-50 print:hidden dark:bg-zinc-800 dark:border-neutral-700 transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px]"
+    class="fixed bottom-0 z-10 h-screen ltr:border-r rtl:border-l vertical-menu rtl:right-0 ltr:left-0 top-[70px] bg-slate-50 border-gray-50 print:hidden dark:bg-zinc-800 dark:border-neutral-700 transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px] overflow-hidden"
     role="navigation" aria-label="Sidebar Navigation">
     <div data-simplebar class="h-full">
         <div class="metismenu pb-10 pt-2.5" id="sidebar-menu">
