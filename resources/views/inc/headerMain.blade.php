@@ -8,7 +8,9 @@
             <div class="hidden lg:flex navbar-brand items-center justify-center shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px] group-data-[sidebar-size=sm]:px-0">
                 <a href="{{ route('assessment.index') }}">
                     <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
-                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden">
+                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden dark:hidden">
+                    <img src="{{ asset('images/logos/infinecs-logo-white.png') }}" alt="Full logo"
+                         class="h-9 w-auto group-data-[sidebar-size=sm]:hidden hidden dark:block">
                     <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
                          class="hidden group-data-[sidebar-size=sm]:inline h-10 w-10 object-contain">
 </a>
