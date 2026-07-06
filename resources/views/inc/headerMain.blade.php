@@ -24,7 +24,7 @@
 
         <!-- Right: Profile Dropdown -->
         <div class="flex items-center ltr:ml-auto rtl:mr-auto">
-            <div class="relative dropdown">
+<div class="relative dropdown">
                 <button type="button"
                     class="flex items-center px-3 py-2 h-[70px] border-x border-gray-50 bg-gray-50/30 dropdown-toggle dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
                     id="page-header-user-dropdown"

@@ -8,7 +8,7 @@
         <meta content="Themesbrand" name="author">
         <!-- App favicon -->
         <link rel="shortcut icon" href="{{ asset('images/logos/Infinecs-Logo-Square.ico') }}">
-        <!-- Tailwind CSS -->
+<!-- Tailwind CSS -->
         <link rel="stylesheet" href="{{ asset('css/tailwind2.css') }}">
         @vite(['resources/css/app.css'])
     </head>

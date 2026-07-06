@@ -2,6 +2,7 @@ import './bootstrap';
 
 // Sidebar Toggle Functionality
 document.addEventListener('DOMContentLoaded', function() {
+
     const body = document.querySelector('body');
     const toggleBtn = document.getElementById('sidebar-toggle');
     
