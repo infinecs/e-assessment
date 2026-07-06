@@ -2,6 +2,9 @@ import './bootstrap';
 
 document.addEventListener('DOMContentLoaded', function() {
 
+    // ── Feather Icons ──────────────────────────────────────────────────────
+    if (typeof feather !== 'undefined') feather.replace();
+
     // ── Sidebar Toggle ──────────────────────────────────────────────────────
     const body = document.querySelector('body');
     const toggleBtn = document.getElementById('sidebar-toggle');
