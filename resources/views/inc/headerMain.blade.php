@@ -11,7 +11,7 @@
                         <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
                              class="h-9 w-auto group-data-[sidebar-size=sm]:hidden">
                         <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
-                             class="hidden group-data-[sidebar-size=sm]:inline h-10 w-10 object-contain">
+                             class="hidden group-data-[sidebar-size=sm]:inline h-12 w-12 group-data-[sidebar-size=sm]:h-12 group-data-[sidebar-size=sm]:w-12 object-contain">
                     </a>
                 </div>
             </div>
