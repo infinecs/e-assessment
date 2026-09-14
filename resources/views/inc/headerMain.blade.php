@@ -10,7 +10,7 @@
                     <a href="{{ route('assessment.index') }}">
                         <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
                              class="h-9 w-auto group-data-[sidebar-size=sm]:hidden">
-                        <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
+                        <img src="{{ asset('images/Infinecs-logo-icon.png') }}" alt="Icon"
                              class="hidden group-data-[sidebar-size=sm]:!inline h-12 w-12 object-contain">
                     </a>
                 </div>
