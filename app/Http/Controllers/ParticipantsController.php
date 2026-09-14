@@ -9,7 +9,6 @@ class ParticipantsController extends Controller
 {
     public function showRegisterForm($eventCode)
     {
-        // Pass eventCode to the view
         return view('participants.participantRegister', compact('eventCode'));
     }
 
@@ -60,37 +59,20 @@ class ParticipantsController extends Controller
             return back()->withErrors(['password' => 'Incorrect assessment password. Please check and try again.'])->withInput();
         }
 
-        // If the participant already registered today, allow re-entry instead of blocking
-        $today = now()->toDateString();
-        $existingParticipant = Participant::where('email', $validated['email'])
-            ->whereDate('created_at', $today)
-            ->first();
-
-        if ($existingParticipant) {
-            session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode", "quiz_result_$eventCode", "quiz_completed_$eventCode"]);
-            session([
-                'participant_email' => $existingParticipant->email,
-                'participant_id'    => $existingParticipant->id,
-            ]);
-            return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
-        }
-
-        // Create new participant record
+        // Always create a fresh participant record for every registration/retake
         $participant = Participant::create([
             'name'       => $validated['name'],
             'email'      => $validated['email'],
             'event_code' => $eventCode,
         ]);
 
-        // Clear any stale quiz session data for this event code
         session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode", "quiz_result_$eventCode", "quiz_completed_$eventCode"]);
 
-        // Store participant info in session
         session([
             'participant_email' => $participant->email,
             'participant_id'    => $participant->id,
         ]);
 
-        return redirect()->route('quiz.show', ['eventCode' => $eventCode])->with('new_session', true);
+        return redirect()->route('quiz.show', ['eventCode' => $eventCode]);
     }
 }

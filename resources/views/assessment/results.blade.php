@@ -297,7 +297,14 @@ $(document).ready(function() {
                                     </td>
                                     <td class="px-3 py-2">{{ $row->participant->name ?? '-' }}</td>
 
-                                    <td class="px-3 py-2">{{ $row->participant->email ?? '-' }}</td>
+                                    <td class="px-3 py-2">
+                                        {{ $row->participant->email ?? '-' }}
+                                        @php $count = $emailCounts[$row->participant->email ?? ''] ?? 1; @endphp
+                                        @if($count > 1)
+                                            <span title="{{ $count }} attempts"
+                                                  class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-500 text-white text-xs font-bold ml-1">{{ $count }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-3 py-2">{{ $row->event->EventName ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row->TotalScore }} / {{ $row->TotalQuestion }}</td>
                                     <td class="px-3 py-2">
@@ -1289,9 +1296,16 @@ document.addEventListener('DOMContentLoaded', function () {
         modalContent.innerHTML = 'Loading...';
 
         fetch(`/assessment/${id}/details`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server returned ' + res.status);
+                return res.json();
+            })
             .then(data => {
-                if (data.status === 'success' && data.questions) {
+                if (data.status === 'success') {
+                    if (!data.questions || data.questions.length === 0) {
+                        modalContent.innerHTML = '<div class="text-sm text-gray-500 text-center py-6">No answers were recorded for this assessment.</div>';
+                        return;
+                    }
                     let html = `<div class="space-y-6">
                         <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-100 mb-4">Assessment Questions & Answers</h3>`;
                     data.questions.forEach((q, idx) => {
@@ -1300,11 +1314,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (q.answers && q.answers.length > 0) {
                             html += `<div class="space-y-2">`;
                             q.answers.forEach((ans, aidx) => {
-                                // Determine if this is the participant's answer
                                 const isParticipant = ans.is_participant;
-                                // Determine if this is the correct answer
                                 const isCorrect = ans.is_correct;
-                                // If participant's answer is wrong, highlight correct
                                 let answerClass = '';
                                 if (isParticipant && isCorrect) {
                                     answerClass = 'bg-green-100 dark:bg-green-900/20 border-green-500';
@@ -1333,8 +1344,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     modalContent.innerHTML = '<div class="text-sm text-gray-600">Failed to load questions and answers.</div>';
                 }
             })
-            .catch(() => {
-                modalContent.innerHTML = 'Error fetching data.';
+            .catch(err => {
+                modalContent.innerHTML = '<div class="text-sm text-red-500">Error loading result. Please try again.</div>';
+                console.error('openModal error:', err);
             });
     }
 

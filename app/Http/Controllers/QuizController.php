@@ -481,35 +481,14 @@ class QuizController extends Controller
             }
 
             // Get participant and event info
-            $email = session('participant_email');
-            $participantId = 0;
-            
-            if ($email) {
-                $participant = Participant::where('email', $email)->first();
-                if ($participant) {
-                    $participantId = $participant->id;
-                }
-            }
+            $participantId = session('participant_id', 0);
 
             $event = AssessmentEvent::where('EventCode', $eventCode)->first();
             $eventId = $event ? $event->EventID : null;
 
-            // Prevent duplicate submissions (manual submit path)
-            if ($participantId && $eventId) {
-                $existing = Assessment::where('ParticipantID', $participantId)
-                    ->where('EventID', $eventId)
-                    ->first();
-                if ($existing) {
-                    session([
-                        "quiz_result_$eventCode" => [
-                            'score' => $existing->TotalScore,
-                            'total' => $existing->TotalQuestion,
-                        ],
-                        "quiz_completed_$eventCode" => true,
-                    ]);
-                    session()->forget(["quiz_questions_$eventCode", "quiz_answers_$eventCode"]);
-                    return redirect()->route('quiz.results', $eventCode);
-                }
+            // Prevent double-submission within the same quiz session (but allow retakes)
+            if (session("quiz_completed_$eventCode")) {
+                return redirect()->route('quiz.results', $eventCode);
             }
 
             // Calculate score
@@ -603,34 +582,13 @@ class QuizController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Session expired']);
         }
 
-        $email = session('participant_email');
-        $participantId = 0;
-        
-        if ($email) {
-            $participant = Participant::where('email', $email)->first();
-            if ($participant) {
-                $participantId = $participant->id;
-            }
-        }
+        $participantId = session('participant_id', 0);
 
         $event = AssessmentEvent::where('EventCode', $eventCode)->first();
         $eventId = $event ? $event->EventID : null;
 
-        // Check if already submitted to prevent duplicates
-        $existingAssessment = Assessment::where('ParticipantID', $participantId)
-                                        ->where('EventID', $eventId)
-                                        ->first();
-
-        if ($existingAssessment) {
-            // If assessment exists, use its data for the result
-            session([
-                "quiz_result_$eventCode" => [
-                    'score' => $existingAssessment->TotalScore,
-                    'total' => $existingAssessment->TotalQuestion,
-                ],
-                "quiz_completed_$eventCode" => true
-            ]);
-            
+        // Prevent double-submission within the same quiz session (but allow retakes)
+        if (session("quiz_completed_$eventCode")) {
             return response()->json(['status' => 'already_submitted']);
         }
 
@@ -734,26 +692,21 @@ class QuizController extends Controller
     
     // If no result in session, try to get from database
     if (!$result) {
-        $email = session('participant_email');
-        if ($email) {
-            $participant = Participant::where('email', $email)->first();
-            if ($participant) {
-                $event = AssessmentEvent::where('EventCode', $eventCode)->first();
-                if ($event) {
-                    $assessment = Assessment::where('ParticipantID', $participant->id)
-                                           ->where('EventID', $event->EventID)
-                                           ->orderBy('DateCreate', 'desc')
-                                           ->first();
-                    
-                    if ($assessment) {
-                        $result = [
-                            'score' => $assessment->TotalScore,
-                            'total' => $assessment->TotalQuestion,
-                        ];
-                        
-                        // Store in session for consistency
-                        session(["quiz_result_$eventCode" => $result]);
-                    }
+        $participantId = session('participant_id');
+        if ($participantId) {
+            $event = AssessmentEvent::where('EventCode', $eventCode)->first();
+            if ($event) {
+                $assessment = Assessment::where('ParticipantID', $participantId)
+                                       ->where('EventID', $event->EventID)
+                                       ->orderBy('DateCreate', 'desc')
+                                       ->first();
+
+                if ($assessment) {
+                    $result = [
+                        'score' => $assessment->TotalScore,
+                        'total' => $assessment->TotalQuestion,
+                    ];
+                    session(["quiz_result_$eventCode" => $result]);
                 }
             }
         }

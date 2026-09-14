@@ -67,6 +67,13 @@ class AssessmentResultController extends Controller
     // Append query parameters to pagination links
     $records->appends($request->query());
 
+    // Count total assessments per email across ALL records (not just current page)
+    $emailCounts = DB::table('assessment as a')
+        ->join('participants as p', 'a.ParticipantID', '=', 'p.id')
+        ->select('p.email', DB::raw('COUNT(a.AssessmentID) as attempt_count'))
+        ->groupBy('p.email')
+        ->pluck('attempt_count', 'email');
+
     // Get all events for filter dropdown
     $allEvents = DB::table('assessmentevent')
         ->select('EventID', 'EventName')
@@ -102,8 +109,13 @@ class AssessmentResultController extends Controller
                         </div>
                       </td>';
 
+            $email = $row->participant->email ?? null;
+            $count = $email ? ($emailCounts[$email] ?? 1) : 1;
+            $badge = $count > 1
+                ? ' <span title="' . $count . ' attempts" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-500 text-white text-xs font-bold">' . $count . '</span>'
+                : '';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->name ?? '-') . '</td>';
-            $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->participant->email ?? '-') . '</td>';
+            $html .= '<td class="px-3 py-2">' . htmlspecialchars($email ?? '-') . $badge . '</td>';
             $html .= '<td class="px-3 py-2">' . htmlspecialchars($row->event->EventName ?? '-') . '</td>';
             $html .= '<td class="px-3 py-2">' . $row->TotalScore . ' / ' . $row->TotalQuestion . '</td>';
             // Percentage column
@@ -143,7 +155,7 @@ class AssessmentResultController extends Controller
         ]);
     }
 
-    return view('assessment.results', compact('records', 'allEvents', 'allCategories', 'allTopics'));
+    return view('assessment.results', compact('records', 'allEvents', 'allCategories', 'allTopics', 'emailCounts'));
 }
 
     public function bulkDelete(Request $request)

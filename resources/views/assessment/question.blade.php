@@ -4,16 +4,26 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script>
-$(document).ready(function() {
-    $('table').DataTable({
+let questionDataTable = null;
+
+function initQuestionDataTable() {
+    if (questionDataTable) {
+        questionDataTable.destroy();
+        questionDataTable = null;
+    }
+    questionDataTable = $('table').DataTable({
         searching: false,
         lengthChange: false,
         paging: false,
         columnDefs: [
-            { orderable: false, targets: 0 }, // Disable sorting for the first column (checkbox)
-            { orderable: false, targets: -3 } // Disable sorting for the Actions column (third from the end)
+            { orderable: false, targets: 0 },
+            { orderable: false, targets: -3 }
         ]
     });
+}
+
+$(document).ready(function() {
+    initQuestionDataTable();
 });
 </script>
 <script>
@@ -1019,8 +1029,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show loading state
             const tbody = document.querySelector('tbody');
+            if (questionDataTable) { questionDataTable.destroy(); questionDataTable = null; }
             tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
-            
+
             // Make AJAX request to get filtered results
             fetch(`/question?${params.toString()}`, {
                 method: 'GET',
@@ -1034,7 +1045,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     // Update table body with new data
                     tbody.innerHTML = data.html;
-                    
+                    initQuestionDataTable();
+
                     // Update pagination info display (simple text)
                     const paginationContainer = document.querySelector('.mt-4');
                     if (paginationContainer && data.total !== undefined) {
@@ -1044,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
                     }
-                    
+
                     // Update URL without page refresh
                     const currentUrl = new URL(window.location.href);
                     const newParams = new URLSearchParams();
@@ -1052,24 +1064,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (selectedTopicIds.length > 0) newParams.append('topics', selectedTopicIds.join(','));
                     currentUrl.search = newParams.toString();
                     window.history.pushState({}, '', currentUrl.toString());
-                    
+
                     // Re-initialize row checkboxes and buttons for new content
                     initializeRowCheckboxes(); // Must run after filtering completes
                     initializeQuestionButtons();
-                    
+
                     // Update filter displays
                     updateTopicDisplay();
                     updateClearAllButton();
-                    
+
                     console.log(`AJAX search completed: ${data.total || 0} questions found`);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    initQuestionDataTable();
                     console.error('Search error:', data.message);
                 }
             })
             .catch(error => {
                 console.error('AJAX error:', error);
                 tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                initQuestionDataTable();
             });
         }
 
@@ -1077,19 +1091,20 @@ document.addEventListener('DOMContentLoaded', function() {
         function clearAllFiltersAction() {
             // Clear text search
             searchInput.value = '';
-            
-            // Clear topic selections  
+
+            // Clear topic selections
             selectedTopicsForSearch.clear();
             document.querySelectorAll('.topic-filter-checkbox').forEach(cb => cb.checked = false);
             updateTopicDisplay();
-            
+
             // Close dropdowns
             topicDropdownFilter.classList.add('hidden');
-            
+
             // Show loading state
             const tbody = document.querySelector('tbody');
+            if (questionDataTable) { questionDataTable.destroy(); questionDataTable = null; }
             tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
-            
+
             // Make AJAX request to get all results (no filters)
             fetch('/question?ajax=1', {
                 method: 'GET',
@@ -1103,7 +1118,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     // Update table body with new data
                     tbody.innerHTML = data.html;
-                    
+                    initQuestionDataTable();
+
                     // Update pagination info display (simple text)
                     const paginationContainer = document.querySelector('.mt-4');
                     if (paginationContainer && data.total !== undefined) {
@@ -1113,25 +1129,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         paginationContainer.innerHTML = `<div class="text-sm text-gray-700 dark:text-gray-300">${paginationText}</div>`;
                     }
-                    
+
                     // Update URL without page refresh
                     const currentUrl = new URL(window.location.href);
                     currentUrl.search = '';
                     window.history.pushState({}, '', currentUrl.toString());
-                    
+
                     // Re-initialize row checkboxes and buttons for new content
                     initializeRowCheckboxes();
                     initializeQuestionButtons();
-                    
+
                     console.log('Filters cleared successfully');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                    initQuestionDataTable();
                     console.error('Clear filters error:', data.message);
                 }
             })
             .catch(error => {
                 console.error('AJAX error:', error);
                 tbody.innerHTML = '<tr><td colspan="7" class="px-2 py-1.5 text-center text-red-500">Error loading results</td></tr>';
+                initQuestionDataTable();
             });
         }
 
