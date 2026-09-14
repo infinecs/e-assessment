@@ -142,12 +142,12 @@
                 @php
                     $pieColorsPhp = ['#5156be', '#ffbf53', '#fd625e', '#4ba6ef', '#2ab57d', '#8e44ad', '#e67e22', '#16a085'];
                 @endphp
-                <div class="flex flex-col gap-4 pr-4 flex-shrink-0" style="width:160px;">
+                <div class="grid grid-cols-2 gap-x-3 gap-y-2 pr-2 flex-shrink-0 self-center overflow-y-auto" style="width:280px; max-height:300px;">
                     @if(!empty($eventChartLabels))
                         @foreach($eventChartLabels as $i => $label)
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-w-0" title="{{ $label }}">
                                 <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background:{{ $pieColorsPhp[$i % count($pieColorsPhp)] }};"></span>
-                                <span class="text-sm text-gray-600 dark:text-gray-300">{{ $label }}</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ $label }}</span>
                             </div>
                         @endforeach
                     @endif
