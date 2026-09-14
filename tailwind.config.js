@@ -1,5 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // The dark-mode toggle was removed; without this, dark: classes still
+  // trigger automatically via the OS/browser's prefers-color-scheme.
+  darkMode: 'class',
   content: [
     './resources/views/**/*.blade.php',
     './resources/js/**/*.js',
