@@ -3,7 +3,7 @@
 
     <head>
         <meta charset="utf-8">
-<title>{{ "500 error" }} | Minia - Admin & Dashboard Template</title>
+<title>{{ "500 error" }} | {{ config('app.name') }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta content="Tailwind Admin & Dashboard Template" name="description">
 <meta content="Themesbrand" name="author">
