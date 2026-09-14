@@ -93,16 +93,19 @@
                                     </div>
                                 @endif
 
-                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}" id="registration-form">
+                                <form method="POST" action="{{ url('participantRegister/' . $eventCode) }}" id="registration-form" enctype="multipart/form-data">
                                     @csrf
                                     <meta name="csrf-token" content="{{ csrf_token() }}">
 
                                     {{-- Error summary --}}
                                     @if ($errors->any())
-                                        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                                            @foreach ($errors->all() as $error)
-                                                <p>{{ $error }}</p>
-                                            @endforeach
+                                        <div class="mb-4 p-4 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+                                            <strong class="block mb-2">Please fix the following errors:</strong>
+                                            <ul class="list-disc list-inside space-y-1">
+                                                @foreach ($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
                                         </div>
                                     @endif
 
@@ -111,7 +114,7 @@
                                         <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Full
                                             Name</label>
                                         <input type="text" name="name" value="{{ old('name') }}" required
-                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100 @error('name') border-red-500 @enderror"
                                             placeholder="Enter your name">
                                         @error('name')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -121,8 +124,8 @@
                                     {{-- Email --}}
                                     <div class="mb-4">
                                         <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Email</label>
-                                        <input type="email" name="email" value="{{ old('email') }}" required
-                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                                        <input type="email" name="email" id="email" value="{{ old('email') }}" required
+                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100 @error('email') border-red-500 @enderror"
                                             placeholder="Enter email"
                                             style="text-transform:lowercase;"
                                             oninput="this.value = this.value.toLowerCase()">
@@ -134,23 +137,25 @@
                                     {{-- Confirm Email --}}
                                     <div class="mb-6">
                                         <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Confirm Email</label>
-                                        <input type="email" name="email_confirmation" value="{{ old('email_confirmation') }}" required
-                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
+                                        <input type="email" name="email_confirmation" id="email_confirmation" value="{{ old('email_confirmation') }}" required
+                                            class="w-full py-2 border-gray-50 rounded bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100 @error('email_confirmation') border-red-500 @enderror"
                                             placeholder="Re-enter email"
                                             style="text-transform:lowercase;"
-                                            oninput="this.value = this.value.toLowerCase()">
+                                            oninput="this.value = this.value.toLowerCase(); validateEmailMatch()">
+                                        <p id="email-match-message" class="mt-1 text-sm hidden"></p>
                                         @error('email_confirmation')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
 
-                                    {{-- Password --}}
+                                    {{-- Assessment Password --}}
                                     <div class="mb-6">
-                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Password</label>
+                                        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-100">Assessment Password</label>
+                                        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">Enter the assessment code/password provided to you</p>
                                         <div class="flex">
                                             <input type="password" name="password" id="register-password"
-                                                class="w-full py-2 border-gray-50 rounded-l bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100"
-                                                placeholder="Enter password" required aria-label="Password" aria-describedby="register-password-addon">
+                                                class="w-full py-2 border-gray-50 rounded-l bg-gray-50/30 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-gray-100 focus:ring focus:ring-violet-500/20 focus:border-violet-100 @error('password') border-red-500 @enderror"
+                                                placeholder="Enter assessment password" required aria-label="Assessment Password" aria-describedby="register-password-addon">
                                             <button class="px-4 border rounded-r border-gray-50 bg-gray-50 dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
                                                 type="button" id="register-password-addon"><i class="mdi mdi-eye-off-outline"></i></button>
                                         </div>
@@ -162,14 +167,42 @@
                                     {{-- Submit --}}
                                     <div class="mb-3">
                                         <button
-                                            class="w-full py-2 text-white border-transparent shadow-md btn bg-violet-500 hover:bg-violet-600"
-                                            type="submit">
+                                            class="w-full py-2 text-white border-transparent shadow-md btn bg-violet-500 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            type="submit"
+                                            id="submit-btn">
                                             Register & Start Quiz
                                         </button>
+                                        <div id="submit-status" class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden"></div>
                                     </div>
                                 </form>
                                 <script>
+                                    // Email validation function
+                                    function validateEmailMatch() {
+                                        const email = document.getElementById('email').value;
+                                        const emailConfirmation = document.getElementById('email_confirmation').value;
+                                        const message = document.getElementById('email-match-message');
+                                        
+                                        if (emailConfirmation && email !== emailConfirmation) {
+                                            message.classList.remove('hidden', 'text-green-600');
+                                            message.classList.add('text-red-600');
+                                            message.textContent = '✗ Emails do not match';
+                                            return false;
+                                        } else if (emailConfirmation && email === emailConfirmation) {
+                                            message.classList.remove('hidden', 'text-red-600');
+                                            message.classList.add('text-green-600');
+                                            message.textContent = '✓ Emails match';
+                                            return true;
+                                        } else {
+                                            message.classList.add('hidden');
+                                            return false;
+                                        }
+                                    }
+
                                     document.addEventListener('DOMContentLoaded', function () {
+                                        console.log('Registration form loaded');
+                                        console.log('Event Code:', '{{ $eventCode }}');
+                                        
+                                        // Password show/hide toggle
                                         var passwordInput = document.getElementById('register-password');
                                         var eyeButton = document.getElementById('register-password-addon');
                                         if (passwordInput && eyeButton) {
@@ -184,6 +217,66 @@
                                                     icon.classList.remove('mdi-eye-outline');
                                                     icon.classList.add('mdi-eye-off-outline');
                                                 }
+                                            });
+                                        }
+
+                                        // Form submission validation
+                                        const form = document.getElementById('registration-form');
+                                        const submitBtn = document.getElementById('submit-btn');
+                                        const submitStatus = document.getElementById('submit-status');
+                                        
+                                        if (form) {
+                                            form.addEventListener('submit', function(e) {
+                                                const name = document.querySelector('input[name="name"]').value;
+                                                const email = document.getElementById('email').value;
+                                                const emailConfirmation = document.getElementById('email_confirmation').value;
+                                                const password = document.getElementById('register-password').value;
+                                                
+                                                console.log('Form validation:', {
+                                                    name: name ? 'Provided' : 'Missing',
+                                                    email: email ? 'Provided' : 'Missing',
+                                                    emailMatch: email === emailConfirmation ? 'Yes' : 'No',
+                                                    passwordProvided: password ? 'Yes' : 'No'
+                                                });
+                                                
+                                                // Validate name
+                                                if (!name || name.trim() === '') {
+                                                    e.preventDefault();
+                                                    submitStatus.textContent = 'Please enter your full name.';
+                                                    submitStatus.classList.remove('hidden');
+                                                    return false;
+                                                }
+                                                
+                                                // Validate email
+                                                if (!email) {
+                                                    e.preventDefault();
+                                                    submitStatus.textContent = 'Please enter your email address.';
+                                                    submitStatus.classList.remove('hidden');
+                                                    return false;
+                                                }
+                                                
+                                                // Validate emails match
+                                                if (email !== emailConfirmation) {
+                                                    e.preventDefault();
+                                                    submitStatus.textContent = 'Email addresses do not match. Please check and try again.';
+                                                    submitStatus.classList.remove('hidden');
+                                                    submitStatus.classList.add('text-red-600');
+                                                    return false;
+                                                }
+                                                
+                                                // Validate password
+                                                if (!password) {
+                                                    e.preventDefault();
+                                                    submitStatus.textContent = 'Please enter the assessment password.';
+                                                    submitStatus.classList.remove('hidden');
+                                                    return false;
+                                                }
+                                                
+                                                // Show submitting status
+                                                submitBtn.disabled = true;
+                                                submitStatus.textContent = 'Submitting...';
+                                                submitStatus.classList.remove('hidden');
+                                                console.log('Form is valid, submitting...');
                                             });
                                         }
                                     });

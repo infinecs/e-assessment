@@ -3,17 +3,30 @@
     <div class="flex justify-between w-full">
 
         <!-- Left: Logo & Menu Toggle -->
-        <div class="flex items-center topbar-brand">
-            <div class="hidden lg:flex navbar-brand items-center justify-between shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none">
-                <a href="#" class="flex items-center text-3xl font-black tracking-tight flex-shrink-0 dark:text-white leading-[69px] px-2 py-1 rounded">
-                    <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Infinecs with Slogan" class="h-9 inline">
-                </a>
+        <div class="flex items-center">
+            <div class="topbar-brand flex items-center">
+                <!-- Responsive Logo -->
+                <div class="hidden lg:flex navbar-brand items-center justify-center shrink px-6 h-[70px] ltr:border-r rtl:border-l bg-[#fbfaff] border-gray-50 dark:border-zinc-700 dark:bg-zinc-800 shadow-none transition-all duration-300 ease-in-out w-64 group-data-[sidebar-size=sm]:w-[70px] group-data-[sidebar-size=sm]:px-0">
+                    <a href="{{ route('assessment.index') }}">
+                        <img src="{{ asset('images/Infinecs-with-slogan.png') }}" alt="Full logo"
+                             class="h-9 w-auto group-data-[sidebar-size=sm]:hidden">
+                        <img src="{{ asset('images/Infinecs-logo icon.png') }}" alt="Icon"
+                             class="hidden group-data-[sidebar-size=sm]:!inline h-12 w-12 object-contain">
+                    </a>
+                </div>
             </div>
+            <!-- Sidebar Toggle Button — outside topbar-brand so theme CSS cannot affect it -->
+            <button id="sidebar-toggle"
+                class="flex items-center justify-center px-3 h-[70px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                aria-label="Toggle sidebar"
+                title="Toggle Sidebar">
+                <i data-feather="menu" class="w-5 h-5"></i>
+            </button>
         </div>
 
         <!-- Right: Profile Dropdown -->
         <div class="flex items-center ltr:ml-auto rtl:mr-auto">
-            <div class="relative dropdown">
+<div class="relative dropdown">
                 <button type="button"
                     class="flex items-center px-3 py-2 h-[70px] border-x border-gray-50 bg-gray-50/30 dropdown-toggle dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100"
                     id="page-header-user-dropdown"

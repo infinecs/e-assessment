@@ -228,7 +228,7 @@
 @empty
     <div class="text-center py-8">
         <p class="text-gray-700 text-lg">No questions found for this event.</p>
-        <a href="/" class="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        <a href="{{ route('participantRegister.show', ['eventCode' => $eventCode]) }}" class="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Go Back
         </a>
     </div>
@@ -262,7 +262,18 @@
         totalSeconds: {{ $questions->count() * (int)$assessment->DurationEachQuestion }},
         participantEmail: '{{ session("participant_email", "guest") }}',
         csrfToken: '{{ csrf_token() }}',
-        isNewSession: {{ $isNewSession ? 'true' : 'false' }}
+        isNewSession: {{ $isNewSession ? 'true' : 'false' }},
+        urls: {
+            register: @json(route('participantRegister.show', ['eventCode' => $eventCode])),
+            results: @json(route('quiz.results', ['eventCode' => $eventCode])),
+            checkActiveSession: @json(route('quiz.checkActiveSession', ['eventCode' => $eventCode])),
+            takeoverSession: @json(route('quiz.takeoverSession', ['eventCode' => $eventCode])),
+            autoSubmit: @json(route('quiz.autoSubmit', ['eventCode' => $eventCode])),
+            saveAnswer: @json(route('quiz.saveAnswer', ['eventCode' => $eventCode])),
+            heartbeat: @json(route('quiz.heartbeat', ['eventCode' => $eventCode])),
+            clearActiveSession: @json(route('quiz.clearActiveSession', ['eventCode' => $eventCode])),
+            clearAnswers: @json(route('quiz.clearAnswers', ['eventCode' => $eventCode]))
+        }
     };
 
     // ---------------- STORAGE KEYS ----------------
@@ -285,7 +296,7 @@
         if (localStorage.getItem('quiz_auto_submitted')) {
             localStorage.removeItem('quiz_auto_submitted');
             clearQuizData();
-            window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+            window.location.href = QUIZ_CONFIG.urls.results;
             return;
         }
         initializeQuiz();
@@ -297,7 +308,7 @@
             updateSessionStatus('Connecting...', 'warning');
 
             if (localStorage.getItem(STORAGE_KEYS.finished) === '1') {
-                window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+                window.location.href = QUIZ_CONFIG.urls.results;
                 return;
             }
 
@@ -327,7 +338,7 @@
     // ---------------- SERVER SESSION CHECK ----------------
     async function checkServerSession(forceNew = false) {
         try {
-            const response = await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/check-active-session`, {
+            const response = await fetch(QUIZ_CONFIG.urls.checkActiveSession, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -357,14 +368,14 @@
         if (result === 'takeover') {
             await takeoverSession();
         } else {
-            window.location.href = '/';
+            window.location.href = QUIZ_CONFIG.urls.register;
         }
     }
 
     async function takeoverSession() {
         try {
             updateSessionStatus('Taking over session...', 'warning');
-            const response = await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/takeover-session`, {
+            const response = await fetch(QUIZ_CONFIG.urls.takeoverSession, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': QUIZ_CONFIG.csrfToken },
                 body: JSON.stringify({ tabId: currentTabId })
@@ -457,7 +468,7 @@
             const form = document.getElementById('quiz-form');
             const formData = new FormData(form);
 
-            const response = await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/auto-submit`, {
+            const response = await fetch(QUIZ_CONFIG.urls.autoSubmit, {
                 method: 'POST',
                 body: formData,
                 headers: { 'X-CSRF-TOKEN': QUIZ_CONFIG.csrfToken }
@@ -467,14 +478,14 @@
             if (result.status === 'submitted' || result.status === 'already_submitted') {
                 clearQuizData();
                 setTimeout(() => {
-                    window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+                    window.location.href = QUIZ_CONFIG.urls.results;
                 }, 2000);
             } else throw new Error(result.message || 'Auto-submit failed');
 
         } catch (error) {
             console.error('Auto-submit error:', error);
             setTimeout(() => {
-                window.location.href = `/quiz/${QUIZ_CONFIG.eventCode}/results`;
+                window.location.href = QUIZ_CONFIG.urls.results;
             }, 2000);
         }
     }
@@ -567,7 +578,7 @@
 
     async function saveAnswerToServer(questionId, value) {
         try {
-            await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/save-answer`, {
+            await fetch(QUIZ_CONFIG.urls.saveAnswer, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': QUIZ_CONFIG.csrfToken },
                 body: JSON.stringify({ questionId, value })
@@ -590,7 +601,7 @@
         heartbeatInterval = setInterval(async () => {
             if (!isQuizActive || isSubmitting) return;
             try {
-                const response = await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/heartbeat`, {
+                const response = await fetch(QUIZ_CONFIG.urls.heartbeat, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': QUIZ_CONFIG.csrfToken },
                     body: JSON.stringify({ tabId: currentTabId })
@@ -615,7 +626,7 @@
         if (reason==='session_taken_over') msg='Your quiz session has been taken over by another tab/device.';
         else if (reason==='no_session') msg='Your login session has expired.';
         else if (reason==='server_error') msg='Server connection lost.';
-        showErrorModal('Session Lost', msg, ()=>window.location.href='/');
+        showErrorModal('Session Lost', msg, ()=>window.location.href=QUIZ_CONFIG.urls.register);
     }
 
     function handleMultipleTabsDetected() {
@@ -626,18 +637,18 @@
     function handlePageUnload(e) {
         if (isSubmitting || !isQuizActive) return;
         const formData = new FormData(document.getElementById('quiz-form'));
-        navigator.sendBeacon(`/quiz/${QUIZ_CONFIG.eventCode}/auto-submit`, formData);
+        navigator.sendBeacon(QUIZ_CONFIG.urls.autoSubmit, formData);
         e.preventDefault(); e.returnValue='Your answers will be submitted automatically. Are you sure?'; return e.returnValue;
     }
 
     // ---------------- SERVER CLEAR FUNCTIONS ----------------
     async function clearServerSession() {
-        try { await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/clear-active-session`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':QUIZ_CONFIG.csrfToken} }); }
+        try { await fetch(QUIZ_CONFIG.urls.clearActiveSession, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':QUIZ_CONFIG.csrfToken} }); }
         catch (error) { console.error(error); }
     }
 
     async function clearServerAnswers() {
-        try { await fetch(`/quiz/${QUIZ_CONFIG.eventCode}/clear-answers`, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':QUIZ_CONFIG.csrfToken} }); }
+        try { await fetch(QUIZ_CONFIG.urls.clearAnswers, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':QUIZ_CONFIG.csrfToken} }); }
         catch (error) { console.error(error); }
     }
 
