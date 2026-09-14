@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 
     <head>
-        <title>{{ "404 error" }} | Minia - Admin & Dashboard Template</title>
+        <title>{{ "404 error" }} | {{ config('app.name') }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta content="Tailwind Admin & Dashboard Template" name="description">
 <meta content="Themesbrand" name="author">
